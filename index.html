@@ -211,7 +211,7 @@
               <i class="fa-solid fa-qrcode"></i>
             </div>
             <div class="flex-grow min-w-0">
-              <p id="statusAlertTitle" class="text-[10px] sm:text-xs text-emerald-800 font-bold uppercase tracking-wider">SIAP MEMINDAI</p>
+              <p id="statusAlertTitle" class="text-[10px] sm:text-xs text-emerald-800 font-bold uppercase tracking-wider">SIAP MEMINDAI (SUPER FAST)</p>
               <h3 id="statusAlertMessage" class="text-xs sm:text-base font-bold text-slate-800 truncate">Arahkan ID / QR Code Santri ke Kamera...</h3>
             </div>
           </div>
@@ -261,14 +261,13 @@
           <!-- Instructions Card -->
           <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-xs text-slate-600 space-y-2 shadow-sm">
             <h4 class="font-bold text-emerald-800 flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-info text-emerald-600"></i>
-              Petunjuk Penggunaan & Audio
+              <i class="fa-solid fa-bolt text-emerald-600"></i>
+              Sistem Scan Super Cepat
             </h4>
             <ul class="list-disc list-inside space-y-1 text-slate-600">
-              <li>Pilih nama Pengajar di bagian atas sebelum memulai scan.</li>
-              <li>Arahkan kartu santri ke depan kamera HP / Webcam.</li>
-              <li>Bunyi gelembung air & sapaan suara pria menandai presensi sukses.</li>
-              <li>Kunci API Suara & Logo Drive sudah otomatis terhubung secara permanen.</li>
+              <li>Scan berjalan instan (25 frame/detik) tanpa jeda.</li>
+              <li>Data tersimpan lokal seketika & disinkronkan ke Google Sheets di latar belakang.</li>
+              <li>Sapaan suara islami pria otomatis diputar setelah scan.</li>
             </ul>
           </div>
 
@@ -718,7 +717,7 @@
               
               setTimeout(() => {
                 source.start(0);
-              }, 200);
+              }, 100);
 
               return;
             }
@@ -739,7 +738,7 @@
           const msg = new SpeechSynthesisUtterance(textToSay);
           msg.lang = "id-ID";
           msg.pitch = 0.95;
-          msg.rate = 0.95;
+          msg.rate = 1.0;
 
           const voices = window.speechSynthesis.getVoices();
           const maleVoice = voices.find(v => 
@@ -755,7 +754,7 @@
 
           setTimeout(() => {
             window.speechSynthesis.speak(msg);
-          }, 250);
+          }, 150);
         }
       } catch (e) {
         console.warn("Speech synthesis error:", e);
@@ -789,6 +788,7 @@
     async function onScanSuccess(decodedText) {
       const now = Date.now();
 
+      // Fast cooldown: 800ms for new scans, duplicate prevention for 3s
       if (isProcessing || (decodedText === lastScannedCode && now - lastScannedTime < 3000)) {
         return;
       }
@@ -797,6 +797,7 @@
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
+      // Instant Water Bubble Audio Trigger
       playWaterBubbleSound();
 
       const currentDate = new Date();
@@ -804,68 +805,61 @@
 
       let localLookup = LOCAL_STUDENT_DB[decodedText] || { nama: decodedText, kelas: "-" };
 
-      updateAlertStatus("loading", `Memproses: ${decodedText}...`, "SINKRONISASI SHEET");
-
-      let apiSuccess = false;
-      let finalNama = localLookup.nama;
-      let finalKelas = localLookup.kelas;
-
-      try {
-        const response = await fetch(currentScriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            nis: decodedText,
-            idSantri: decodedText,
-            guru: selectedGuru
-          })
-        });
-
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData && resData.status === "success") {
-            apiSuccess = true;
-            if (resData.namaSantri && resData.namaSantri !== "Nama Tidak Ditemukan") {
-              finalNama = resData.namaSantri;
-            }
-            if (resData.kelas && resData.kelas !== "-") {
-              finalKelas = resData.kelas;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Google Apps Script network error, saved locally:", err);
-      }
-
-      playGeminiVoiceGreeting(finalNama, finalKelas);
-
       const logEntry = {
         id: "PRES-" + Math.random().toString(36).substring(2, 7),
         idSantri: decodedText,
-        namaSantri: finalNama,
-        kelas: finalKelas,
+        namaSantri: localLookup.nama,
+        kelas: localLookup.kelas,
         guru: selectedGuru,
         hariTanggal: formattedHariTanggal,
         rawDate: currentDate.toISOString(),
-        statusSheet: apiSuccess ? "Tersimpan" : "Lokal"
+        statusSheet: "Lokal"
       };
 
+      // Immediate UI Update (Zero Delay)
       presensiHistory.unshift(logEntry);
       saveHistoryToStorage();
-
       updateLastScannedCard(logEntry);
       renderHistoryTable();
       updateStats();
 
-      if (apiSuccess) {
-        updateAlertStatus("success", `✓ Presensi Berhasil: ${finalNama}`, "DATA TERSIMPAN KE GOOGLE SHEET");
-      } else {
-        updateAlertStatus("warning", `✓ Tersimpan Lokal: ${finalNama}`, "GURU: " + selectedGuru);
-      }
+      updateAlertStatus("success", `✓ Alhamdulillah sudah masuk: ${localLookup.nama}`, "PRESENSI BERHASIL");
 
+      // Play Voice Greeting Immediately
+      playGeminiVoiceGreeting(localLookup.nama, localLookup.kelas);
+
+      // Background Async Call to Google Apps Script (No Blocking)
+      fetch(currentScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          nis: decodedText,
+          idSantri: decodedText,
+          guru: selectedGuru
+        })
+      }).then(res => res.json()).then(resData => {
+        if (resData && resData.status === "success") {
+          logEntry.statusSheet = "Tersimpan";
+          if (resData.namaSantri && resData.namaSantri !== "Nama Tidak Ditemukan") {
+            logEntry.namaSantri = resData.namaSantri;
+          }
+          if (resData.kelas && resData.kelas !== "-") {
+            logEntry.kelas = resData.kelas;
+          }
+          saveHistoryToStorage();
+          renderHistoryTable();
+          updateStats();
+          updateLastScannedCard(logEntry);
+          updateAlertStatus("success", `✓ Alhamdulillah sudah masuk & tersimpan ke Sheet: ${logEntry.namaSantri}`, "PRESENSI TERSIMPAN");
+        }
+      }).catch(err => {
+        console.warn("Background sync error, retained local copy:", err);
+      });
+
+      // Quick unlock for next scan
       setTimeout(() => {
         isProcessing = false;
-      }, 1500);
+      }, 800);
     }
 
     function updateAlertStatus(type, message, title) {
@@ -1108,10 +1102,11 @@
       updateStats();
 
       try {
+        // Superfast High FPS Camera Config (25 FPS)
         html5QrCodeScanner = new Html5QrcodeScanner(
           "reader",
           {
-            fps: 10,
+            fps: 25,
             qrbox: { width: 250, height: 250 },
             rememberLastUsedCamera: true,
             aspectRatio: 1.0
