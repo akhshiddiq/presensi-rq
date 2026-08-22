@@ -63,6 +63,7 @@
 </head>
 <body class="bg-emerald-50/40 text-slate-800 min-h-screen flex flex-col antialiased">
 
+  <!-- HEADER -->
   <header class="bg-white border-b border-emerald-100 sticky top-0 z-40 shadow-sm">
     <div class="max-w-5xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 sm:space-x-3.5 min-w-0">
@@ -102,13 +103,14 @@
     </div>
   </header>
 
+  <!-- TAB NAVIGATION -->
   <div class="bg-white border-b border-emerald-100 px-4 sm:px-6">
     <div class="max-w-5xl mx-auto flex space-x-2 sm:space-x-4 overflow-x-auto custom-scrollbar">
-      <button onclick="switchTab('scan')" id="tab-scan-btn" class="py-3 px-3 sm:px-4 border-b-2 border-emerald-600 text-emerald-700 text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap">
+      <button onclick="switchTab('scan')" id="tab-scan-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap">
         <i class="fa-solid fa-camera"></i>
         1. Pemindai Presensi Live
       </button>
-      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3 px-3 sm:px-4 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-xs sm:text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap">
+      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
         <i class="fa-solid fa-chart-pie"></i>
         2. Rekap Absen Per Kelas
       </button>
@@ -142,23 +144,23 @@
         </div>
       </div>
 
-      <!-- REALTIME STATS GRID (Dipindahkan ke atas kamera) -->
+      <!-- STATISTIK RINGKASAN (DI ATAS KAMERA) -->
       <div class="grid grid-cols-3 gap-2">
         <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
           <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Total Scan</p>
-          <p id="statTotal" class="text-sm sm:text-base font-bold text-slate-800 leading-tight">0</p>
+          <p id="statTotal" class="text-xs sm:text-sm font-bold text-slate-800 leading-tight">0</p>
         </div>
         <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
           <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Terisi Sheet</p>
-          <p id="statSuccess" class="text-sm sm:text-base font-bold text-emerald-600 leading-tight">0</p>
+          <p id="statSuccess" class="text-xs sm:text-sm font-bold text-emerald-600 leading-tight">0</p>
         </div>
         <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
           <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Simpan Lokal</p>
-          <p id="statLocal" class="text-sm sm:text-base font-bold text-amber-600 leading-tight">0</p>
+          <p id="statLocal" class="text-xs sm:text-sm font-bold text-amber-600 leading-tight">0</p>
         </div>
       </div>
 
-      <!-- CAMERA VIEWPORT CONTAINER -->
+      <!-- BINGKAI KAMERA PEMINDAI -->
       <div class="white-card rounded-2xl p-3.5 sm:p-5 space-y-3 relative overflow-hidden">
         <div class="flex items-center justify-between">
           <h2 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -171,23 +173,22 @@
         </div>
 
         <!-- CAMERA DISPLAY REGION -->
-        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-200 min-h-[220px] sm:min-h-[280px] flex flex-col items-center justify-center shadow-inner">
-          <div id="reader" class="w-full h-full min-h-[200px]"></div>
+        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-200 min-h-[190px] max-w-sm mx-auto flex flex-col items-center justify-center shadow-inner">
+          <div id="reader" class="w-full h-full min-h-[180px]"></div>
 
-          <!-- CLEAN START CAMERA BUTTON OVERLAY (Shows before camera starts) -->
+          <!-- START OVERLAY -->
           <div id="cameraStartOverlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center space-y-3 z-10">
-            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
               <i class="fa-solid fa-camera"></i>
             </div>
-            <button onclick="startCamera()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+            <button onclick="startCamera()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
               <i class="fa-solid fa-video"></i>
               Mulai Pemindai Kamera
             </button>
-            <p class="text-[11px] text-slate-400 max-w-xs">Izinkan akses kamera browser untuk memindai QR code santri secara instan</p>
+            <p class="text-[10px] text-slate-400 max-w-xs">Izinkan akses kamera untuk scan QR Code santri</p>
           </div>
         </div>
 
-        <!-- CAMERA CONTROLS BAR -->
         <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
           <div class="flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-emerald-600"></i>
@@ -199,7 +200,7 @@
         </div>
       </div>
 
-      <!-- STATUS & LAST SCAN UPDATE ALERT (Placed Directly Below Camera) -->
+      <!-- NOTIFIKASI STATUS (PAS DI BAWAH KAMERA) -->
       <div id="statusAlert" class="bg-emerald-50 border border-emerald-300 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all">
         <div id="statusAlertIcon" class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg flex-shrink-0 border border-emerald-400">
           <i class="fa-solid fa-qrcode"></i>
@@ -211,7 +212,51 @@
         </div>
       </div>
 
-      <!-- HISTORY TABLE CARD -->
+      <!-- KOLOM ABSEN MANUAL (TANPA BARCODE) -->
+      <div class="white-card rounded-2xl p-3.5 sm:p-4 space-y-3 bg-emerald-50/20 border-emerald-200">
+        <div class="flex items-center justify-between border-b border-emerald-100 pb-2">
+          <div class="flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs flex-shrink-0">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-800">Absen Manual / Cari Nama (Kartu Hilang)</h3>
+              <p class="text-[10px] text-slate-500">Pilih santri dari 87 data terdaftar atau ketik manual jika kartu hilang</p>
+            </div>
+          </div>
+          <button onclick="fetchStudentData()" title="Sinkronkan dengan Google Sheets" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 text-xs rounded-lg transition font-semibold flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-rotate text-emerald-600"></i>
+            <span class="hidden sm:inline">Sync Data</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Pilih Nama Santri -->
+          <div class="sm:col-span-1">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Santri Terdaftar (87 Santri):</label>
+            <select id="manualSantriSelect" onchange="onManualSelectChange()" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="">-- Sedang Memuat Data... --</option>
+            </select>
+            <p id="syncStatus" class="text-[9px] text-emerald-600 mt-1"><i class="fa-solid fa-check-double"></i> 87 Santri Siap Terhubung</p>
+          </div>
+
+          <!-- Ketik Nama Manual jika Tidak Ditemukan -->
+          <div class="sm:col-span-1">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Ketik Nama Manual:</label>
+            <input type="text" id="manualNamaInput" placeholder="Contoh: Muhammad Bahrul" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+
+          <!-- Tombol Simpan Manual -->
+          <div class="sm:col-span-1 flex items-end">
+            <button onclick="submitManualPresensi()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[34px]">
+              <i class="fa-solid fa-check-to-slot"></i>
+              Catat Kehadiran Manual
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIWAYAT PRESENSI TABLE CARD -->
       <div class="white-card rounded-2xl p-3.5 sm:p-5 space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -271,11 +316,15 @@
             <select id="rekapFilterKelas" onchange="renderRekapTable()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none">
               <option value="SEMUA">-- Semua Kelas --</option>
               <option value="Abdurrahman">Abdurrahman</option>
+              <option value="Abu Ubaidah">Abu Ubaidah</option>
+              <option value="Abu Bakar">Abu Bakar</option>
               <option value="Ali">Ali</option>
-              <option value="Zubair">Zubair</option>
-              <option value="Hamzah">Hamzah</option>
               <option value="Bilal">Bilal</option>
               <option value="Fatimah">Fatimah</option>
+              <option value="Hamzah">Hamzah</option>
+              <option value="Umar">Umar</option>
+              <option value="Utsman">Utsman</option>
+              <option value="Zubair">Zubair</option>
             </select>
           </div>
 
@@ -396,17 +445,17 @@
       <div class="grid grid-cols-3 gap-2.5">
         <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
           <div id="qr1" class="flex justify-center bg-white p-1 rounded-lg shadow-inner"></div>
+          <p class="text-[11px] font-bold text-emerald-700">IDSRQ001</p>
+          <p class="text-[9px] text-slate-500 truncate">Alfatih Ahmad</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
+          <div id="qr2" class="flex justify-center bg-white p-1 rounded-lg shadow-inner"></div>
           <p class="text-[11px] font-bold text-emerald-700">IDSRQ003</p>
           <p class="text-[9px] text-slate-500 truncate">M. Atthaya</p>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
-          <div id="qr2" class="flex justify-center bg-white p-1 rounded-lg shadow-inner"></div>
-          <p class="text-[11px] font-bold text-emerald-700">IDSRQ009</p>
-          <p class="text-[9px] text-slate-500 truncate">Naufal Giebran</p>
-        </div>
-        <div class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-center space-y-1.5">
           <div id="qr3" class="flex justify-center bg-white p-1 rounded-lg shadow-inner"></div>
-          <p class="text-[11px] font-bold text-emerald-700">IDSRQ027</p>
+          <p class="text-[11px] font-bold text-emerald-700">IDSRQ074</p>
           <p class="text-[9px] text-slate-500 truncate">Hevanika Zhafira</p>
         </div>
       </div>
@@ -433,19 +482,101 @@
     let html5QrCode = null;
     let isCameraActive = false;
 
-    // Fallback Local Student Database
-    const LOCAL_STUDENT_DB = {
-      "IDSRQ001": { nama: "Ahmad Zaki", kelas: "Abdurrahman" },
-      "IDSRQ002": { nama: "Ali Zainal", kelas: "Ali" },
-      "IDSRQ003": { nama: "M. Atthaya Azka", kelas: "Abdurrahman" },
-      "IDSRQ004": { nama: "Fatimah Az-Zahra", kelas: "Fatimah" },
-      "IDSRQ005": { nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman" },
-      "IDSRQ009": { nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman" },
-      "IDSRQ020": { nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal" },
-      "IDSRQ022": { nama: "Zaid Aflahul Mubarok", kelas: "Bilal" },
-      "IDSRQ024": { nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah" },
-      "IDSRQ027": { nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah" }
-    };
+    const MASTER_SANTRI_LIST = [
+      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman" },
+      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman" },
+      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman" },
+      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman" },
+      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman" },
+      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman" },
+      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman" },
+      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman" },
+      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman" },
+      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman" },
+      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah" },
+      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair" },
+      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair" },
+      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair" },
+      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair" },
+      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair" },
+      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair" },
+      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair" },
+      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali" },
+      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali" },
+      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali" },
+      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali" },
+      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar" },
+      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar" },
+      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar" },
+      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar" },
+      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar" },
+      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar" },
+      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar" },
+      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar" },
+      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar" },
+      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar" },
+      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar" },
+      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar" },
+      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal" },
+      { id: "IDSRQ052", nama: "Alifiandra ahmad hudaya", kelas: "Bilal" },
+      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal" },
+      { id: "IDSRQ054", nama: "Dilara adrena ramadhani", kelas: "Bilal" },
+      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal" },
+      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal" },
+      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal" },
+      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal" },
+      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal" },
+      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal" },
+      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal" },
+      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal" },
+      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal" },
+      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah" },
+      { id: "IDSRQ065", nama: "Arkhan Salman Al-farisi", kelas: "Hamzah" },
+      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah" },
+      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah" },
+      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah" },
+      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah" },
+      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah" },
+      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah" },
+      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah" },
+      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah" },
+      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah" },
+      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah" },
+      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah" },
+      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah" },
+      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar" },
+      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar" },
+      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar" },
+      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar" },
+      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar" },
+      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar" },
+      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman" },
+      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman" },
+      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman" },
+      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali" }
+    ];
+
+    // Build initial LOCAL_STUDENT_DB dictionary
+    let LOCAL_STUDENT_DB = {};
+    MASTER_SANTRI_LIST.forEach(s => {
+      LOCAL_STUDENT_DB[s.id] = { nama: s.nama, kelas: s.kelas };
+    });
 
     let presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
 
@@ -535,6 +666,63 @@
       }
     }
 
+    // Populate dropdown with 87 master students
+    function renderStudentSelect(listData) {
+      const selectEl = document.getElementById("manualSantriSelect");
+      const syncStatus = document.getElementById("syncStatus");
+      
+      selectEl.innerHTML = '<option value="">-- Pilih Nama Santri (87 Santri) --</option>';
+
+      // Sort by class then by name
+      const sortedList = [...listData].sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+
+      sortedList.forEach(santri => {
+        LOCAL_STUDENT_DB[santri.id] = { nama: santri.nama, kelas: santri.kelas };
+        const opt = document.createElement("option");
+        opt.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
+        opt.text = `[${santri.kelas}] ${santri.nama} (${santri.id})`;
+        selectEl.appendChild(opt);
+      });
+
+      if (syncStatus) {
+        syncStatus.innerHTML = `<i class="fa-solid fa-check-double text-emerald-600"></i> ${listData.length} Santri Siap Terhubung`;
+      }
+    }
+
+    // Fetch Student Data from Google Sheets or fallback to MASTER_SANTRI_LIST
+    function fetchStudentData() {
+      const selectEl = document.getElementById("manualSantriSelect");
+      const syncStatus = document.getElementById("syncStatus");
+      
+      if (syncStatus) {
+        syncStatus.innerHTML = `<i class="fa-solid fa-rotate animate-spin text-emerald-600"></i> Menghubungkan Google Sheet...`;
+      }
+      
+      fetch(currentScriptUrl)
+        .then(res => res.json())
+        .then(resData => {
+          if (resData && resData.status === "success" && resData.data && resData.data.length > 0) {
+            renderStudentSelect(resData.data);
+            localStorage.setItem("presensi_student_backup", JSON.stringify(resData.data));
+            if (syncStatus) {
+              syncStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-600"></i> ${resData.data.length} Santri Tersinkron Google Sheet`;
+            }
+          } else {
+            loadLocalBackupDb();
+          }
+        })
+        .catch(err => {
+          console.warn("Gagal menarik data langsung, menggunakan data master lokal.", err);
+          loadLocalBackupDb();
+        });
+    }
+
+    function loadLocalBackupDb() {
+      const backupData = JSON.parse(localStorage.getItem("presensi_student_backup") || "null");
+      const dataToUse = (backupData && backupData.length > 0) ? backupData : MASTER_SANTRI_LIST;
+      renderStudentSelect(dataToUse);
+    }
+
     function getShortDayName(dateObj) {
       const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
       return days[dateObj.getDay()];
@@ -593,7 +781,7 @@
       // Show update directly below camera
       updateAlertStatus("success", `Alhamdulillah sudah masuk: ${localLookup.nama}`, "PRESENSI BERHASIL", `Kelas: ${localLookup.kelas} | Pengajar: ${selectedGuru}`);
 
-      // Background Async Call to Google Apps Script (No Blocking)
+      // Background Async Call to Google Apps Script
       fetch(currentScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -626,6 +814,82 @@
       }, 800);
     }
 
+    function onManualSelectChange() {
+      const val = document.getElementById("manualSantriSelect").value;
+      if (val) {
+        document.getElementById("manualNamaInput").value = "";
+      }
+    }
+
+    function submitManualPresensi() {
+      const selectVal = document.getElementById("manualSantriSelect").value;
+      const manualName = document.getElementById("manualNamaInput").value.trim();
+
+      let finalId = "MANUAL-" + Math.floor(100 + Math.random() * 900);
+      let finalNama = "";
+      let finalKelas = "-";
+
+      if (manualName) {
+        finalNama = manualName;
+      } else if (selectVal) {
+        const parts = selectVal.split("|");
+        finalId = parts[0] || finalId;
+        finalNama = parts[1] || "";
+        finalKelas = parts[2] || "-";
+      } else {
+        updateAlertStatus("error", "Pilih nama santri atau ketikkan nama santri terlebih dahulu!", "PERHATIAN");
+        return;
+      }
+
+      // Trigger Water Bubble Sound
+      playWaterBubbleSound();
+
+      const currentDate = new Date();
+      const formattedHariTanggal = formatHariTanggal(currentDate);
+
+      const logEntry = {
+        id: "PRES-" + Math.random().toString(36).substring(2, 7),
+        idSantri: finalId,
+        namaSantri: finalNama,
+        kelas: finalKelas,
+        guru: selectedGuru,
+        hariTanggal: formattedHariTanggal,
+        rawDate: currentDate.toISOString(),
+        statusSheet: "Lokal"
+      };
+
+      presensiHistory.unshift(logEntry);
+      saveHistoryToStorage();
+      renderHistoryTable();
+      updateStats();
+
+      // Show update directly below camera
+      updateAlertStatus("success", `Alhamdulillah sudah masuk: ${finalNama}`, "PRESENSI MANUAL BERHASIL", `Kelas: ${finalKelas} | Pengajar: ${selectedGuru}`);
+
+      // Reset form
+      document.getElementById("manualSantriSelect").value = "";
+      document.getElementById("manualNamaInput").value = "";
+
+      // Sync to Google Script
+      fetch(currentScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          nis: finalId,
+          idSantri: finalId,
+          namaSantri: finalNama,
+          guru: selectedGuru
+        })
+      }).then(res => res.json()).then(resData => {
+        if (resData && resData.status === "success") {
+          logEntry.statusSheet = "Tersimpan";
+          saveHistoryToStorage();
+          renderHistoryTable();
+          updateStats();
+        }
+      }).catch(err => console.warn(err));
+    }
+
     function updateAlertStatus(type, message, title, subText = "") {
       const alertEl = document.getElementById("statusAlert");
       const iconEl = document.getElementById("statusAlertIcon");
@@ -647,6 +911,10 @@
         alertEl.className = "bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
         iconEl.className = "w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg flex-shrink-0 border border-emerald-400";
         iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+      } else {
+        alertEl.className = "bg-amber-50 border-2 border-amber-400 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
+        iconEl.className = "w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg flex-shrink-0 border border-amber-400";
+        iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
       }
     }
 
@@ -771,17 +1039,17 @@
       const scanContent = document.getElementById("tab-scan-content");
       const rekapContent = document.getElementById("tab-rekap-content");
 
-      scanBtn.className = "py-3 px-3 sm:px-4 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-xs sm:text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap";
-      rekapBtn.className = "py-3 px-3 sm:px-4 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-xs sm:text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap";
+      scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
+      rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
 
       scanContent.classList.add("hidden");
       rekapContent.classList.add("hidden");
 
       if (tabName === "scan") {
-        scanBtn.className = "py-3 px-3 sm:px-4 border-b-2 border-emerald-600 text-emerald-700 text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap";
+        scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
         scanContent.classList.remove("hidden");
       } else if (tabName === "rekap") {
-        rekapBtn.className = "py-3 px-3 sm:px-4 border-b-2 border-emerald-600 text-emerald-700 text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap";
+        rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
         rekapContent.classList.remove("hidden");
         renderRekapTable();
       }
@@ -792,7 +1060,7 @@
         html5QrCode = new Html5Qrcode("reader");
       }
 
-      const config = { fps: 25, qrbox: { width: 220, height: 220 } };
+      const config = { fps: 25, qrbox: { width: 180, height: 180 } };
 
       html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
         .then(() => {
@@ -803,7 +1071,6 @@
           document.getElementById("scanStatusBadge").className = "text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200";
         })
         .catch(() => {
-          // Fallback to front camera or default
           html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
             .then(() => {
               isCameraActive = true;
@@ -813,7 +1080,7 @@
               document.getElementById("scanStatusBadge").className = "text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200";
             })
             .catch(err => {
-              alert("Gagal membuka kamera: " + err);
+              updateAlertStatus("error", "Gagal membuka kamera: " + err, "ERR KAMERA");
             });
         });
     }
@@ -832,7 +1099,7 @@
 
     function exportCSV() {
       if (presensiHistory.length === 0) {
-        alert("Tidak ada data untuk di-export!");
+        updateAlertStatus("error", "Tidak ada data untuk di-export!", "PERHATIAN");
         return;
       }
       let csv = "Hari / Tanggal,ID Santri,Nama Santri,Kelas,Guru,Status\n";
@@ -846,7 +1113,7 @@
       const tbody = document.getElementById("rekapTableBody");
       const rows = tbody.querySelectorAll("tr");
       if (rows.length === 0 || rows[0].cells.length <= 1) {
-        alert("Tidak ada data rekap untuk di-export!");
+        updateAlertStatus("error", "Tidak ada data rekap untuk di-export!", "PERHATIAN");
         return;
       }
 
@@ -882,23 +1149,25 @@
       document.getElementById("qr2").innerHTML = "";
       document.getElementById("qr3").innerHTML = "";
 
-      new QRCode(document.getElementById("qr1"), { text: "IDSRQ003", width: 80, height: 80 });
-      new QRCode(document.getElementById("qr2"), { text: "IDSRQ009", width: 80, height: 80 });
-      new QRCode(document.getElementById("qr3"), { text: "IDSRQ027", width: 80, height: 80 });
-    }
-
-    function closeSampleModal() {
-      document.getElementById("sampleModal").classList.add("hidden");
+      new QRCode(document.getElementById("qr1"), { text: "IDSRQ001", width: 80, height: 80 });
+      new QRCode(document.getElementById("qr2"), { text: "IDSRQ003", width: 80, height: 80 });
+      new QRCode(document.getElementById("qr3"), { text: "IDSRQ074", width: 80, height: 80 });
     }
 
     window.onload = function() {
       document.getElementById("guruSelect").value = selectedGuru;
 
-      // Apply Logo & Settings immediately
+      // Apply Logo & Settings
       applyCustomLogo();
+
+      // Render 87 master students into dropdown immediately
+      renderStudentSelect(MASTER_SANTRI_LIST);
 
       renderHistoryTable();
       updateStats();
+      
+      // Auto fetch updated student list from Google Sheets
+      fetchStudentData();
     };
   </script>
 </body>
