@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Santri RQ Al-Khansa - System Presensi Live & Gemini Voice</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- HTML5 QR Code Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- QRCode Generator Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+
+    /* HTML5 Camera Reader Customization */
+    #reader video {
+      border-radius: 0.85rem;
+      object-fit: cover;
+      width: 100% !important;
+    }
+
+    #reader {
+      border: none !important;
+    }
+
+    #reader__scan_region {
+      background: transparent !important;
+    }
+
+    #reader__dashboard {
+      padding: 10px !important;
+    }
+
+    #reader__dashboard_section_csr button {
+      background: linear-gradient(135deg, #059669 0%, #0d9488 100%) !important;
+      color: white !important;
+      padding: 0.65rem 1.4rem !important;
+      border-radius: 0.6rem !important;
+      font-weight: 700 !important;
+      border: none !important;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+      transition: all 0.2s ease;
+    }
+    #reader__dashboard_section_csr button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.6);
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #022c22;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #059669;
+      border-radius: 3px;
+    }
+
+    /* Faceless Santri Walking Animations */
+    @keyframes walkingChild {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-5px) rotate(1deg); }
+      50% { transform: translateY(0px) rotate(-1deg); }
+      75% { transform: translateY(-5px) rotate(1deg); }
+    }
+
+    @keyframes armBagSway {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    @keyframes cloudMove {
+      0% { transform: translateX(0px); }
+      50% { transform: translateX(18px); }
+      100% { transform: translateX(0px); }
+    }
+
+    @keyframes domeGlowPulse {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.5)); }
+      50% { filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.9)); }
+    }
+
+    @keyframes starTwinkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .anim-walking {
+      animation: walkingChild 2.4s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    .anim-bag {
+      animation: armBagSway 2.4s ease-in-out infinite;
+      transform-origin: top left;
+    }
+
+    .anim-cloud {
+      animation: cloudMove 8s ease-in-out infinite;
+    }
+
+    .anim-dome {
+      animation: domeGlowPulse 3s ease-in-out infinite;
+    }
+
+    .anim-star-1 { animation: starTwinkle 2s ease-in-out infinite; }
+    .anim-star-2 { animation: starTwinkle 2.8s ease-in-out infinite 0.6s; }
+    .anim-star-3 { animation: starTwinkle 2.3s ease-in-out infinite 1.2s; }
+
+    /* Glassmorphism Card Style */
+    .glass-card {
+      background: rgba(6, 78, 59, 0.35);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    .glass-card-hover {
+      transition: all 0.25s ease;
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(52, 211, 153, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(4, 120, 87, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-950 via-slate-950 to-teal-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <header class="bg-emerald-950/90 backdrop-blur-md border-b border-emerald-800/60 sticky top-0 z-40 shadow-lg shadow-emerald-950/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3.5">
+        
+        <!-- Logo RQ Al-Khansa Greenland Container -->
+        <div id="logoContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border-2 border-emerald-400 shadow-lg shadow-emerald-500/20 p-1 flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105 overflow-hidden">
+          <svg viewBox="0 0 200 200" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="98" fill="#ffffff"/>
+            <g transform="translate(100 68) scale(0.68)">
+              <path d="M 0,-85 L 25,-60 L 60,-60 L 60,-25 L 85,0 L 60,25 L 60,60 L 25,60 L 0,85 L -25,60 L -60,60 L -60,25 L -85,0 L -60,-25 L -60,-60 L -25,-60 Z" fill="none" stroke="#ea580c" stroke-width="8" stroke-linejoin="round"/>
+              <path d="M 0,-72 L 21,-51 L 51,-51 L 51,-21 L 72,0 L 51,21 L 51,51 L 21,51 L 0,72 L -21,51 L -51,51 L -51,21 L -72,0 L -51,-21 L -51,-51 L -21,-51 Z" fill="none" stroke="#15803d" stroke-width="7" stroke-linejoin="round"/>
+            </g>
+            <path d="M 100 16 A 6 6 0 1 0 102 28 A 8 8 0 1 1 100 16 Z" fill="#15803d"/>
+            <polygon points="102,17 103,20 106,20 104,22 105,25 102,23 99,25 100,22 98,20 101,20" fill="#15803d"/>
+            <g fill="#15803d">
+              <path d="M 70 54 L 95 65 L 100 63 L 105 65 L 130 54 L 122 49 L 100 58 L 78 49 Z"/>
+              <path d="M 66 42 C 80 36 94 42 100 46 C 106 42 120 36 134 42 L 129 53 C 116 47 105 51 100 54 C 95 51 84 47 71 53 Z" fill="#16a34a"/>
+            </g>
+            <path d="M 12 96 C 45 112 155 112 188 96 L 178 124 C 145 138 55 138 22 124 Z" fill="#15803d"/>
+            <path d="M 8 100 L 25 106 L 20 126 L 3 120 Z" fill="#116631"/>
+            <path d="M 192 100 L 175 106 L 180 126 L 197 120 Z" fill="#116631"/>
+            <text x="100" y="118" font-family="'Inter', sans-serif" font-weight="900" font-size="23" fill="#ffffff" text-anchor="middle" letter-spacing="2">AL KHANSA</text>
+            <text x="100" y="152" font-family="'Inter', sans-serif" font-weight="900" font-size="18" fill="#ea580c" text-anchor="middle">Rumah Qur'an</text>
+            <text x="100" y="174" font-family="'Inter', sans-serif" font-weight="800" font-style="italic" font-size="15" fill="#c2410c" text-anchor="middle">Greenland</text>
+          </svg>
+        </div>
+
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold text-white tracking-wide flex items-center gap-2">
+            Presensi Santri RQ Al-Khansa
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <button onclick="toggleAudio()" id="audioToggleBtn" class="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-100 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-700/60 transition shadow-sm">
+          <i id="audioIcon" class="fa-solid fa-volume-high text-emerald-400"></i>
+          <span id="audioText">Suara Gemini: ON</span>
+        </button>
+
+        <button onclick="openConfigModal()" class="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800 text-emerald-100 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-700/60 transition shadow-sm">
+          <i class="fa-solid fa-gear text-emerald-400"></i>
+          <span class="hidden sm:inline">Pengaturan URL & Logo</span>
+        </button>
+
+        <button onclick="openSampleModal()" class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-md shadow-emerald-900/50">
+          <i class="fa-solid fa-qrcode"></i>
+          <span>Contoh QR</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tab Bar -->
+  <div class="bg-emerald-950/60 border-b border-emerald-800/40 px-4 sm:px-6 backdrop-blur">
+    <div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-4 overflow-x-auto custom-scrollbar">
+      <button onclick="switchTab('scan')" id="tab-scan-btn" class="py-3.5 px-4 border-b-2 border-emerald-400 text-emerald-300 text-sm font-bold flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-camera"></i>
+        1. Pemindai Presensi Live
+      </button>
+      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-4 border-b-2 border-transparent text-emerald-200/60 hover:text-emerald-200 text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-chart-pie"></i>
+        2. Rekap Absen Per Kelas
+      </button>
+    </div>
+  </div>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- ================= TAB 1: PEMINDAI PRESENSI ================= -->
+    <div id="tab-scan-content" class="space-y-6">
+
+      <!-- HERO BANNER: FACELESS SANTRI CHILD GOING TO NGAJI ANIMATION -->
+      <div class="bg-gradient-to-r from-emerald-900/80 via-teal-900/70 to-emerald-950/90 border border-emerald-700/50 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+        
+        <!-- Background Decorative Stars & Crescent -->
+        <div class="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#34d399_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+        <div class="z-10 space-y-2 max-w-lg text-center md:text-left">
+          <div class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 text-xs px-3 py-1 rounded-full border border-emerald-400/30 font-semibold mb-1">
+            <i class="fa-solid fa-mosque text-amber-400"></i> Rumah Qur'an Greenland
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white tracking-wide leading-tight">
+            Semangat Berangkat Ngaji & Murojaah Setiap Hari!
+          </h2>
+          <p class="text-xs sm:text-sm text-emerald-200/80 leading-relaxed">
+            Catat kehadiran santri secara cepat, akurat, dan terhubung langsung ke Google Sheets dengan sapaan hangat islami.
+          </p>
+        </div>
+
+        <!-- Faceless Santri Artwork SVG Animation -->
+        <div class="z-10 flex-shrink-0 w-full md:w-80 h-44 bg-emerald-950/60 rounded-2xl border border-emerald-600/40 p-2 flex items-center justify-center relative overflow-hidden shadow-inner">
+          
+          <svg viewBox="0 0 360 180" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background Sky Gradient -->
+            <defs>
+              <linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#022c22"/>
+                <stop offset="100%" stop-color="#065f46"/>
+              </linearGradient>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fbbf24"/>
+                <stop offset="100%" stop-color="#d97706"/>
+              </linearGradient>
+            </defs>
+
+            <rect width="360" height="180" fill="url(#skyGrad)" rx="12"/>
+
+            <!-- Stars -->
+            <circle cx="30" cy="25" r="1.5" fill="#fef08a" class="anim-star-1"/>
+            <circle cx="80" cy="40" r="1.2" fill="#fef08a" class="anim-star-2"/>
+            <circle cx="150" cy="20" r="1.8" fill="#fef08a" class="anim-star-3"/>
+            <circle cx="280" cy="30" r="1.5" fill="#fef08a" class="anim-star-1"/>
+
+            <!-- Floating Crescent Moon -->
+            <path d="M 320 20 A 10 10 0 1 0 324 34 A 12 12 0 1 1 320 20 Z" fill="url(#goldGrad)" />
+
+            <!-- Soft Clouds -->
+            <g fill="#a7f3d0" opacity="0.15" class="anim-cloud">
+              <path d="M 20 45 Q 35 30 50 45 Q 65 30 80 45 L 20 45 Z"/>
+              <path d="M 220 35 Q 235 20 250 35 Q 265 20 280 35 L 220 35 Z"/>
+            </g>
+
+            <!-- Mosque / Rumah Quran Silhouette in Background -->
+            <g class="anim-dome">
+              <!-- Main Central Dome -->
+              <path d="M 270 140 C 270 95 310 95 310 140 Z" fill="#047857"/>
+              <path d="M 290 85 L 290 95 M 287 90 L 293 90" stroke="#f59e0b" stroke-width="2"/>
+              <!-- Minaret -->
+              <rect x="245" y="105" width="12" height="35" fill="#065f46"/>
+              <path d="M 245 105 C 245 95 257 95 257 105 Z" fill="#10b981"/>
+            </g>
+
+            <!-- Hill Path -->
+            <path d="M 0 155 Q 180 135 360 155 L 360 180 L 0 180 Z" fill="#023a2e"/>
+            <path d="M 0 162 Q 180 148 360 162 L 360 180 L 0 180 Z" fill="#064e3b"/>
+
+            <!-- FACELESS SANTRI CHILD WALKING TO NGAJI -->
+            <g class="anim-walking" transform="translate(100, 78)">
+              
+              <!-- Shadow underneath -->
+              <ellipse cx="40" cy="80" rx="18" ry="4" fill="#011e17" opacity="0.6"/>
+
+              <!-- Legs walking -->
+              <path d="M 32 60 L 26 78 L 20 78" stroke="#1f2937" stroke-width="5" stroke-linecap="round" fill="none"/>
+              <path d="M 45 60 L 52 78 L 58 78" stroke="#1f2937" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+              <!-- Shoes -->
+              <ellipse cx="18" cy="78" rx="4" ry="2.5" fill="#0f172a"/>
+              <ellipse cx="60" cy="78" rx="4" ry="2.5" fill="#0f172a"/>
+
+              <!-- Baju Koko / Robe (White / Mint) -->
+              <path d="M 24 35 L 54 35 L 58 63 L 20 63 Z" fill="#f0fdf4" rx="4"/>
+              <!-- Green Vest/Detail -->
+              <path d="M 32 35 L 46 35 L 43 63 L 35 63 Z" fill="#10b981"/>
+
+              <!-- Arm holding Quran / Bag -->
+              <g class="anim-bag">
+                <!-- Arm -->
+                <path d="M 25 38 L 15 52 L 25 55" stroke="#fca5a5" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+                <!-- Quran / Kitab Bag -->
+                <rect x="8" y="48" width="18" height="22" rx="3" fill="#15803d" stroke="#f59e0b" stroke-width="1.5"/>
+                <!-- Gold Emblem on Bag -->
+                <circle cx="17" cy="59" r="3" fill="#f59e0b"/>
+              </g>
+
+              <!-- Other Arm -->
+              <path d="M 52 38 L 60 50" stroke="#fca5a5" stroke-width="4.5" stroke-linecap="round"/>
+
+              <!-- FACELESS HEAD & NECK -->
+              <ellipse cx="39" cy="30" rx="3.5" ry="4" fill="#fca5a5"/>
+              <!-- Faceless Smooth Oval Head (No Eyes/Mouth) -->
+              <ellipse cx="39" cy="22" rx="10" ry="11" fill="#fca5a5"/>
+
+              <!-- Peci / Islamic Cap (Black with Gold Trim) -->
+              <path d="M 28 18 C 28 10 50 10 50 18 Z" fill="#18181b"/>
+              <line x1="28" y1="18" x2="50" y2="18" stroke="#f59e0b" stroke-width="1.5"/>
+            </g>
+
+            <!-- Text Caption in Graphic -->
+            <text x="20" y="168" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="11" fill="#6ee7b7" letter-spacing="0.5">Bismillah, Otomatis & Terhubung Google Sheets</text>
+          </svg>
+
+        </div>
+
+      </div>
+
+      <!-- LARGE GURU / PENGAJAR SELECTOR CARD -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-emerald-700/50">
+        <div class="flex items-center space-x-3.5">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shadow-inner">
+            <i class="fa-solid fa-user-tie text-2xl"></i>
+          </div>
+          <div>
+            <label for="guruSelect" class="block text-base sm:text-lg font-extrabold text-white tracking-wide">
+              Guru / Pengajar:
+            </label>
+            <p class="text-xs sm:text-sm text-emerald-200/70">Pilih nama Ustadz / Ustadzah yang bertugas memimpin presensi</p>
+          </div>
+        </div>
+
+        <div class="w-full md:w-80">
+          <select id="guruSelect" onchange="updateSelectedGuru()" class="w-full bg-emerald-950/90 border-2 border-emerald-400/60 text-emerald-200 text-base sm:text-lg font-bold rounded-xl p-3 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-300 outline-none transition cursor-pointer shadow-lg shadow-emerald-950/50">
+            <option value="Ustadz Sidik" selected>Ustadz Sidik</option>
+            <option value="Ustadzah Mega">Ustadzah Mega</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Scanner Grid Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Scanner View Column -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="glass-card rounded-2xl p-5 shadow-xl relative overflow-hidden border border-emerald-700/50">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-bold text-emerald-100 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                Pemindai Live Kamera
+              </h2>
+              <span id="scanStatusBadge" class="text-xs bg-emerald-900/80 text-emerald-300 px-3 py-1 rounded-full font-semibold border border-emerald-700/60">
+                Kamera Siap
+              </span>
+            </div>
+
+            <!-- HTML5 QR Code Camera Container -->
+            <div id="reader-wrapper" class="relative rounded-2xl overflow-hidden bg-emerald-950/90 border-2 border-emerald-800/80 min-h-[300px] flex items-center justify-center shadow-inner">
+              <div id="reader" class="w-full"></div>
+            </div>
+
+            <!-- Scanner Controls Footer -->
+            <div class="mt-4 flex items-center justify-between text-xs text-emerald-200/70 pt-3 border-t border-emerald-800/60">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-400" id="scriptStatusIcon"></i>
+                <span id="scriptStatusText" class="text-emerald-300 font-semibold">Google Script Terhubung</span>
+              </div>
+              <span class="flex items-center gap-1.5 text-amber-400 font-semibold">
+                <i class="fa-solid fa-volume-high"></i> Suara Pria Gemini AI
+              </span>
+            </div>
+          </div>
+
+          <!-- Quick Feedback Card -->
+          <div id="statusAlert" class="bg-emerald-950/80 border border-emerald-700/60 rounded-2xl p-4 shadow-xl flex items-center space-x-4 transition-all">
+            <div id="statusAlertIcon" class="w-12 h-12 rounded-xl bg-emerald-900/80 text-emerald-300 flex items-center justify-center text-xl flex-shrink-0 border border-emerald-700/60">
+              <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <div class="flex-grow min-w-0">
+              <p id="statusAlertTitle" class="text-xs text-emerald-300/80 font-bold uppercase tracking-wider">SIAP MEMINDAI</p>
+              <h3 id="statusAlertMessage" class="text-sm sm:text-base font-bold text-white truncate">Arahkan ID / QR Code Santri ke Kamera...</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats & Info Column -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- Realtime Stats Grid -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="glass-card p-4 rounded-2xl text-center border border-emerald-700/50">
+              <p class="text-xs text-emerald-200/70 font-semibold mb-1">Total Scan</p>
+              <p id="statTotal" class="text-2xl font-black text-white">0</p>
+            </div>
+            <div class="glass-card p-4 rounded-2xl text-center border border-emerald-700/50">
+              <p class="text-xs text-emerald-200/70 font-semibold mb-1">Terisi Sheet</p>
+              <p id="statSuccess" class="text-2xl font-black text-emerald-400">0</p>
+            </div>
+            <div class="glass-card p-4 rounded-2xl text-center border border-emerald-700/50">
+              <p class="text-xs text-emerald-200/70 font-semibold mb-1">Simpan Lokal</p>
+              <p id="statLocal" class="text-2xl font-black text-amber-400">0</p>
+            </div>
+          </div>
+
+          <!-- Last Scanned Student Detail Card -->
+          <div class="glass-card rounded-2xl p-5 shadow-xl space-y-3 border border-emerald-700/50">
+            <h3 class="text-xs font-extrabold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-address-card text-emerald-400"></i>
+              Data Santri Terakhir Discanned
+            </h3>
+            <div class="p-4 bg-emerald-950/80 rounded-xl border border-emerald-800/80 space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 id="lastNama" class="text-base font-bold text-white">Belum ada scan</h4>
+                  <p id="lastID" class="text-xs text-emerald-300/70">ID Santri: -</p>
+                </div>
+                <span id="lastKelasBadge" class="bg-emerald-900/80 text-emerald-200 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-700/60">
+                  -
+                </span>
+              </div>
+              <div class="pt-2 border-t border-emerald-800/60 flex justify-between text-xs text-emerald-200/70">
+                <span>Pengajar: <strong id="lastGuruText" class="text-emerald-100">Ustadz Sidik</strong></span>
+                <span id="lastTimeText">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instructions Card -->
+          <div class="bg-emerald-950/40 border border-emerald-800/60 rounded-2xl p-4 text-xs text-emerald-200/80 space-y-2">
+            <h4 class="font-bold text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-info text-amber-400"></i>
+              Petunjuk Penggunaan & Audio Gemini
+            </h4>
+            <ul class="list-disc list-inside space-y-1 text-emerald-200/70">
+              <li>Pilih nama Pengajar di bagian atas sebelum memulai scan.</li>
+              <li>Arahkan kartu santri ke depan kamera.</li>
+              <li>Bunyi gelembung air & ucapan suara pria ramah Gemini AI menandai sukses.</li>
+              <li>Jeda anti-duplicate active (3 detik per santri).</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Presensi History Log Table -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4 border border-emerald-700/50">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-emerald-400"></i>
+              Riwayat Presensi Hari Ini
+            </h3>
+            <p class="text-xs text-emerald-200/70">Daftar pemindai langsung yang tersimpan ke Google Sheet</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="clearHistory()" class="px-3.5 py-1.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold border border-emerald-700/60 transition">
+              <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan
+            </button>
+            <button onclick="exportCSV()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition shadow-md shadow-emerald-950/40">
+              <i class="fa-solid fa-file-csv mr-1"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-emerald-800/80">
+          <table class="w-full text-left text-xs sm:text-sm text-emerald-100">
+            <thead class="bg-emerald-950/90 text-emerald-300 text-xs font-bold uppercase tracking-wider border-b border-emerald-800/80">
+              <tr>
+                <th class="py-3.5 px-4">Hari / Tanggal</th>
+                <th class="py-3.5 px-4">Nama Santri</th>
+                <th class="py-3.5 px-4">Kelas</th>
+                <th class="py-3.5 px-4">Guru</th>
+                <th class="py-3.5 px-4 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-emerald-800/40 bg-emerald-950/40">
+              <tr id="emptyHistoryRow">
+                <td colspan="5" class="py-8 text-center text-emerald-300/50 italic">
+                  Belum ada data presensi yang discan hari ini.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= TAB 2: REKAP ABSEN PER KELAS ================= -->
+    <div id="tab-rekap-content" class="space-y-6 hidden">
+      
+      <!-- Filter Bar -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4 border border-emerald-700/50">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-filter text-emerald-400"></i>
+          Filter Rekap Presensi Per Kelas & Tanggal
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-emerald-200/80 mb-1">Pilih Kelas</label>
+            <select id="rekapFilterKelas" onchange="renderRekapTable()" class="w-full bg-emerald-950/90 border border-emerald-700/80 text-emerald-100 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-400 outline-none">
+              <option value="SEMUA">-- Semua Kelas --</option>
+              <option value="Abdurrahman">Abdurrahman</option>
+              <option value="Ali">Ali</option>
+              <option value="Zubair">Zubair</option>
+              <option value="Hamzah">Hamzah</option>
+              <option value="Bilal">Bilal</option>
+              <option value="Fatimah">Fatimah</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-emerald-200/80 mb-1">Tanggal Rekap</label>
+            <input type="date" id="rekapFilterTanggal" onchange="renderRekapTable()" class="w-full bg-emerald-950/90 border border-emerald-700/80 text-emerald-100 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-400 outline-none">
+          </div>
+
+          <div class="flex items-end">
+            <button onclick="renderRekapTable()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-md">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              Tampilkan Rekap
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Class Summary Card -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-card p-5 rounded-2xl border border-emerald-700/50">
+          <p class="text-xs text-emerald-300/80 font-bold uppercase">Total Santri Hadir</p>
+          <h2 id="rekapTotalHadir" class="text-3xl font-black text-emerald-400 mt-2">0</h2>
+        </div>
+        <div class="glass-card p-5 rounded-2xl border border-emerald-700/50">
+          <p class="text-xs text-emerald-300/80 font-bold uppercase">Kelas Terpilih</p>
+          <h2 id="rekapKelasTerpilih" class="text-xl font-bold text-white mt-2">Semua Kelas</h2>
+        </div>
+        <div class="glass-card p-5 rounded-2xl border border-emerald-700/50">
+          <p class="text-xs text-emerald-300/80 font-bold uppercase">Tanggal Rekap</p>
+          <h2 id="rekapTanggalTerpilih" class="text-xl font-bold text-emerald-200 mt-2">Hari Ini</h2>
+        </div>
+      </div>
+
+      <!-- Rekap Table -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4 border border-emerald-700/50">
+        <div class="flex justify-between items-center">
+          <h3 class="text-base font-bold text-white">Daftar Kehadiran Santri Per Kelas</h3>
+          <button onclick="exportRekapCSV()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition shadow-md">
+            <i class="fa-solid fa-file-csv mr-1"></i> Download Rekap
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-emerald-800/80">
+          <table class="w-full text-left text-xs sm:text-sm text-emerald-100">
+            <thead class="bg-emerald-950/90 text-emerald-300 text-xs font-bold uppercase tracking-wider border-b border-emerald-800/80">
+              <tr>
+                <th class="py-3.5 px-4">No</th>
+                <th class="py-3.5 px-4">Hari / Tanggal</th>
+                <th class="py-3.5 px-4">Nama Santri</th>
+                <th class="py-3.5 px-4">Kelas</th>
+                <th class="py-3.5 px-4">Guru</th>
+                <th class="py-3.5 px-4 text-center">Kehadiran</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody" class="divide-y divide-emerald-800/40 bg-emerald-950/40">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-emerald-300/50 italic">
+                  Belum ada data rekap untuk filter ini.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: SET SCRIPT URL & LOGO CONFIGURATION -->
+  <div id="configModal" class="fixed inset-0 bg-emerald-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card border border-emerald-700/60 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl bg-emerald-950/95">
+      <div class="flex items-center justify-between border-b border-emerald-800/80 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-gear text-emerald-400"></i>
+          Pengaturan Google Script & Logo Google Drive
+        </h3>
+        <button onclick="closeConfigModal()" class="text-emerald-300/70 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-emerald-100">
+        <label class="block font-semibold text-emerald-200">1. Google Apps Script Web App URL:</label>
+        <input type="text" id="scriptUrlInput" class="w-full bg-emerald-950 border border-emerald-700/80 rounded-xl p-3 text-emerald-100 text-xs focus:ring-2 focus:ring-emerald-400 outline-none font-mono" placeholder="https://script.google.com/macros/s/.../exec">
+        
+        <label class="block font-semibold text-emerald-200 pt-2">2. ID File / Link Gambar Google Drive (Optional):</label>
+        <input type="text" id="driveLogoInput" class="w-full bg-emerald-950 border border-emerald-700/80 rounded-xl p-3 text-emerald-100 text-xs focus:ring-2 focus:ring-emerald-400 outline-none font-mono" placeholder="Masukkan ID File (contoh: 1A2B3C4D5E6F7G8H9I) atau Link Share Google Drive">
+        <p class="text-[11px] text-emerald-300/70">
+          *Pastikan file gambar di Google Drive sudah diatur ke <strong>"Siapa saja yang memiliki link"</strong> (Public).
+        </p>
+      </div>
+
+      <div class="p-3 bg-emerald-950/90 rounded-xl border border-emerald-800/80 text-xs text-emerald-300/80 space-y-1">
+        <p class="font-bold text-emerald-400">Catatan Integrasi:</p>
+        <p>Jika kolom ID Logo Google Drive terisi, aplikasi akan menampilkan logo asli dari Drive Anda secara otomatis.</p>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold">Batal</button>
+        <button onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: SAMPLE QR CODES -->
+  <div id="sampleModal" class="fixed inset-0 bg-emerald-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card border border-emerald-700/60 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar bg-emerald-950/95">
+      <div class="flex items-center justify-between border-b border-emerald-800/80 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-emerald-400"></i>
+          Contoh QR Code Santri Siap Scan
+        </h3>
+        <button onclick="closeSampleModal()" class="text-emerald-300/70 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-emerald-200/80">Arahkan kamera HP / webcam ke QR Code berikut untuk menguji pemindaian presensi:</p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div class="bg-emerald-950/90 border border-emerald-800/80 p-3 rounded-2xl text-center space-y-2">
+          <div id="qr1" class="flex justify-center bg-white p-2 rounded-xl"></div>
+          <p class="text-xs font-bold text-emerald-400">IDSRQ003</p>
+          <p class="text-[10px] text-emerald-200/70 truncate">M. Atthaya Azka</p>
+        </div>
+        <div class="bg-emerald-950/90 border border-emerald-800/80 p-3 rounded-2xl text-center space-y-2">
+          <div id="qr2" class="flex justify-center bg-white p-2 rounded-xl"></div>
+          <p class="text-xs font-bold text-emerald-400">IDSRQ009</p>
+          <p class="text-[10px] text-emerald-200/70 truncate">Naufal Giebran</p>
+        </div>
+        <div class="bg-emerald-950/90 border border-emerald-800/80 p-3 rounded-2xl text-center space-y-2">
+          <div id="qr3" class="flex justify-center bg-white p-2 rounded-xl"></div>
+          <p class="text-xs font-bold text-emerald-400">IDSRQ027</p>
+          <p class="text-[10px] text-emerald-200/70 truncate">Hevanika Zhafira (Akhwat)</p>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-emerald-800/80 text-center">
+        <button onclick="closeSampleModal()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyR7Vm0G1_TKiJTfXLFIpCiNsIKvUHe6MOH2cQBs-7vXB8IUEABg1wJqcsUpvzdiJu9/exec";
+    let currentScriptUrl = localStorage.getItem("presensi_script_url") || DEFAULT_SCRIPT_URL;
+    let customLogoDriveId = localStorage.getItem("presensi_logo_drive_id") || "";
+
+    let isAudioEnabled = true;
+    let isProcessing = false;
+    let lastScannedCode = "";
+    let lastScannedTime = 0;
+    let selectedGuru = localStorage.getItem("presensi_selected_guru") || "Ustadz Sidik";
+    let html5QrCodeScanner = null;
+
+    // Fallback Local Student Database
+    const LOCAL_STUDENT_DB = {
+      "IDSRQ001": { nama: "Ahmad Zaki", kelas: "Abdurrahman" },
+      "IDSRQ002": { nama: "Ali Zainal", kelas: "Ali" },
+      "IDSRQ003": { nama: "M. Atthaya Azka", kelas: "Abdurrahman" },
+      "IDSRQ004": { nama: "Fatimah Az-Zahra", kelas: "Fatimah" },
+      "IDSRQ005": { nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman" },
+      "IDSRQ009": { nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman" },
+      "IDSRQ020": { nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal" },
+      "IDSRQ022": { nama: "Zaid Aflahul Mubarok", kelas: "Bilal" },
+      "IDSRQ024": { nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah" },
+      "IDSRQ027": { nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah" }
+    };
+
+    // Warm Islamic & Rumah Quran Motivations (Rotated Randomly)
+    const WARM_MOTIVATION_PHRASES = [
+      "Alhamdulillah, kehadiran kamu hari ini sudah tercatat. Semangat belajar dan jangan lupa murojaah ya!",
+      "MasyaAllah, terima kasih sudah hadir. Terus semangat mengaji, sedikit demi sedikit menjadi hafalan yang kuat!",
+      "Alhamdulillah, kamu sudah hadir! Yuk, belajar dengan semangat dan jadi santri hebat hari ini!",
+      "Alhamdulillah, kehadiran berhasil dicatat. Semangat mengaji dan menambah hafalan hari ini!",
+      "Alhamdulillah, kehadiran tercatat. Semoga setiap langkah menuju Rumah Quran menjadi pahala dan keberkahan.",
+      "MasyaAllah, selamat datang! Semoga ilmu dan hafalan yang dipelajari hari ini mendatangkan keberkahan."
+    ];
+
+    // History Log Array State
+    let presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
+
+    function extractDriveId(inputStr) {
+      if (!inputStr) return "";
+      inputStr = inputStr.trim();
+      const matchD = inputStr.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (matchD) return matchD[1];
+      const matchId = inputStr.match(/id=([a-zA-Z0-9_-]+)/);
+      if (matchId) return matchId[1];
+      if (!inputStr.includes("/") && inputStr.length > 15) return inputStr;
+      return inputStr;
+    }
+
+    function applyCustomLogo() {
+      const driveId = extractDriveId(customLogoDriveId);
+      if (!driveId) return;
+
+      const logoContainer = document.getElementById('logoContainer');
+      if (logoContainer) {
+        const driveImgUrl = `https://lh3.googleusercontent.com/d/${driveId}`;
+        logoContainer.innerHTML = `
+          <img src="${driveImgUrl}" 
+               alt="Logo RQ Al-Khansa" 
+               class="w-full h-full object-cover rounded-full"
+               onerror="console.warn('Gagal memuat logo Google Drive, pastikan akses file diset Publik');">
+        `;
+      }
+    }
+
+    function openConfigModal() {
+      document.getElementById("scriptUrlInput").value = currentScriptUrl;
+      document.getElementById("driveLogoInput").value = customLogoDriveId;
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function saveSettings() {
+      const newUrl = document.getElementById("scriptUrlInput").value.trim();
+      const newDriveLogo = document.getElementById("driveLogoInput").value.trim();
+
+      if (newUrl) {
+        currentScriptUrl = newUrl;
+        localStorage.setItem("presensi_script_url", currentScriptUrl);
+      }
+
+      customLogoDriveId = newDriveLogo;
+      localStorage.setItem("presensi_logo_drive_id", customLogoDriveId);
+
+      if (customLogoDriveId) {
+        applyCustomLogo();
+      }
+
+      closeConfigModal();
+      alert("Pengaturan URL & Logo Google Drive berhasil disimpan!");
+    }
+
+    function playWaterBubbleSound() {
+      if (!isAudioEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        
+        const now = ctx.currentTime;
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.exponentialRampToValueAtTime(1150, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(380, now + 0.15);
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } catch (e) {
+        console.warn("Water sound audio error:", e);
+      }
+    }
+
+    function determineGender(nama, kelas) {
+      const nameLower = (nama || '').toLowerCase();
+      const kelasLower = (kelas || '').toLowerCase();
+
+      if (kelasLower.includes("fatimah") || kelasLower.includes("akhwat") || kelasLower.includes("putri")) {
+        return "P";
+      }
+
+      const femaleKeywords = ["sakura", "hevanika", "alesha", "zhafira", "assyabiya", "nadia", "siti", "aisyah", "fatimah", "zahra", "nisa", "anisa", "putri", "zahwa", "nurul", "cantika", "salma"];
+      for (let kw of femaleKeywords) {
+        if (nameLower.includes(kw)) return "P";
+      }
+
+      return "L";
+    }
+
+    function getFriendlyShortName(fullName) {
+      if (!fullName || fullName === "Nama Tidak Ditemukan" || fullName.startsWith("IDSRQ")) {
+        return "";
+      }
+      let parts = fullName.trim().split(/\s+/);
+      if (parts.length > 1 && (parts[0].toLowerCase() === "m." || parts[0].toLowerCase() === "muhammad" || parts[0].toLowerCase() === "muhamad" || parts[0].toLowerCase() === "ahmad")) {
+        return parts[1];
+      }
+      return parts[0];
+    }
+
+    async function playGeminiVoiceGreeting(studentNama, studentKelas) {
+      if (!isAudioEnabled) return;
+
+      const gender = determineGender(studentNama, studentKelas);
+      const shortName = getFriendlyShortName(studentNama);
+      const arabicThanks = (gender === "P") ? "Jazaakillahu khairan" : "Jazaakallahu khairan";
+      
+      const randomPhrase = WARM_MOTIVATION_PHRASES[Math.floor(Math.random() * WARM_MOTIVATION_PHRASES.length)];
+
+      const speechScript = shortName 
+        ? `${arabicThanks} ${shortName}. ${randomPhrase}`
+        : `${arabicThanks}. ${randomPhrase}`;
+
+      try {
+        const apiKey = ""; // Canvas runtime provides API key automatically
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+        
+        const payload = {
+          contents: [{
+            parts: [{ text: `Say warmly, politely, cheerful, and naturally in clear Indonesian with a friendly young male ustadz voice tone: ${speechScript}` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: "Puck" }
+              }
+            }
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const part = result?.candidates?.[0]?.content?.parts?.[0];
+          const audioData = part?.inlineData?.data;
+          const mimeType = part?.inlineData?.mimeType;
+
+          if (audioData) {
+            const binaryStr = atob(audioData);
+            const len = binaryStr.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+
+            let sampleRate = 24000;
+            if (mimeType && mimeType.includes("rate=")) {
+              const match = mimeType.match(/rate=(\d+)/);
+              if (match) sampleRate = parseInt(match[1], 10);
+            }
+
+            const pcm16 = new Int16Array(bytes.buffer);
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const buffer = audioCtx.createBuffer(1, pcm16.length, sampleRate);
+            const channelData = buffer.getChannelData(0);
+
+            for (let i = 0; i < pcm16.length; i++) {
+              channelData[i] = pcm16[i] / 32768.0;
+            }
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtx.destination);
+            
+            setTimeout(() => {
+              source.start(0);
+            }, 200);
+
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Gemini Male TTS API error, switching to browser fallback:", e);
+      }
+
+      speakFallbackBrowserGreeting(speechScript);
+    }
+
+    function speakFallbackBrowserGreeting(textToSay) {
+      if (!isAudioEnabled) return;
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const msg = new SpeechSynthesisUtterance(textToSay);
+          msg.lang = "id-ID";
+          msg.pitch = 0.95;
+          msg.rate = 0.95;
+
+          const voices = window.speechSynthesis.getVoices();
+          const maleVoice = voices.find(v => 
+            v.lang.toLowerCase().includes("id") && (
+              v.name.toLowerCase().includes("male") || 
+              v.name.toLowerCase().includes("pria") ||
+              v.name.includes("Google") || 
+              v.name.includes("Natural")
+            )
+          ) || voices.find(v => v.lang.toLowerCase().startsWith("id"));
+
+          if (maleVoice) msg.voice = maleVoice;
+
+          setTimeout(() => {
+            window.speechSynthesis.speak(msg);
+          }, 250);
+        }
+      } catch (e) {
+        console.warn("Speech synthesis error:", e);
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
+    function getShortDayName(dateObj) {
+      const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+      return days[dateObj.getDay()];
+    }
+
+    function getMonthNameIndo(monthIndex) {
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      return months[monthIndex];
+    }
+
+    function formatHariTanggal(dateObj) {
+      const shortDay = getShortDayName(dateObj);
+      const dayNum = dateObj.getDate();
+      const monthName = getMonthNameIndo(dateObj.getMonth());
+      const yearNum = dateObj.getFullYear();
+      return `${shortDay} ${dayNum} ${monthName} ${yearNum}`;
+    }
+
+    async function onScanSuccess(decodedText) {
+      const now = Date.now();
+
+      if (isProcessing || (decodedText === lastScannedCode && now - lastScannedTime < 3000)) {
+        return;
+      }
+
+      isProcessing = true;
+      lastScannedCode = decodedText;
+      lastScannedTime = now;
+
+      playWaterBubbleSound();
+
+      const currentDate = new Date();
+      const formattedHariTanggal = formatHariTanggal(currentDate);
+
+      let localLookup = LOCAL_STUDENT_DB[decodedText] || { nama: decodedText, kelas: "-" };
+
+      updateAlertStatus("loading", `Memproses: ${decodedText}...`, "SINKRONISASI SHEET");
+
+      let apiSuccess = false;
+      let finalNama = localLookup.nama;
+      let finalKelas = localLookup.kelas;
+
+      try {
+        const response = await fetch(currentScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            nis: decodedText,
+            idSantri: decodedText,
+            guru: selectedGuru
+          })
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData && resData.status === "success") {
+            apiSuccess = true;
+            if (resData.namaSantri && resData.namaSantri !== "Nama Tidak Ditemukan") {
+              finalNama = resData.namaSantri;
+            }
+            if (resData.kelas && resData.kelas !== "-") {
+              finalKelas = resData.kelas;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Google Apps Script network error, saved locally:", err);
+      }
+
+      playGeminiVoiceGreeting(finalNama, finalKelas);
+
+      const logEntry = {
+        id: "PRES-" + Math.random().toString(36).substring(2, 7),
+        idSantri: decodedText,
+        namaSantri: finalNama,
+        kelas: finalKelas,
+        guru: selectedGuru,
+        hariTanggal: formattedHariTanggal,
+        rawDate: currentDate.toISOString(),
+        statusSheet: apiSuccess ? "Tersimpan" : "Lokal"
+      };
+
+      presensiHistory.unshift(logEntry);
+      saveHistoryToStorage();
+
+      updateLastScannedCard(logEntry);
+      renderHistoryTable();
+      updateStats();
+
+      if (apiSuccess) {
+        updateAlertStatus("success", `✓ Presensi Berhasil: ${finalNama}`, "DATA TERSIMPAN KE GOOGLE SHEET");
+      } else {
+        updateAlertStatus("warning", `✓ Tersimpan Lokal: ${finalNama}`, "GURU: " + selectedGuru);
+      }
+
+      setTimeout(() => {
+        isProcessing = false;
+      }, 1500);
+    }
+
+    function updateAlertStatus(type, message, title) {
+      const alertEl = document.getElementById("statusAlert");
+      const iconEl = document.getElementById("statusAlertIcon");
+      const titleEl = document.getElementById("statusAlertTitle");
+      const msgEl = document.getElementById("statusAlertMessage");
+
+      titleEl.innerText = title;
+      msgEl.innerText = message;
+
+      if (type === "loading") {
+        alertEl.className = "bg-amber-950/60 border border-amber-700/80 rounded-2xl p-4 shadow-xl flex items-center space-x-4 transition-all";
+        iconEl.className = "w-12 h-12 rounded-xl bg-amber-900/80 text-amber-300 flex items-center justify-center text-xl flex-shrink-0 animate-spin border border-amber-600/60";
+        iconEl.innerHTML = `<i class="fa-solid fa-spinner"></i>`;
+      } else if (type === "success") {
+        alertEl.className = "bg-emerald-950/80 border border-emerald-600/80 rounded-2xl p-4 shadow-xl flex items-center space-x-4 transition-all";
+        iconEl.className = "w-12 h-12 rounded-xl bg-emerald-900/90 text-emerald-300 flex items-center justify-center text-xl flex-shrink-0 border border-emerald-500/60";
+        iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+      } else if (type === "warning") {
+        alertEl.className = "bg-teal-950/80 border border-teal-600/80 rounded-2xl p-4 shadow-xl flex items-center space-x-4 transition-all";
+        iconEl.className = "w-12 h-12 rounded-xl bg-teal-900/90 text-teal-300 flex items-center justify-center text-xl flex-shrink-0 border border-teal-500/60";
+        iconEl.innerHTML = `<i class="fa-solid fa-database"></i>`;
+      }
+    }
+
+    function updateLastScannedCard(entry) {
+      document.getElementById("lastNama").innerText = entry.namaSantri;
+      document.getElementById("lastID").innerText = "ID Santri: " + entry.idSantri;
+      document.getElementById("lastKelasBadge").innerText = entry.kelas;
+      document.getElementById("lastGuruText").innerText = entry.guru;
+      document.getElementById("lastTimeText").innerText = entry.hariTanggal;
+    }
+
+    function updateSelectedGuru() {
+      selectedGuru = document.getElementById("guruSelect").value;
+      localStorage.setItem("presensi_selected_guru", selectedGuru);
+    }
+
+    function renderHistoryTable() {
+      const tbody = document.getElementById("historyTableBody");
+      if (!tbody) return;
+
+      if (presensiHistory.length === 0) {
+        tbody.innerHTML = `
+          <tr id="emptyHistoryRow">
+            <td colspan="5" class="py-8 text-center text-emerald-300/50 italic">
+              Belum ada data presensi yang discan hari ini.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = presensiHistory.map(item => `
+        <tr class="hover:bg-emerald-900/40 transition">
+          <td class="py-3.5 px-4 font-mono text-emerald-200">${item.hariTanggal}</td>
+          <td class="py-3.5 px-4 font-bold text-white">${item.namaSantri}</td>
+          <td class="py-3.5 px-4 text-emerald-200">${item.kelas}</td>
+          <td class="py-3.5 px-4 text-emerald-200">${item.guru}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${item.statusSheet === 'Tersimpan' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
+              <i class="fa-solid ${item.statusSheet === 'Tersimpan' ? 'fa-check' : 'fa-floppy-disk'} mr-1.5"></i>
+              ${item.statusSheet}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRekapTable() {
+      const kelasFilter = document.getElementById("rekapFilterKelas").value;
+      const tanggalFilter = document.getElementById("rekapFilterTanggal").value;
+      const tbody = document.getElementById("rekapTableBody");
+
+      let filtered = presensiHistory;
+
+      if (kelasFilter !== "SEMUA") {
+        filtered = filtered.filter(item => item.kelas === kelasFilter);
+      }
+
+      if (tanggalFilter) {
+        filtered = filtered.filter(item => {
+          const itemDate = new Date(item.rawDate).toISOString().split('T')[0];
+          return itemDate === tanggalFilter;
+        });
+      }
+
+      document.getElementById("rekapTotalHadir").innerText = filtered.length;
+      document.getElementById("rekapKelasTerpilih").innerText = kelasFilter === "SEMUA" ? "Semua Kelas" : "Kelas " + kelasFilter;
+      document.getElementById("rekapTanggalTerpilih").innerText = tanggalFilter ? tanggalFilter : "Semua Tanggal";
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-emerald-300/50 italic">
+              Tidak ada data presensi yang sesuai dengan filter ini.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((item, index) => `
+        <tr class="hover:bg-emerald-900/40 transition">
+          <td class="py-3.5 px-4 text-emerald-300/70">${index + 1}</td>
+          <td class="py-3.5 px-4 font-mono text-emerald-200">${item.hariTanggal}</td>
+          <td class="py-3.5 px-4 font-bold text-white">${item.namaSantri}</td>
+          <td class="py-3.5 px-4 text-emerald-200">${item.kelas}</td>
+          <td class="py-3.5 px-4 text-emerald-200">${item.guru}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              🟢 Hadir
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats() {
+      const total = presensiHistory.length;
+      const success = presensiHistory.filter(i => i.statusSheet === "Tersimpan").length;
+      const local = presensiHistory.filter(i => i.statusSheet === "Lokal").length;
+
+      document.getElementById("statTotal").innerText = total;
+      document.getElementById("statSuccess").innerText = success;
+      document.getElementById("statLocal").innerText = local;
+    }
+
+    function saveHistoryToStorage() {
+      localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
+    }
+
+    function clearHistory() {
+      if (confirm("Apakah Anda yakin ingin membersihkan riwayat presensi lokal?")) {
+        presensiHistory = [];
+        saveHistoryToStorage();
+        renderHistoryTable();
+        updateStats();
+      }
+    }
+
+    function toggleAudio() {
+      isAudioEnabled = !isAudioEnabled;
+      document.getElementById("audioText").innerText = isAudioEnabled ? "Suara Gemini: ON" : "Suara Gemini: OFF";
+      document.getElementById("audioIcon").className = isAudioEnabled ? "fa-solid fa-volume-high text-emerald-400" : "fa-solid fa-volume-xmark text-emerald-600";
+    }
+
+    function switchTab(tabName) {
+      const scanBtn = document.getElementById("tab-scan-btn");
+      const rekapBtn = document.getElementById("tab-rekap-btn");
+
+      const scanContent = document.getElementById("tab-scan-content");
+      const rekapContent = document.getElementById("tab-rekap-content");
+
+      scanBtn.className = "py-3.5 px-4 border-b-2 border-transparent text-emerald-200/60 hover:text-emerald-200 text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap";
+      rekapBtn.className = "py-3.5 px-4 border-b-2 border-transparent text-emerald-200/60 hover:text-emerald-200 text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap";
+
+      scanContent.classList.add("hidden");
+      rekapContent.classList.add("hidden");
+
+      if (tabName === "scan") {
+        scanBtn.className = "py-3.5 px-4 border-b-2 border-emerald-400 text-emerald-300 text-sm font-bold flex items-center gap-2 transition whitespace-nowrap";
+        scanContent.classList.remove("hidden");
+      } else if (tabName === "rekap") {
+        rekapBtn.className = "py-3.5 px-4 border-b-2 border-emerald-400 text-emerald-300 text-sm font-bold flex items-center gap-2 transition whitespace-nowrap";
+        rekapContent.classList.remove("hidden");
+        renderRekapTable();
+      }
+    }
+
+    function exportCSV() {
+      if (presensiHistory.length === 0) {
+        alert("Tidak ada data untuk di-export!");
+        return;
+      }
+      let csv = "Hari / Tanggal,ID Santri,Nama Santri,Kelas,Guru,Status\n";
+      presensiHistory.forEach(row => {
+        csv += `"${row.hariTanggal}","${row.idSantri}","${row.namaSantri}","${row.kelas}","${row.guru}","${row.statusSheet}"\n`;
+      });
+      downloadFile(csv, `Presensi_Santri_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+    }
+
+    function exportRekapCSV() {
+      const tbody = document.getElementById("rekapTableBody");
+      const rows = tbody.querySelectorAll("tr");
+      if (rows.length === 0 || rows[0].cells.length <= 1) {
+        alert("Tidak ada data rekap untuk di-export!");
+        return;
+      }
+
+      let csv = "No,Hari / Tanggal,Nama Santri,Kelas,Guru,Kehadiran\n";
+      rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        if (cells.length >= 6) {
+          csv += `"${cells[0].innerText}","${cells[1].innerText}","${cells[2].innerText}","${cells[3].innerText}","${cells[4].innerText}","Hadir"\n`;
+        }
+      });
+      downloadFile(csv, `Rekap_Presensi_Kelas_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+    }
+
+    function downloadFile(content, fileName, mimeType) {
+      const a = document.createElement('a');
+      mimeType = mimeType || 'application/octet-stream';
+
+      if (navigator.msSaveBlob) {
+        navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
+      } else if (URL && 'download' in a) {
+        a.href = URL.createObjectURL(new Blob([content], { type: mimeType }));
+        a.setAttribute('download', fileName);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+
+    function openSampleModal() {
+      document.getElementById("sampleModal").classList.remove("hidden");
+      
+      document.getElementById("qr1").innerHTML = "";
+      document.getElementById("qr2").innerHTML = "";
+      document.getElementById("qr3").innerHTML = "";
+
+      new QRCode(document.getElementById("qr1"), { text: "IDSRQ003", width: 100, height: 100 });
+      new QRCode(document.getElementById("qr2"), { text: "IDSRQ009", width: 100, height: 100 });
+      new QRCode(document.getElementById("qr3"), { text: "IDSRQ027", width: 100, height: 100 });
+    }
+
+    function closeSampleModal() {
+      document.getElementById("sampleModal").classList.add("hidden");
+    }
+
+    window.onload = function() {
+      document.getElementById("guruSelect").value = selectedGuru;
+
+      if (customLogoDriveId) {
+        applyCustomLogo();
+      }
+
+      renderHistoryTable();
+      updateStats();
+
+      try {
+        html5QrCodeScanner = new Html5QrcodeScanner(
+          "reader",
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true,
+            aspectRatio: 1.0
+          },
+          /* verbose= */ false
+        );
+
+        html5QrCodeScanner.render(onScanSuccess, (errorMessage) => {
+          // Silent scan error handling for smooth continuous camera scanning
+        });
+      } catch (err) {
+        console.error("Scanner initialization error:", err);
+      }
+    };
+  </script>
+</body>
+</html>
