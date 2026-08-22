@@ -142,6 +142,22 @@
         </div>
       </div>
 
+      <!-- REALTIME STATS GRID (Dipindahkan ke atas kamera) -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
+          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Total Scan</p>
+          <p id="statTotal" class="text-sm sm:text-base font-bold text-slate-800 leading-tight">0</p>
+        </div>
+        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
+          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Terisi Sheet</p>
+          <p id="statSuccess" class="text-sm sm:text-base font-bold text-emerald-600 leading-tight">0</p>
+        </div>
+        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
+          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Simpan Lokal</p>
+          <p id="statLocal" class="text-sm sm:text-base font-bold text-amber-600 leading-tight">0</p>
+        </div>
+      </div>
+
       <!-- CAMERA VIEWPORT CONTAINER -->
       <div class="white-card rounded-2xl p-3.5 sm:p-5 space-y-3 relative overflow-hidden">
         <div class="flex items-center justify-between">
@@ -192,22 +208,6 @@
           <p id="statusAlertTitle" class="text-[10px] text-emerald-800 font-bold uppercase tracking-wider">SIAP MEMINDAI (SUPER FAST)</p>
           <h3 id="statusAlertMessage" class="text-xs sm:text-base font-extrabold text-slate-800 truncate">Arahkan ID / QR Code Santri ke Kamera...</h3>
           <p id="statusAlertSub" class="text-[11px] text-slate-500 hidden"></p>
-        </div>
-      </div>
-
-      <!-- REALTIME STATS GRID -->
-      <div class="grid grid-cols-3 gap-2">
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Total Scan</p>
-          <p id="statTotal" class="text-sm sm:text-base font-bold text-slate-800 leading-tight">0</p>
-        </div>
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Terisi Sheet</p>
-          <p id="statSuccess" class="text-sm sm:text-base font-bold text-emerald-600 leading-tight">0</p>
-        </div>
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Simpan Lokal</p>
-          <p id="statLocal" class="text-sm sm:text-base font-bold text-amber-600 leading-tight">0</p>
         </div>
       </div>
 
