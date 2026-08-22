@@ -482,6 +482,7 @@
     let html5QrCode = null;
     let isCameraActive = false;
 
+    // MASTER DATABASE: 87 SANTRI RQ AL-KHANSA
     const MASTER_SANTRI_LIST = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman" },
       { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman" },
@@ -691,7 +692,6 @@
 
     // Fetch Student Data from Google Sheets or fallback to MASTER_SANTRI_LIST
     function fetchStudentData() {
-      const selectEl = document.getElementById("manualSantriSelect");
       const syncStatus = document.getElementById("syncStatus");
       
       if (syncStatus) {
@@ -788,6 +788,7 @@
         body: JSON.stringify({
           nis: decodedText,
           idSantri: decodedText,
+          namaSantri: localLookup.nama,
           guru: selectedGuru
         })
       }).then(res => res.json()).then(resData => {
