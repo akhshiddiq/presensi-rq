@@ -76,7 +76,7 @@
           <h1 class="text-sm sm:text-lg md:text-xl font-extrabold text-emerald-900 tracking-tight leading-tight truncate">
             Presensi Santri RQ Al-Khansa
           </h1>
-          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Presensi Otomatis Real-time</p>
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Presensi Otomatis Real-time (Multi-Device Sync)</p>
         </div>
       </div>
 
@@ -223,9 +223,9 @@
               <p class="text-[10px] text-slate-500">Pilih santri dari 87 data terdaftar atau ketik nama jika kartu hilang</p>
             </div>
           </div>
-          <button type="button" onclick="initMasterDataDropdowns()" title="Sinkronkan Data Santri" class="px-2.5 py-1 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 text-xs rounded-lg transition font-semibold flex items-center gap-1 shadow-sm cursor-pointer active:scale-95">
+          <button type="button" onclick="fetchHistoryFromSheets()" title="Sinkronkan Data Cloud" class="px-2.5 py-1 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 text-xs rounded-lg transition font-semibold flex items-center gap-1 shadow-sm cursor-pointer active:scale-95">
             <i class="fa-solid fa-rotate text-emerald-600"></i>
-            <span class="hidden sm:inline">Refresh Sync</span>
+            <span class="hidden sm:inline">Sync Data</span>
           </button>
         </div>
 
@@ -260,7 +260,7 @@
               <i class="fa-solid fa-list-check text-emerald-600"></i>
               Riwayat Presensi Hari Ini
             </h3>
-            <p class="text-[11px] text-slate-500">Daftar pemindai langsung yang tersimpan ke Google Sheet</p>
+            <p class="text-[11px] text-slate-500">Tersimpan otomatis ke Google Sheet & tersinkron antar HP/Laptop</p>
           </div>
           <div class="flex items-center gap-2 self-end sm:self-auto">
             <button type="button" onclick="clearHistory()" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200 cursor-pointer active:scale-95">
@@ -338,7 +338,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: REKAP ABSEN -->
+    <!-- TAB 3: REKAP ABSEN PER KELAS -->
     <div id="tab-rekap-content" class="space-y-5 hidden" style="display: none;">
       
       <!-- Filter Bar -->
@@ -466,7 +466,7 @@
 
       <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-900 space-y-1">
         <p class="font-bold text-emerald-800">Status Pengaturan:</p>
-        <p>✓ Logo Google Drive Al-Khansa terhubung.<br>✓ Efek suara blup air aktif saat scan berhasil.</p>
+        <p>✓ Logo Google Drive Al-Khansa terhubung.<br>✓ Sinkronisasi otomatis antar HP & Laptop aktif.</p>
       </div>
 
       <div class="flex justify-end space-x-2 pt-2">
@@ -517,12 +517,17 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7gfWLT8qCDhZTnX-bE2QrWEsAPoHNtktDaTlDszUVUyydC4tElSC__E57Dh3n2ZJd/exec";
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5lCvYBdcrvABMX6JQFqPQxjmJacIuv1rMFsYWwxkKEliwVXUnVxCkUvWvKvufjpRY/exec";
     const DEFAULT_LOGO_DRIVE_ID = "1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
 
     let currentScriptUrl = DEFAULT_SCRIPT_URL;
     try {
       currentScriptUrl = localStorage.getItem("presensi_script_url") || DEFAULT_SCRIPT_URL;
+      // Selalu utamakan URL Script terbaru jika tersimpan URL lama
+      if (currentScriptUrl !== DEFAULT_SCRIPT_URL) {
+        currentScriptUrl = DEFAULT_SCRIPT_URL;
+        localStorage.setItem("presensi_script_url", DEFAULT_SCRIPT_URL);
+      }
     } catch(e) {}
 
     let customLogoDriveId = DEFAULT_LOGO_DRIVE_ID;
@@ -550,7 +555,7 @@
       presensiHistory = [];
     }
 
-    // MASTER SANTRI DATA (87 SANTRI LENGKAP & PRESISI)
+    // MASTER SANTRI DATA (87 SANTRI LENGKAP DENGAN GURU MASING-MASING)
     const MASTER_SANTRI_LIST = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
@@ -664,11 +669,38 @@
         renderRekapTable();
         applyCustomLogo();
 
+        // Ambil riwayat dari Google Sheet untuk pertama kali
+        fetchHistoryFromSheets();
+
+        // Auto-Sync dari Cloud Google Sheets setiap 8 detik
+        setInterval(fetchHistoryFromSheets, 8000);
+
         setTimeout(generateSampleQRs, 300);
       } catch(e) {
         console.error("Initialization error:", e);
       }
     });
+
+    // AMBIL DATA RIWAYAT CLOUD DARI GOOGLE SHEETS
+    function fetchHistoryFromSheets() {
+      if (!currentScriptUrl) return;
+
+      fetch(currentScriptUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.status === "online" && Array.isArray(data.history)) {
+            presensiHistory = data.history;
+            try {
+              localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
+            } catch(e) {}
+            renderHistoryTable();
+            renderRekapTable();
+          }
+        })
+        .catch(err => {
+          console.log("Sync background check:", err);
+        });
+    }
 
     // APPLY DRIVE LOGO
     function applyCustomLogo() {
@@ -966,6 +998,7 @@
         body: JSON.stringify(payload)
       }).then(() => {
         console.log("Presensi successfully dispatched to Google Sheets!");
+        setTimeout(fetchHistoryFromSheets, 1500);
       }).catch(err => {
         console.error("Failed sending to Google Sheets:", err);
       });
@@ -999,6 +1032,8 @@
             idSantri: itemToDelete.idSantri,
             namaSantri: itemToDelete.namaSantri
           })
+        }).then(() => {
+          setTimeout(fetchHistoryFromSheets, 1500);
         }).catch(err => console.error("Error sending delete action:", err));
       }
     }
@@ -1096,7 +1131,7 @@
 
       let html = "";
       filteredSantri.forEach((santri, idx) => {
-        // Search if santri has attendance log today
+        // Cari apakah santri memiliki catatan presensi
         const log = presensiHistory.find(h => h.idSantri === santri.id || h.namaSantri.toLowerCase() === santri.nama.toLowerCase());
 
         let statusText = "⚪ Belum Absen";
@@ -1282,6 +1317,7 @@
       applyCustomLogo();
       closeConfigModal();
       showAlert("PENGATURAN DISIMPAN", "URL Google Script & Logo berhasil diperbarui!", "success");
+      fetchHistoryFromSheets();
     }
   </script>
 </body>
