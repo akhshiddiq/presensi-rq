@@ -114,6 +114,10 @@
         <i class="fa-solid fa-chart-pie"></i>
         2. Rekap Absen Per Kelas
       </button>
+      <button onclick="switchTab('tidak-hadir')" id="tab-tidak-hadir-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-user-xmark"></i>
+        3. Input Ketidakhadiran (Sakit / Izin / Alfa)
+      </button>
     </div>
   </div>
 
@@ -248,7 +252,7 @@
 
           <!-- Tombol Simpan Manual -->
           <div class="sm:col-span-1 flex items-end">
-            <button onclick="submitManualPresensi()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[34px]">
+            <button onclick="submitManualPresensi('Hadir')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[34px]">
               <i class="fa-solid fa-check-to-slot"></i>
               Catat Kehadiran Manual
             </button>
@@ -284,12 +288,13 @@
                 <th class="py-2.5 px-3">Nama Santri</th>
                 <th class="py-2.5 px-3">Kelas</th>
                 <th class="py-2.5 px-3">Guru</th>
+                <th class="py-2.5 px-3 text-center">Keterangan</th>
                 <th class="py-2.5 px-3 text-center">Status</th>
               </tr>
             </thead>
             <tbody id="historyTableBody" class="divide-y divide-slate-100 bg-white">
               <tr id="emptyHistoryRow">
-                <td colspan="5" class="py-8 text-center text-slate-400 italic">
+                <td colspan="6" class="py-8 text-center text-slate-400 italic">
                   Belum ada data presensi yang discan hari ini.
                 </td>
               </tr>
@@ -333,7 +338,7 @@
             <input type="date" id="rekapFilterTanggal" onchange="renderRekapTable()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none">
           </div>
 
-          <div class="flex items-end">
+          <div class="flex items-end gap-2">
             <button onclick="renderRekapTable()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
               <i class="fa-solid fa-arrows-rotate"></i>
               Tampilkan Rekap
@@ -343,16 +348,20 @@
       </div>
 
       <!-- Summary Card -->
-      <div class="grid grid-cols-3 gap-3">
-        <div class="white-card p-3 sm:p-4 rounded-2xl">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div class="white-card p-3 rounded-2xl">
           <p class="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Total Hadir</p>
-          <h2 id="rekapTotalHadir" class="text-xl sm:text-2xl font-black text-emerald-600 mt-1">0</h2>
+          <h2 id="rekapTotalHadir" class="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5">0</h2>
         </div>
-        <div class="white-card p-3 sm:p-4 rounded-2xl">
+        <div class="white-card p-3 rounded-2xl">
+          <p class="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Sakit / Izin / Alfa</p>
+          <h2 id="rekapTotalAbsen" class="text-xl sm:text-2xl font-black text-amber-600 mt-0.5">0</h2>
+        </div>
+        <div class="white-card p-3 rounded-2xl">
           <p class="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Kelas Terpilih</p>
           <h2 id="rekapKelasTerpilih" class="text-xs sm:text-sm font-bold text-slate-800 mt-1 truncate">Semua Kelas</h2>
         </div>
-        <div class="white-card p-3 sm:p-4 rounded-2xl">
+        <div class="white-card p-3 rounded-2xl">
           <p class="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Tanggal</p>
           <h2 id="rekapTanggalTerpilih" class="text-xs sm:text-sm font-bold text-emerald-700 mt-1 truncate">Hari Ini</h2>
         </div>
@@ -360,11 +369,17 @@
 
       <!-- Rekap Table -->
       <div class="white-card rounded-2xl p-3.5 sm:p-4 space-y-3">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xs sm:text-sm font-bold text-slate-800">Daftar Kehadiran Santri Per Kelas</h3>
-          <button onclick="exportRekapCSV()" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
-            <i class="fa-solid fa-file-csv mr-1"></i> Download Rekap
-          </button>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-xs sm:text-sm font-bold text-slate-800">Daftar Kehadiran Santri Per Kelas (Lengkap 87 Santri)</h3>
+            <p class="text-[10px] text-slate-500">Daftar rekapitulasi status kehadiran santri per kelas</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="exportRekapCSV()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
+              <i class="fa-solid fa-file-csv mr-1"></i> Download Rekap
+            </button>
+          </div>
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-slate-200">
@@ -376,12 +391,13 @@
                 <th class="py-2.5 px-3">Nama Santri</th>
                 <th class="py-2.5 px-3">Kelas</th>
                 <th class="py-2.5 px-3">Guru</th>
-                <th class="py-2.5 px-3 text-center">Kehadiran</th>
+                <th class="py-2.5 px-3 text-center">Status Kehadiran</th>
+                <th class="py-2.5 px-3 text-center">Aksi Cepat</th>
               </tr>
             </thead>
             <tbody id="rekapTableBody" class="divide-y divide-slate-100 bg-white">
               <tr>
-                <td colspan="6" class="py-8 text-center text-slate-400 italic">
+                <td colspan="7" class="py-8 text-center text-slate-400 italic">
                   Belum ada data rekap untuk filter ini.
                 </td>
               </tr>
@@ -390,6 +406,49 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- TAB 3: INPUT KETIDAKHADIRAN -->
+    <div id="tab-tidak-hadir-content" class="space-y-5 hidden">
+      <div class="white-card rounded-2xl p-4 sm:p-5 space-y-4 bg-amber-50/20 border-amber-200">
+        <div class="flex items-center space-x-3 border-b border-amber-100 pb-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-user-xmark"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800">Catat Santri Tidak Hadir / Sakit / Izin</h3>
+            <p class="text-xs text-slate-500">Pilih nama santri yang tidak hadir hari ini untuk memperbarui statusnya</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Pilih Santri -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">1. Pilih Santri:</label>
+            <select id="tidakHadirSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+              <option value="">-- Pilih Nama Santri --</option>
+            </select>
+          </div>
+
+          <!-- Pilih Alasan / Keterangan -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">2. Alasan Ketidakhadiran:</label>
+            <select id="tidakHadirStatusSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-bold">
+              <option value="Sakit" class="text-blue-600">🔵 Sakit</option>
+              <option value="Izin" class="text-amber-600">🟡 Izin</option>
+              <option value="Tidak Hadir" class="text-red-600" selected>🔴 Tidak Hadir (Alfa)</option>
+            </select>
+          </div>
+
+          <!-- Tombol Simpan -->
+          <div class="flex items-end">
+            <button onclick="submitKetidakhadiranManual()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Simpan Status Ketidakhadiran
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -670,19 +729,27 @@
     // Populate dropdown with 87 master students
     function renderStudentSelect(listData) {
       const selectEl = document.getElementById("manualSantriSelect");
+      const tidakHadirSelect = document.getElementById("tidakHadirSantriSelect");
       const syncStatus = document.getElementById("syncStatus");
       
       selectEl.innerHTML = '<option value="">-- Pilih Nama Santri (87 Santri) --</option>';
+      tidakHadirSelect.innerHTML = '<option value="">-- Pilih Nama Santri --</option>';
 
       // Sort by class then by name
       const sortedList = [...listData].sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
 
       sortedList.forEach(santri => {
         LOCAL_STUDENT_DB[santri.id] = { nama: santri.nama, kelas: santri.kelas };
-        const opt = document.createElement("option");
-        opt.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
-        opt.text = `[${santri.kelas}] ${santri.nama} (${santri.id})`;
-        selectEl.appendChild(opt);
+        
+        const opt1 = document.createElement("option");
+        opt1.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
+        opt1.text = `[${santri.kelas}] ${santri.nama} (${santri.id})`;
+        selectEl.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
+        opt2.text = `[${santri.kelas}] ${santri.nama}`;
+        tidakHadirSelect.appendChild(opt2);
       });
 
       if (syncStatus) {
@@ -690,10 +757,8 @@
       }
     }
 
-    // Fetch Student Data from Google Sheets or fallback to MASTER_SANTRI_LIST
     function fetchStudentData() {
       const syncStatus = document.getElementById("syncStatus");
-      
       if (syncStatus) {
         syncStatus.innerHTML = `<i class="fa-solid fa-rotate animate-spin text-emerald-600"></i> Menghubungkan Google Sheet...`;
       }
@@ -744,7 +809,6 @@
     async function onScanSuccess(decodedText) {
       const now = Date.now();
 
-      // Cooldown: 800ms for new scans, 3s for exact duplicate
       if (isProcessing || (decodedText === lastScannedCode && now - lastScannedTime < 3000)) {
         return;
       }
@@ -753,7 +817,6 @@
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      // Instant Water Bubble Sound Trigger ("blup air")
       playWaterBubbleSound();
 
       const currentDate = new Date();
@@ -767,21 +830,19 @@
         namaSantri: localLookup.nama,
         kelas: localLookup.kelas,
         guru: selectedGuru,
+        statusAbsen: "Hadir",
         hariTanggal: formattedHariTanggal,
         rawDate: currentDate.toISOString(),
         statusSheet: "Lokal"
       };
 
-      // Immediate UI Update (Zero Delay)
       presensiHistory.unshift(logEntry);
       saveHistoryToStorage();
       renderHistoryTable();
       updateStats();
 
-      // Show update directly below camera
       updateAlertStatus("success", `Alhamdulillah sudah masuk: ${localLookup.nama}`, "PRESENSI BERHASIL", `Kelas: ${localLookup.kelas} | Pengajar: ${selectedGuru}`);
 
-      // Background Async Call to Google Apps Script
       fetch(currentScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -789,7 +850,8 @@
           nis: decodedText,
           idSantri: decodedText,
           namaSantri: localLookup.nama,
-          guru: selectedGuru
+          guru: selectedGuru,
+          status: "Hadir"
         })
       }).then(res => res.json()).then(resData => {
         if (resData && resData.status === "success") {
@@ -803,13 +865,11 @@
           saveHistoryToStorage();
           renderHistoryTable();
           updateStats();
-          updateAlertStatus("success", `Alhamdulillah sudah masuk: ${logEntry.namaSantri}`, "PRESENSI TERSIMPAN SHEET", `Kelas: ${logEntry.kelas} | Pengajar: ${selectedGuru}`);
         }
       }).catch(err => {
         console.warn("Background sync error, retained local copy:", err);
       });
 
-      // Quick unlock for next scan
       setTimeout(() => {
         isProcessing = false;
       }, 800);
@@ -822,7 +882,7 @@
       }
     }
 
-    function submitManualPresensi() {
+    function submitManualPresensi(statusParam = "Hadir") {
       const selectVal = document.getElementById("manualSantriSelect").value;
       const manualName = document.getElementById("manualNamaInput").value.trim();
 
@@ -842,7 +902,6 @@
         return;
       }
 
-      // Trigger Water Bubble Sound
       playWaterBubbleSound();
 
       const currentDate = new Date();
@@ -854,6 +913,7 @@
         namaSantri: finalNama,
         kelas: finalKelas,
         guru: selectedGuru,
+        statusAbsen: statusParam,
         hariTanggal: formattedHariTanggal,
         rawDate: currentDate.toISOString(),
         statusSheet: "Lokal"
@@ -864,14 +924,11 @@
       renderHistoryTable();
       updateStats();
 
-      // Show update directly below camera
-      updateAlertStatus("success", `Alhamdulillah sudah masuk: ${finalNama}`, "PRESENSI MANUAL BERHASIL", `Kelas: ${finalKelas} | Pengajar: ${selectedGuru}`);
+      updateAlertStatus(statusParam === "Hadir" ? "success" : "error", `Status dicatat (${statusParam}): ${finalNama}`, "PRESENSI TERCATAT", `Kelas: ${finalKelas} | Status: ${statusParam}`);
 
-      // Reset form
       document.getElementById("manualSantriSelect").value = "";
       document.getElementById("manualNamaInput").value = "";
 
-      // Sync to Google Script
       fetch(currentScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -879,7 +936,8 @@
           nis: finalId,
           idSantri: finalId,
           namaSantri: finalNama,
-          guru: selectedGuru
+          guru: selectedGuru,
+          status: statusParam
         })
       }).then(res => res.json()).then(resData => {
         if (resData && resData.status === "success") {
@@ -889,6 +947,168 @@
           updateStats();
         }
       }).catch(err => console.warn(err));
+    }
+
+    function submitKetidakhadiranManual() {
+      const selectVal = document.getElementById("tidakHadirSantriSelect").value;
+      const statusAbsenVal = document.getElementById("tidakHadirStatusSelect").value;
+
+      if (!selectVal) {
+        alert("Pilih nama santri terlebih dahulu!");
+        return;
+      }
+
+      const parts = selectVal.split("|");
+      const finalId = parts[0];
+      const finalNama = parts[1];
+      const finalKelas = parts[2] || "-";
+
+      playWaterBubbleSound();
+
+      const currentDate = new Date();
+      const formattedHariTanggal = formatHariTanggal(currentDate);
+
+      const logEntry = {
+        id: "PRES-" + Math.random().toString(36).substring(2, 7),
+        idSantri: finalId,
+        namaSantri: finalNama,
+        kelas: finalKelas,
+        guru: selectedGuru,
+        statusAbsen: statusAbsenVal,
+        hariTanggal: formattedHariTanggal,
+        rawDate: currentDate.toISOString(),
+        statusSheet: "Lokal"
+      };
+
+      presensiHistory.unshift(logEntry);
+      saveHistoryToStorage();
+      renderHistoryTable();
+      updateStats();
+
+      alert(`Status [${statusAbsenVal}] berhasil dicatat untuk ${finalNama}`);
+      document.getElementById("tidakHadirSantriSelect").value = "";
+
+      fetch(currentScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          nis: finalId,
+          idSantri: finalId,
+          namaSantri: finalNama,
+          guru: selectedGuru,
+          status: statusAbsenVal
+        })
+      }).then(res => res.json()).then(resData => {
+        if (resData && resData.status === "success") {
+          logEntry.statusSheet = "Tersimpan";
+          saveHistoryToStorage();
+          renderHistoryTable();
+          updateStats();
+        }
+      }).catch(err => console.warn(err));
+    }
+
+    function setStatusSingleSantri(idSantri, namaSantri, kelasSantri, statusNew) {
+      const currentDate = new Date();
+      const formattedHariTanggal = formatHariTanggal(currentDate);
+
+      const logEntry = {
+        id: "PRES-" + Math.random().toString(36).substring(2, 7),
+        idSantri: idSantri,
+        namaSantri: namaSantri,
+        kelas: kelasSantri,
+        guru: selectedGuru,
+        statusAbsen: statusNew,
+        hariTanggal: formattedHariTanggal,
+        rawDate: currentDate.toISOString(),
+        statusSheet: "Lokal"
+      };
+
+      presensiHistory.unshift(logEntry);
+      saveHistoryToStorage();
+      renderRekapTable();
+      renderHistoryTable();
+      updateStats();
+
+      fetch(currentScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          nis: idSantri,
+          idSantri: idSantri,
+          namaSantri: namaSantri,
+          guru: selectedGuru,
+          status: statusNew
+        })
+      }).then(res => res.json()).then(resData => {
+        if (resData && resData.status === "success") {
+          logEntry.statusSheet = "Tersimpan";
+          saveHistoryToStorage();
+          renderRekapTable();
+          renderHistoryTable();
+        }
+      }).catch(err => console.warn(err));
+    }
+
+    function prosesOtomatisTidakHadir() {
+      const kelasFilter = document.getElementById("rekapFilterKelas").value;
+      if (kelasFilter === "SEMUA") {
+        alert("Silakan pilih salah satu kelas terlebih dahulu di menu filter untuk menandai tidak hadir!");
+        return;
+      }
+
+      const todayStr = formatHariTanggal(new Date());
+      const santriInClass = MASTER_SANTRI_LIST.filter(s => s.kelas === kelasFilter);
+
+      let addedCount = 0;
+
+      santriInClass.forEach(santri => {
+        const existing = presensiHistory.find(item => item.idSantri === santri.id && item.hariTanggal === todayStr);
+        if (!existing) {
+          addedCount++;
+          const logEntry = {
+            id: "PRES-" + Math.random().toString(36).substring(2, 7),
+            idSantri: santri.id,
+            namaSantri: santri.nama,
+            kelas: santri.kelas,
+            guru: selectedGuru,
+            statusAbsen: "Tidak Hadir",
+            hariTanggal: todayStr,
+            rawDate: new Date().toISOString(),
+            statusSheet: "Lokal"
+          };
+
+          presensiHistory.unshift(logEntry);
+
+          fetch(currentScriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              nis: santri.id,
+              idSantri: santri.id,
+              namaSantri: santri.nama,
+              guru: selectedGuru,
+              status: "Tidak Hadir"
+            })
+          }).then(res => res.json()).then(resData => {
+            if (resData && resData.status === "success") {
+              logEntry.statusSheet = "Tersimpan";
+              saveHistoryToStorage();
+            }
+          }).catch(err => console.warn(err));
+        }
+      });
+
+      saveHistoryToStorage();
+      renderRekapTable();
+      renderHistoryTable();
+      updateStats();
+
+      if (addedCount > 0) {
+        alert(`Berhasil menandai ${addedCount} santri Kelas ${kelasFilter} yang belum scan sebagai Tidak Hadir!`);
+      } else {
+        alert(`Semua santri di Kelas ${kelasFilter} sudah memiliki status presensi hari ini.`);
+      }
     }
 
     function updateAlertStatus(type, message, title, subText = "") {
@@ -931,7 +1151,7 @@
       if (presensiHistory.length === 0) {
         tbody.innerHTML = `
           <tr id="emptyHistoryRow">
-            <td colspan="5" class="py-8 text-center text-slate-400 italic">
+            <td colspan="6" class="py-8 text-center text-slate-400 italic">
               Belum ada data presensi yang discan hari ini.
             </td>
           </tr>
@@ -939,20 +1159,28 @@
         return;
       }
 
-      tbody.innerHTML = presensiHistory.map(item => `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="py-2.5 px-3 font-mono text-slate-600">${item.hariTanggal}</td>
-          <td class="py-2.5 px-3 font-bold text-slate-800">${item.namaSantri}</td>
-          <td class="py-2.5 px-3 text-slate-600">${item.kelas}</td>
-          <td class="py-2.5 px-3 text-slate-600">${item.guru}</td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.statusSheet === 'Tersimpan' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
-              <i class="fa-solid ${item.statusSheet === 'Tersimpan' ? 'fa-check' : 'fa-floppy-disk'} mr-1"></i>
-              ${item.statusSheet}
-            </span>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = presensiHistory.map(item => {
+        let statusBadge = "🟢 Hadir";
+        if (item.statusAbsen === "Sakit") statusBadge = "🔵 Sakit";
+        else if (item.statusAbsen === "Izin") statusBadge = "🟡 Izin";
+        else if (item.statusAbsen === "Tidak Hadir") statusBadge = "🔴 Tidak Hadir";
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3 font-mono text-slate-600">${item.hariTanggal}</td>
+            <td class="py-2.5 px-3 font-bold text-slate-800">${item.namaSantri}</td>
+            <td class="py-2.5 px-3 text-slate-600">${item.kelas}</td>
+            <td class="py-2.5 px-3 text-slate-600">${item.guru}</td>
+            <td class="py-2.5 px-3 text-center font-bold">${statusBadge}</td>
+            <td class="py-2.5 px-3 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.statusSheet === 'Tersimpan' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
+                <i class="fa-solid ${item.statusSheet === 'Tersimpan' ? 'fa-check' : 'fa-floppy-disk'} mr-1"></i>
+                ${item.statusSheet}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function renderRekapTable() {
@@ -960,48 +1188,84 @@
       const tanggalFilter = document.getElementById("rekapFilterTanggal").value;
       const tbody = document.getElementById("rekapTableBody");
 
-      let filtered = presensiHistory;
+      const todayStr = formatHariTanggal(new Date());
+
+      let studentListToRender = MASTER_SANTRI_LIST;
 
       if (kelasFilter !== "SEMUA") {
-        filtered = filtered.filter(item => item.kelas === kelasFilter);
+        studentListToRender = MASTER_SANTRI_LIST.filter(s => s.kelas === kelasFilter);
       }
 
-      if (tanggalFilter) {
-        filtered = filtered.filter(item => {
-          const itemDate = new Date(item.rawDate).toISOString().split('T')[0];
-          return itemDate === tanggalFilter;
+      let totalHadirCount = 0;
+      let totalAbsenCount = 0;
+
+      const rowsHtml = studentListToRender.map((santri, index) => {
+        const foundLog = presensiHistory.find(item => {
+          const isSameId = item.idSantri === santri.id;
+          if (tanggalFilter) {
+            const itemDate = new Date(item.rawDate).toISOString().split('T')[0];
+            return isSameId && itemDate === tanggalFilter;
+          }
+          return isSameId && item.hariTanggal === todayStr;
         });
-      }
 
-      document.getElementById("rekapTotalHadir").innerText = filtered.length;
-      document.getElementById("rekapKelasTerpilih").innerText = kelasFilter === "SEMUA" ? "Semua Kelas" : "Kelas " + kelasFilter;
-      document.getElementById("rekapTanggalTerpilih").innerText = tanggalFilter ? tanggalFilter : "Hari Ini";
+        let statusText = "⚪ Belum Absen";
+        let statusBadgeClass = "bg-slate-100 text-slate-600 border-slate-200";
+        let guruName = "-";
+        let dateStr = tanggalFilter || todayStr;
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="py-8 text-center text-slate-400 italic">
-              Tidak ada data presensi yang sesuai dengan filter ini.
+        if (foundLog) {
+          guruName = foundLog.guru || selectedGuru;
+          dateStr = foundLog.hariTanggal;
+          if (foundLog.statusAbsen === "Hadir" || !foundLog.statusAbsen) {
+            statusText = "🟢 Hadir";
+            statusBadgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+            totalHadirCount++;
+          } else if (foundLog.statusAbsen === "Sakit") {
+            statusText = "🔵 Sakit";
+            statusBadgeClass = "bg-blue-100 text-blue-800 border-blue-200";
+            totalAbsenCount++;
+          } else if (foundLog.statusAbsen === "Izin") {
+            statusText = "🟡 Izin";
+            statusBadgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+            totalAbsenCount++;
+          } else {
+            statusText = "🔴 Tidak Hadir";
+            statusBadgeClass = "bg-red-100 text-red-800 border-red-200";
+            totalAbsenCount++;
+          }
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3 text-slate-400">${index + 1}</td>
+            <td class="py-2.5 px-3 font-mono text-slate-600">${dateStr}</td>
+            <td class="py-2.5 px-3 font-bold text-slate-800">${santri.nama}</td>
+            <td class="py-2.5 px-3 text-slate-600">${santri.kelas}</td>
+            <td class="py-2.5 px-3 text-slate-600">${guruName}</td>
+            <td class="py-2.5 px-3 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusBadgeClass}">
+                ${statusText}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Hadir')" class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold hover:bg-emerald-200">Hadir</button>
+                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Sakit')" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold hover:bg-blue-200">Sakit</button>
+                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Izin')" class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold hover:bg-amber-200">Izin</button>
+                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Tidak Hadir')" class="px-1.5 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200">Alfa</button>
+              </div>
             </td>
           </tr>
         `;
-        return;
-      }
+      }).join('');
 
-      tbody.innerHTML = filtered.map((item, index) => `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="py-2.5 px-3 text-slate-400">${index + 1}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-600">${item.hariTanggal}</td>
-          <td class="py-2.5 px-3 font-bold text-slate-800">${item.namaSantri}</td>
-          <td class="py-2.5 px-3 text-slate-600">${item.kelas}</td>
-          <td class="py-2.5 px-3 text-slate-600">${item.guru}</td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              🟢 Hadir
-            </span>
-          </td>
-        </tr>
-      `).join('');
+      document.getElementById("rekapTotalHadir").innerText = totalHadirCount;
+      document.getElementById("rekapTotalAbsen").innerText = totalAbsenCount;
+      document.getElementById("rekapKelasTerpilih").innerText = kelasFilter === "SEMUA" ? "Semua Kelas" : "Kelas " + kelasFilter;
+      document.getElementById("rekapTanggalTerpilih").innerText = tanggalFilter ? tanggalFilter : "Hari Ini";
+
+      tbody.innerHTML = rowsHtml;
     }
 
     function updateStats() {
@@ -1036,15 +1300,19 @@
     function switchTab(tabName) {
       const scanBtn = document.getElementById("tab-scan-btn");
       const rekapBtn = document.getElementById("tab-rekap-btn");
+      const tidakHadirBtn = document.getElementById("tab-tidak-hadir-btn");
 
       const scanContent = document.getElementById("tab-scan-content");
       const rekapContent = document.getElementById("tab-rekap-content");
+      const tidakHadirContent = document.getElementById("tab-tidak-hadir-content");
 
       scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
       rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
+      tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
 
       scanContent.classList.add("hidden");
       rekapContent.classList.add("hidden");
+      tidakHadirContent.classList.add("hidden");
 
       if (tabName === "scan") {
         scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
@@ -1053,6 +1321,9 @@
         rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
         rekapContent.classList.remove("hidden");
         renderRekapTable();
+      } else if (tabName === "tidak-hadir") {
+        tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
+        tidakHadirContent.classList.remove("hidden");
       }
     }
 
@@ -1103,9 +1374,9 @@
         updateAlertStatus("error", "Tidak ada data untuk di-export!", "PERHATIAN");
         return;
       }
-      let csv = "Hari / Tanggal,ID Santri,Nama Santri,Kelas,Guru,Status\n";
+      let csv = "Hari / Tanggal,ID Santri,Nama Santri,Kelas,Guru,Keterangan,Status Sheet\n";
       presensiHistory.forEach(row => {
-        csv += `"${row.hariTanggal}","${row.idSantri}","${row.namaSantri}","${row.kelas}","${row.guru}","${row.statusSheet}"\n`;
+        csv += `"${row.hariTanggal}","${row.idSantri}","${row.namaSantri}","${row.kelas}","${row.guru}","${row.statusAbsen || 'Hadir'}","${row.statusSheet}"\n`;
       });
       downloadFile(csv, `Presensi_Santri_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
     }
@@ -1122,7 +1393,7 @@
       rows.forEach(row => {
         const cells = row.querySelectorAll("td");
         if (cells.length >= 6) {
-          csv += `"${cells[0].innerText}","${cells[1].innerText}","${cells[2].innerText}","${cells[3].innerText}","${cells[4].innerText}","Hadir"\n`;
+          csv += `"${cells[0].innerText}","${cells[1].innerText}","${cells[2].innerText}","${cells[3].innerText}","${cells[4].innerText}","${cells[5].innerText.trim()}"\n`;
         }
       });
       downloadFile(csv, `Rekap_Presensi_Kelas_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
@@ -1158,16 +1429,10 @@
     window.onload = function() {
       document.getElementById("guruSelect").value = selectedGuru;
 
-      // Apply Logo & Settings
       applyCustomLogo();
-
-      // Render 87 master students into dropdown immediately
       renderStudentSelect(MASTER_SANTRI_LIST);
-
       renderHistoryTable();
       updateStats();
-      
-      // Auto fetch updated student list from Google Sheets
       fetchStudentData();
     };
   </script>
