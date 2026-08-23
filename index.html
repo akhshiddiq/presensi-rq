@@ -27,7 +27,6 @@
       font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     }
 
-    /* Clean Video Viewport */
     #reader video {
       border-radius: 1rem;
       object-fit: cover;
@@ -40,7 +39,6 @@
       background: transparent !important;
     }
 
-    /* Custom Scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -53,7 +51,6 @@
       border-radius: 3px;
     }
 
-    /* Clean White Card Style */
     .white-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -68,7 +65,6 @@
     <div class="max-w-5xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2">
       <div class="flex items-center space-x-2 sm:space-x-3.5 min-w-0">
         
-        <!-- Logo Container -->
         <div id="logoContainer" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-emerald-500 shadow-md p-0.5 flex items-center justify-center flex-shrink-0 overflow-hidden">
           <div class="w-full h-full rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 font-bold text-xs">
             RQ
@@ -110,13 +106,13 @@
         <i class="fa-solid fa-camera"></i>
         1. Pemindai Presensi Live
       </button>
-      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
-        <i class="fa-solid fa-chart-pie"></i>
-        2. Rekap Absen Per Kelas
-      </button>
       <button onclick="switchTab('tidak-hadir')" id="tab-tidak-hadir-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
         <i class="fa-solid fa-user-xmark"></i>
-        3. Input Ketidakhadiran (Sakit / Izin / Alfa)
+        2. Input Ketidakhadiran (Sakit / Izin / Alfa)
+      </button>
+      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-chart-pie"></i>
+        3. Rekap Absen Per Kelas
       </button>
     </div>
   </div>
@@ -176,11 +172,9 @@
           </span>
         </div>
 
-        <!-- CAMERA DISPLAY REGION -->
         <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-200 min-h-[190px] max-w-sm mx-auto flex flex-col items-center justify-center shadow-inner">
           <div id="reader" class="w-full h-full min-h-[180px]"></div>
 
-          <!-- START OVERLAY -->
           <div id="cameraStartOverlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center space-y-3 z-10">
             <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
               <i class="fa-solid fa-camera"></i>
@@ -204,7 +198,7 @@
         </div>
       </div>
 
-      <!-- NOTIFIKASI STATUS (PAS DI BAWAH KAMERA) -->
+      <!-- NOTIFIKASI STATUS -->
       <div id="statusAlert" class="bg-emerald-50 border border-emerald-300 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all">
         <div id="statusAlertIcon" class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg flex-shrink-0 border border-emerald-400">
           <i class="fa-solid fa-qrcode"></i>
@@ -235,22 +229,19 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <!-- Pilih Nama Santri -->
           <div class="sm:col-span-1">
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Santri Terdaftar (87 Santri):</label>
             <select id="manualSantriSelect" onchange="onManualSelectChange()" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-              <option value="">-- Sedang Memuat Data... --</option>
+              <option value="">-- Memuat Data Santri... --</option>
             </select>
             <p id="syncStatus" class="text-[9px] text-emerald-600 mt-1"><i class="fa-solid fa-check-double"></i> 87 Santri Siap Terhubung</p>
           </div>
 
-          <!-- Ketik Nama Manual jika Tidak Ditemukan -->
           <div class="sm:col-span-1">
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Ketik Nama Manual:</label>
             <input type="text" id="manualNamaInput" placeholder="Contoh: Muhammad Bahrul" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
           </div>
 
-          <!-- Tombol Simpan Manual -->
           <div class="sm:col-span-1 flex items-end">
             <button onclick="submitManualPresensi('Hadir')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[34px]">
               <i class="fa-solid fa-check-to-slot"></i>
@@ -272,7 +263,7 @@
           </div>
           <div class="flex items-center gap-2 self-end sm:self-auto">
             <button onclick="clearHistory()" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200">
-              <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan
+              <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Semua
             </button>
             <button onclick="exportCSV()" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
               <i class="fa-solid fa-file-csv mr-1"></i> Export CSV
@@ -284,6 +275,7 @@
           <table class="w-full text-left text-xs text-slate-700">
             <thead class="bg-emerald-50 text-emerald-900 text-[11px] font-bold uppercase tracking-wider border-b border-emerald-100">
               <tr>
+                <th class="py-2.5 px-2 text-center w-10">Batal</th>
                 <th class="py-2.5 px-3">Hari / Tanggal</th>
                 <th class="py-2.5 px-3">Nama Santri</th>
                 <th class="py-2.5 px-3">Kelas</th>
@@ -294,7 +286,7 @@
             </thead>
             <tbody id="historyTableBody" class="divide-y divide-slate-100 bg-white">
               <tr id="emptyHistoryRow">
-                <td colspan="6" class="py-8 text-center text-slate-400 italic">
+                <td colspan="7" class="py-8 text-center text-slate-400 italic">
                   Belum ada data presensi yang discan hari ini.
                 </td>
               </tr>
@@ -305,7 +297,47 @@
 
     </div>
 
-    <!-- TAB 2: REKAP ABSEN -->
+    <!-- TAB 2: INPUT KETIDAKHADIRAN -->
+    <div id="tab-tidak-hadir-content" class="space-y-5 hidden">
+      <div class="white-card rounded-2xl p-4 sm:p-5 space-y-4 bg-amber-50/20 border-amber-200">
+        <div class="flex items-center space-x-3 border-b border-amber-100 pb-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-user-xmark"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800">Catat Santri Tidak Hadir / Sakit / Izin</h3>
+            <p class="text-xs text-slate-500">Pilih nama santri yang tidak hadir hari ini untuk memperbarui statusnya</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">1. Pilih Santri:</label>
+            <select id="tidakHadirSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+              <option value="">-- Pilih Nama Santri --</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">2. Alasan Ketidakhadiran:</label>
+            <select id="tidakHadirStatusSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-bold">
+              <option value="Sakit" class="text-blue-600">🔵 Sakit</option>
+              <option value="Izin" class="text-amber-600">🟡 Izin</option>
+              <option value="Tidak Hadir" class="text-red-600" selected>🔴 Tidak Hadir (Alfa)</option>
+            </select>
+          </div>
+
+          <div class="flex items-end">
+            <button onclick="submitKetidakhadiranManual()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Simpan Status Ketidakhadiran
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: REKAP ABSEN -->
     <div id="tab-rekap-content" class="space-y-5 hidden">
       
       <!-- Filter Bar -->
@@ -408,49 +440,6 @@
 
     </div>
 
-    <!-- TAB 3: INPUT KETIDAKHADIRAN -->
-    <div id="tab-tidak-hadir-content" class="space-y-5 hidden">
-      <div class="white-card rounded-2xl p-4 sm:p-5 space-y-4 bg-amber-50/20 border-amber-200">
-        <div class="flex items-center space-x-3 border-b border-amber-100 pb-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
-            <i class="fa-solid fa-user-xmark"></i>
-          </div>
-          <div>
-            <h3 class="text-sm sm:text-base font-bold text-slate-800">Catat Santri Tidak Hadir / Sakit / Izin</h3>
-            <p class="text-xs text-slate-500">Pilih nama santri yang tidak hadir hari ini untuk memperbarui statusnya</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <!-- Pilih Santri -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">1. Pilih Santri:</label>
-            <select id="tidakHadirSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
-              <option value="">-- Pilih Nama Santri --</option>
-            </select>
-          </div>
-
-          <!-- Pilih Alasan / Keterangan -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">2. Alasan Ketidakhadiran:</label>
-            <select id="tidakHadirStatusSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-bold">
-              <option value="Sakit" class="text-blue-600">🔵 Sakit</option>
-              <option value="Izin" class="text-amber-600">🟡 Izin</option>
-              <option value="Tidak Hadir" class="text-red-600" selected>🔴 Tidak Hadir (Alfa)</option>
-            </select>
-          </div>
-
-          <!-- Tombol Simpan -->
-          <div class="flex items-end">
-            <button onclick="submitKetidakhadiranManual()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2">
-              <i class="fa-solid fa-floppy-disk"></i>
-              Simpan Status Ketidakhadiran
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </main>
 
   <!-- MODAL 1: CONFIGURATION -->
@@ -526,7 +515,6 @@
   </div>
 
   <script>
-    // HARDCODED DEFAULTS
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyR7Vm0G1_TKiJTfXLFIpCiNsIKvUHe6MOH2cQBs-7vXB8IUEABg1wJqcsUpvzdiJu9/exec";
     const DEFAULT_LOGO_DRIVE_ID = "1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
 
@@ -541,7 +529,8 @@
     let html5QrCode = null;
     let isCameraActive = false;
 
-    // MASTER DATABASE: 87 SANTRI RQ AL-KHANSA
+    let presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
+
     const MASTER_SANTRI_LIST = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman" },
       { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman" },
@@ -632,39 +621,42 @@
       { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali" }
     ];
 
-    // Build initial LOCAL_STUDENT_DB dictionary
     let LOCAL_STUDENT_DB = {};
     MASTER_SANTRI_LIST.forEach(s => {
       LOCAL_STUDENT_DB[s.id] = { nama: s.nama, kelas: s.kelas };
     });
 
-    let presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
-
-    function extractDriveId(inputStr) {
-      if (!inputStr) return "";
-      inputStr = inputStr.trim();
-      const matchD = inputStr.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (matchD) return matchD[1];
-      const matchId = inputStr.match(/id=([a-zA-Z0-9_-]+)/);
-      if (matchId) return matchId[1];
-      if (!inputStr.includes("/") && inputStr.length > 15) return inputStr;
-      return inputStr;
+    function applyCustomLogo() {
+      const logoContainer = document.getElementById("logoContainer");
+      if (customLogoDriveId && logoContainer) {
+        const logoUrl = `https://lh3.googleusercontent.com/d/${customLogoDriveId}`;
+        logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo RQ Al-Khansa" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 font-bold text-xs\'>RQ</div>';">`;
+      }
     }
 
-    function applyCustomLogo() {
-      const driveId = extractDriveId(customLogoDriveId) || DEFAULT_LOGO_DRIVE_ID;
-      const logoContainer = document.getElementById('logoContainer');
-      
-      if (logoContainer && driveId) {
-        const driveImgUrl = `https://lh3.googleusercontent.com/d/${driveId}`;
-        const fallbackUrl = `https://drive.google.com/uc?export=view&id=${driveId}`;
+    function deleteSingleHistory(index) {
+      if (index >= 0 && index < presensiHistory.length) {
+        const deletedItem = presensiHistory[index];
+        
+        presensiHistory.splice(index, 1);
+        saveHistoryToStorage();
+        renderHistoryTable();
+        renderRekapTable();
+        updateStats();
 
-        logoContainer.innerHTML = `
-          <img src="${driveImgUrl}" 
-               alt="Logo RQ Al-Khansa" 
-               class="w-full h-full object-cover rounded-full"
-               onerror="this.onerror=null; this.src='${fallbackUrl}';">
-        `;
+        updateAlertStatus("error", `Presensi ${deletedItem.namaSantri} berhasil dibatalkan & dihapus dari Sheet`, "DIBATALKAN");
+
+        fetch(currentScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "delete",
+            idSantri: deletedItem.idSantri,
+            namaSantri: deletedItem.namaSantri
+          })
+        }).then(res => res.json()).then(resData => {
+          console.log("Respon hapus dari Google Sheet:", resData);
+        }).catch(err => console.warn("Gagal hapus dari Sheet:", err));
       }
     }
 
@@ -694,7 +686,6 @@
       closeConfigModal();
     }
 
-    // Audio FX: Water Bubble Sound ("Blup Air")
     function playWaterBubbleSound() {
       if (!isAudioEnabled) return;
       try {
@@ -722,20 +713,20 @@
         osc.start(now);
         osc.stop(now + 0.18);
       } catch (e) {
-        console.warn("Water sound audio error:", e);
+        console.warn(e);
       }
     }
 
-    // Populate dropdown with 87 master students
     function renderStudentSelect(listData) {
       const selectEl = document.getElementById("manualSantriSelect");
       const tidakHadirSelect = document.getElementById("tidakHadirSantriSelect");
       const syncStatus = document.getElementById("syncStatus");
       
+      if (!selectEl || !tidakHadirSelect) return;
+
       selectEl.innerHTML = '<option value="">-- Pilih Nama Santri (87 Santri) --</option>';
       tidakHadirSelect.innerHTML = '<option value="">-- Pilih Nama Santri --</option>';
 
-      // Sort by class then by name
       const sortedList = [...listData].sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
 
       sortedList.forEach(santri => {
@@ -776,10 +767,7 @@
             loadLocalBackupDb();
           }
         })
-        .catch(err => {
-          console.warn("Gagal menarik data langsung, menggunakan data master lokal.", err);
-          loadLocalBackupDb();
-        });
+        .catch(() => loadLocalBackupDb());
     }
 
     function loadLocalBackupDb() {
@@ -847,6 +835,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
+          action: "add",
           nis: decodedText,
           idSantri: decodedText,
           namaSantri: localLookup.nama,
@@ -856,19 +845,11 @@
       }).then(res => res.json()).then(resData => {
         if (resData && resData.status === "success") {
           logEntry.statusSheet = "Tersimpan";
-          if (resData.namaSantri && resData.namaSantri !== "Nama Tidak Ditemukan") {
-            logEntry.namaSantri = resData.namaSantri;
-          }
-          if (resData.kelas && resData.kelas !== "-") {
-            logEntry.kelas = resData.kelas;
-          }
           saveHistoryToStorage();
           renderHistoryTable();
           updateStats();
         }
-      }).catch(err => {
-        console.warn("Background sync error, retained local copy:", err);
-      });
+      }).catch(err => console.warn(err));
 
       setTimeout(() => {
         isProcessing = false;
@@ -933,6 +914,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
+          action: "add",
           nis: finalId,
           idSantri: finalId,
           namaSantri: finalNama,
@@ -954,7 +936,7 @@
       const statusAbsenVal = document.getElementById("tidakHadirStatusSelect").value;
 
       if (!selectVal) {
-        alert("Pilih nama santri terlebih dahulu!");
+        updateAlertStatus("error", "Pilih nama santri terlebih dahulu!", "PERHATIAN");
         return;
       }
 
@@ -985,13 +967,14 @@
       renderHistoryTable();
       updateStats();
 
-      alert(`Status [${statusAbsenVal}] berhasil dicatat untuk ${finalNama}`);
+      updateAlertStatus("error", `Ketidakhadiran [${statusAbsenVal}] dicatat: ${finalNama}`, "STATUS DISIMPAN", `Kelas: ${finalKelas}`);
       document.getElementById("tidakHadirSantriSelect").value = "";
 
       fetch(currentScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
+          action: "add",
           nis: finalId,
           idSantri: finalId,
           namaSantri: finalNama,
@@ -1034,6 +1017,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
+          action: "add",
           nis: idSantri,
           idSantri: idSantri,
           namaSantri: namaSantri,
@@ -1050,73 +1034,14 @@
       }).catch(err => console.warn(err));
     }
 
-    function prosesOtomatisTidakHadir() {
-      const kelasFilter = document.getElementById("rekapFilterKelas").value;
-      if (kelasFilter === "SEMUA") {
-        alert("Silakan pilih salah satu kelas terlebih dahulu di menu filter untuk menandai tidak hadir!");
-        return;
-      }
-
-      const todayStr = formatHariTanggal(new Date());
-      const santriInClass = MASTER_SANTRI_LIST.filter(s => s.kelas === kelasFilter);
-
-      let addedCount = 0;
-
-      santriInClass.forEach(santri => {
-        const existing = presensiHistory.find(item => item.idSantri === santri.id && item.hariTanggal === todayStr);
-        if (!existing) {
-          addedCount++;
-          const logEntry = {
-            id: "PRES-" + Math.random().toString(36).substring(2, 7),
-            idSantri: santri.id,
-            namaSantri: santri.nama,
-            kelas: santri.kelas,
-            guru: selectedGuru,
-            statusAbsen: "Tidak Hadir",
-            hariTanggal: todayStr,
-            rawDate: new Date().toISOString(),
-            statusSheet: "Lokal"
-          };
-
-          presensiHistory.unshift(logEntry);
-
-          fetch(currentScriptUrl, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              nis: santri.id,
-              idSantri: santri.id,
-              namaSantri: santri.nama,
-              guru: selectedGuru,
-              status: "Tidak Hadir"
-            })
-          }).then(res => res.json()).then(resData => {
-            if (resData && resData.status === "success") {
-              logEntry.statusSheet = "Tersimpan";
-              saveHistoryToStorage();
-            }
-          }).catch(err => console.warn(err));
-        }
-      });
-
-      saveHistoryToStorage();
-      renderRekapTable();
-      renderHistoryTable();
-      updateStats();
-
-      if (addedCount > 0) {
-        alert(`Berhasil menandai ${addedCount} santri Kelas ${kelasFilter} yang belum scan sebagai Tidak Hadir!`);
-      } else {
-        alert(`Semua santri di Kelas ${kelasFilter} sudah memiliki status presensi hari ini.`);
-      }
-    }
-
     function updateAlertStatus(type, message, title, subText = "") {
       const alertEl = document.getElementById("statusAlert");
       const iconEl = document.getElementById("statusAlertIcon");
       const titleEl = document.getElementById("statusAlertTitle");
       const msgEl = document.getElementById("statusAlertMessage");
       const subEl = document.getElementById("statusAlertSub");
+
+      if (!alertEl) return;
 
       titleEl.innerText = title;
       msgEl.innerText = message;
@@ -1151,7 +1076,7 @@
       if (presensiHistory.length === 0) {
         tbody.innerHTML = `
           <tr id="emptyHistoryRow">
-            <td colspan="6" class="py-8 text-center text-slate-400 italic">
+            <td colspan="7" class="py-8 text-center text-slate-400 italic">
               Belum ada data presensi yang discan hari ini.
             </td>
           </tr>
@@ -1159,14 +1084,19 @@
         return;
       }
 
-      tbody.innerHTML = presensiHistory.map(item => {
+      tbody.innerHTML = presensiHistory.map((item, idx) => {
         let statusBadge = "🟢 Hadir";
         if (item.statusAbsen === "Sakit") statusBadge = "🔵 Sakit";
         else if (item.statusAbsen === "Izin") statusBadge = "🟡 Izin";
-        else if (item.statusAbsen === "Tidak Hadir") statusBadge = "🔴 Tidak Hadir";
+        else if (item.statusAbsen === "Tidak Hadir" || item.statusAbsen === "Alfa") statusBadge = "🔴 Tidak Hadir";
 
         return `
           <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-2 text-center">
+              <button onclick="deleteSingleHistory(${idx})" title="Hapus/Batal Absen Santri Ini" class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition flex items-center justify-center mx-auto shadow-sm">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </td>
             <td class="py-2.5 px-3 font-mono text-slate-600">${item.hariTanggal}</td>
             <td class="py-2.5 px-3 font-bold text-slate-800">${item.namaSantri}</td>
             <td class="py-2.5 px-3 text-slate-600">${item.kelas}</td>
@@ -1187,6 +1117,7 @@
       const kelasFilter = document.getElementById("rekapFilterKelas").value;
       const tanggalFilter = document.getElementById("rekapFilterTanggal").value;
       const tbody = document.getElementById("rekapTableBody");
+      if (!tbody) return;
 
       const todayStr = formatHariTanggal(new Date());
 
@@ -1283,12 +1214,12 @@
     }
 
     function clearHistory() {
-      if (confirm("Apakah Anda yakin ingin membersihkan riwayat presensi lokal?")) {
-        presensiHistory = [];
-        saveHistoryToStorage();
-        renderHistoryTable();
-        updateStats();
-      }
+      presensiHistory = [];
+      saveHistoryToStorage();
+      renderHistoryTable();
+      renderRekapTable();
+      updateStats();
+      updateAlertStatus("error", "Seluruh riwayat presensi lokal telah dibersihkan", "DISELURUHKAN");
     }
 
     function toggleAudio() {
@@ -1299,31 +1230,31 @@
 
     function switchTab(tabName) {
       const scanBtn = document.getElementById("tab-scan-btn");
-      const rekapBtn = document.getElementById("tab-rekap-btn");
       const tidakHadirBtn = document.getElementById("tab-tidak-hadir-btn");
+      const rekapBtn = document.getElementById("tab-rekap-btn");
 
       const scanContent = document.getElementById("tab-scan-content");
-      const rekapContent = document.getElementById("tab-rekap-content");
       const tidakHadirContent = document.getElementById("tab-tidak-hadir-content");
+      const rekapContent = document.getElementById("tab-rekap-content");
 
       scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
-      rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
       tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
+      rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
 
       scanContent.classList.add("hidden");
-      rekapContent.classList.add("hidden");
       tidakHadirContent.classList.add("hidden");
+      rekapContent.classList.add("hidden");
 
       if (tabName === "scan") {
         scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
         scanContent.classList.remove("hidden");
+      } else if (tabName === "tidak-hadir") {
+        tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
+        tidakHadirContent.classList.remove("hidden");
       } else if (tabName === "rekap") {
         rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
         rekapContent.classList.remove("hidden");
         renderRekapTable();
-      } else if (tabName === "tidak-hadir") {
-        tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
-        tidakHadirContent.classList.remove("hidden");
       }
     }
 
