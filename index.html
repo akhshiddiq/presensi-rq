@@ -25,6 +25,7 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      touch-action: manipulation;
     }
 
     #reader video {
@@ -58,7 +59,7 @@
     }
   </style>
 </head>
-<body class="bg-emerald-50/40 text-slate-800 min-h-screen flex flex-col antialiased">
+<body class="bg-emerald-50/40 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-emerald-200">
 
   <!-- HEADER -->
   <header class="bg-white border-b border-emerald-100 sticky top-0 z-40 shadow-sm">
@@ -80,17 +81,17 @@
       </div>
 
       <div class="flex items-center space-x-1.5 sm:space-x-2.5 flex-shrink-0">
-        <button onclick="toggleAudio()" id="audioToggleBtn" class="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200 transition shadow-sm">
+        <button type="button" onclick="toggleAudio()" id="audioToggleBtn" class="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200 transition shadow-sm cursor-pointer active:scale-95">
           <i id="audioIcon" class="fa-solid fa-volume-high text-emerald-600"></i>
           <span id="audioText" class="hidden xs:inline">Suara: ON</span>
         </button>
 
-        <button onclick="openConfigModal()" class="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200 transition shadow-sm">
+        <button type="button" onclick="openConfigModal()" class="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200 transition shadow-sm cursor-pointer active:scale-95">
           <i class="fa-solid fa-gear text-emerald-600"></i>
           <span class="hidden md:inline">Pengaturan URL & Logo</span>
         </button>
 
-        <button onclick="openSampleModal()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/30">
+        <button type="button" onclick="openSampleModal()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/30 cursor-pointer active:scale-95">
           <i class="fa-solid fa-qrcode"></i>
           <span class="hidden sm:inline">Contoh QR</span>
           <span class="sm:hidden">QR</span>
@@ -100,17 +101,17 @@
   </header>
 
   <!-- TAB NAVIGATION -->
-  <div class="bg-white border-b border-emerald-100 px-4 sm:px-6">
+  <div class="bg-white border-b border-emerald-100 px-4 sm:px-6 sticky top-16 sm:top-20 z-30 shadow-xs">
     <div class="max-w-5xl mx-auto flex space-x-2 sm:space-x-4 overflow-x-auto custom-scrollbar">
-      <button onclick="switchTab('scan')" id="tab-scan-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap">
+      <button type="button" onclick="switchTab('scan')" id="tab-scan-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-camera"></i>
         1. Pemindai Presensi Live
       </button>
-      <button onclick="switchTab('tidak-hadir')" id="tab-tidak-hadir-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
+      <button type="button" onclick="switchTab('tidak-hadir')" id="tab-tidak-hadir-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-user-xmark"></i>
         2. Input Ketidakhadiran (Sakit / Izin / Alfa)
       </button>
-      <button onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap">
+      <button type="button" onclick="switchTab('rekap')" id="tab-rekap-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-chart-pie"></i>
         3. Rekap Absen Per Kelas
       </button>
@@ -120,7 +121,7 @@
   <main class="flex-grow max-w-5xl w-full mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
 
     <!-- TAB 1: SCANNER LIVE -->
-    <div id="tab-scan-content" class="space-y-4 sm:space-y-5">
+    <div id="tab-scan-content" class="space-y-4 sm:space-y-5 block">
 
       <!-- GURU / PENGAJAR SELECTOR CARD -->
       <div class="white-card rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -144,19 +145,19 @@
         </div>
       </div>
 
-      <!-- STATISTIK RINGKASAN (DI ATAS KAMERA) -->
+      <!-- STATISTIK RINGKASAN -->
       <div class="grid grid-cols-3 gap-2">
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Total Scan</p>
-          <p id="statTotal" class="text-xs sm:text-sm font-bold text-slate-800 leading-tight">0</p>
+        <div class="white-card p-2 sm:p-3 rounded-xl text-center">
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium">Total Scan</p>
+          <p id="statTotal" class="text-sm sm:text-lg font-black text-slate-800 leading-tight mt-0.5">0</p>
         </div>
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Terisi Sheet</p>
-          <p id="statSuccess" class="text-xs sm:text-sm font-bold text-emerald-600 leading-tight">0</p>
+        <div class="white-card p-2 sm:p-3 rounded-xl text-center">
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium">Terisi Sheet</p>
+          <p id="statSuccess" class="text-sm sm:text-lg font-black text-emerald-600 leading-tight mt-0.5">0</p>
         </div>
-        <div class="white-card p-1.5 sm:p-2.5 rounded-xl text-center">
-          <p class="text-[9px] sm:text-[11px] text-slate-500 font-medium">Simpan Lokal</p>
-          <p id="statLocal" class="text-xs sm:text-sm font-bold text-amber-600 leading-tight">0</p>
+        <div class="white-card p-2 sm:p-3 rounded-xl text-center">
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium">Simpan Lokal</p>
+          <p id="statLocal" class="text-sm sm:text-lg font-black text-amber-600 leading-tight mt-0.5">0</p>
         </div>
       </div>
 
@@ -172,14 +173,14 @@
           </span>
         </div>
 
-        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-200 min-h-[190px] max-w-sm mx-auto flex flex-col items-center justify-center shadow-inner">
-          <div id="reader" class="w-full h-full min-h-[180px]"></div>
+        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-200 min-h-[200px] max-w-sm mx-auto flex flex-col items-center justify-center shadow-inner">
+          <div id="reader" class="w-full h-full min-h-[190px]"></div>
 
           <div id="cameraStartOverlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center space-y-3 z-10">
-            <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
               <i class="fa-solid fa-camera"></i>
             </div>
-            <button onclick="startCamera()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+            <button type="button" onclick="startCamera()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95">
               <i class="fa-solid fa-video"></i>
               Mulai Pemindai Kamera
             </button>
@@ -192,7 +193,7 @@
             <i class="fa-solid fa-circle-check text-emerald-600"></i>
             <span class="text-slate-700 font-semibold text-[11px]">Google Script Terhubung</span>
           </div>
-          <button id="stopCamBtn" onclick="stopCamera()" class="hidden text-[11px] text-red-600 font-bold hover:underline">
+          <button type="button" id="stopCamBtn" onclick="stopCamera()" class="hidden text-[11px] text-red-600 font-bold hover:underline cursor-pointer">
             <i class="fa-solid fa-power-off mr-1"></i>Matikan Kamera
           </button>
         </div>
@@ -210,7 +211,7 @@
         </div>
       </div>
 
-      <!-- KOLOM ABSEN MANUAL (TANPA BARCODE) -->
+      <!-- KOLOM ABSEN MANUAL -->
       <div class="white-card rounded-2xl p-3.5 sm:p-4 space-y-3 bg-emerald-50/20 border-emerald-200">
         <div class="flex items-center justify-between border-b border-emerald-100 pb-2">
           <div class="flex items-center space-x-2">
@@ -219,31 +220,31 @@
             </div>
             <div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-800">Absen Manual / Cari Nama (Kartu Hilang)</h3>
-              <p class="text-[10px] text-slate-500">Pilih santri dari 87 data terdaftar atau ketik manual jika kartu hilang</p>
+              <p class="text-[10px] text-slate-500">Pilih santri dari 87 data terdaftar atau ketik nama jika kartu hilang</p>
             </div>
           </div>
-          <button onclick="fetchStudentData()" title="Sinkronkan dengan Google Sheets" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 text-xs rounded-lg transition font-semibold flex items-center gap-1 shadow-sm">
+          <button type="button" onclick="initMasterDataDropdowns()" title="Sinkronkan Data Santri" class="px-2.5 py-1 bg-white border border-slate-200 hover:bg-emerald-50 text-emerald-700 text-xs rounded-lg transition font-semibold flex items-center gap-1 shadow-sm cursor-pointer active:scale-95">
             <i class="fa-solid fa-rotate text-emerald-600"></i>
-            <span class="hidden sm:inline">Sync Data</span>
+            <span class="hidden sm:inline">Refresh Sync</span>
           </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div class="sm:col-span-1">
-            <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Santri Terdaftar (87 Santri):</label>
-            <select id="manualSantriSelect" onchange="onManualSelectChange()" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-              <option value="">-- Memuat Data Santri... --</option>
+            <label for="manualSantriSelect" class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Santri Terdaftar (87 Santri):</label>
+            <select id="manualSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
+              <option value="">-- Loading 87 Santri... --</option>
             </select>
             <p id="syncStatus" class="text-[9px] text-emerald-600 mt-1"><i class="fa-solid fa-check-double"></i> 87 Santri Siap Terhubung</p>
           </div>
 
           <div class="sm:col-span-1">
-            <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Ketik Nama Manual:</label>
+            <label for="manualNamaInput" class="block text-[11px] font-bold text-slate-700 mb-1">Atau Ketik Nama Manual:</label>
             <input type="text" id="manualNamaInput" placeholder="Contoh: Muhammad Bahrul" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
           </div>
 
           <div class="sm:col-span-1 flex items-end">
-            <button onclick="submitManualPresensi('Hadir')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[34px]">
+            <button type="button" onclick="submitManualPresensi('Hadir')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 h-[36px] cursor-pointer active:scale-95">
               <i class="fa-solid fa-check-to-slot"></i>
               Catat Kehadiran Manual
             </button>
@@ -262,10 +263,10 @@
             <p class="text-[11px] text-slate-500">Daftar pemindai langsung yang tersimpan ke Google Sheet</p>
           </div>
           <div class="flex items-center gap-2 self-end sm:self-auto">
-            <button onclick="clearHistory()" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200">
+            <button type="button" onclick="clearHistory()" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200 cursor-pointer active:scale-95">
               <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Semua
             </button>
-            <button onclick="exportCSV()" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
+            <button type="button" onclick="exportCSV()" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm cursor-pointer active:scale-95">
               <i class="fa-solid fa-file-csv mr-1"></i> Export CSV
             </button>
           </div>
@@ -275,7 +276,7 @@
           <table class="w-full text-left text-xs text-slate-700">
             <thead class="bg-emerald-50 text-emerald-900 text-[11px] font-bold uppercase tracking-wider border-b border-emerald-100">
               <tr>
-                <th class="py-2.5 px-2 text-center w-10">Batal</th>
+                <th class="py-2.5 px-3 text-center w-12">Batal</th>
                 <th class="py-2.5 px-3">Hari / Tanggal</th>
                 <th class="py-2.5 px-3">Nama Santri</th>
                 <th class="py-2.5 px-3">Kelas</th>
@@ -298,7 +299,7 @@
     </div>
 
     <!-- TAB 2: INPUT KETIDAKHADIRAN -->
-    <div id="tab-tidak-hadir-content" class="space-y-5 hidden">
+    <div id="tab-tidak-hadir-content" class="space-y-5 hidden" style="display: none;">
       <div class="white-card rounded-2xl p-4 sm:p-5 space-y-4 bg-amber-50/20 border-amber-200">
         <div class="flex items-center space-x-3 border-b border-amber-100 pb-3">
           <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
@@ -312,15 +313,15 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">1. Pilih Santri:</label>
-            <select id="tidakHadirSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+            <label for="tidakHadirSantriSelect" class="block text-xs font-bold text-slate-700 mb-1">1. Pilih Santri:</label>
+            <select id="tidakHadirSantriSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer">
               <option value="">-- Pilih Nama Santri --</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">2. Alasan Ketidakhadiran:</label>
-            <select id="tidakHadirStatusSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-bold">
+            <label for="tidakHadirStatusSelect" class="block text-xs font-bold text-slate-700 mb-1">2. Alasan Ketidakhadiran:</label>
+            <select id="tidakHadirStatusSelect" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none font-bold cursor-pointer">
               <option value="Sakit" class="text-blue-600">🔵 Sakit</option>
               <option value="Izin" class="text-amber-600">🟡 Izin</option>
               <option value="Tidak Hadir" class="text-red-600" selected>🔴 Tidak Hadir (Alfa)</option>
@@ -328,7 +329,7 @@
           </div>
 
           <div class="flex items-end">
-            <button onclick="submitKetidakhadiranManual()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2">
+            <button type="button" onclick="submitKetidakhadiranManual()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95">
               <i class="fa-solid fa-floppy-disk"></i>
               Simpan Status Ketidakhadiran
             </button>
@@ -338,7 +339,7 @@
     </div>
 
     <!-- TAB 3: REKAP ABSEN -->
-    <div id="tab-rekap-content" class="space-y-5 hidden">
+    <div id="tab-rekap-content" class="space-y-5 hidden" style="display: none;">
       
       <!-- Filter Bar -->
       <div class="white-card rounded-2xl p-4 space-y-3">
@@ -349,8 +350,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Kelas</label>
-            <select id="rekapFilterKelas" onchange="renderRekapTable()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none">
+            <label for="rekapFilterKelas" class="block text-xs font-semibold text-slate-600 mb-1">Pilih Kelas</label>
+            <select id="rekapFilterKelas" onchange="renderRekapTable()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
               <option value="SEMUA">-- Semua Kelas --</option>
               <option value="Abdurrahman">Abdurrahman</option>
               <option value="Abu Ubaidah">Abu Ubaidah</option>
@@ -366,12 +367,12 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Rekap</label>
+            <label for="rekapFilterTanggal" class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Rekap</label>
             <input type="date" id="rekapFilterTanggal" onchange="renderRekapTable()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none">
           </div>
 
           <div class="flex items-end gap-2">
-            <button onclick="renderRekapTable()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+            <button type="button" onclick="renderRekapTable()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95">
               <i class="fa-solid fa-arrows-rotate"></i>
               Tampilkan Rekap
             </button>
@@ -408,7 +409,7 @@
           </div>
           
           <div class="flex items-center gap-2">
-            <button onclick="exportRekapCSV()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
+            <button type="button" onclick="exportRekapCSV()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm cursor-pointer active:scale-95">
               <i class="fa-solid fa-file-csv mr-1"></i> Download Rekap
             </button>
           </div>
@@ -443,23 +444,23 @@
   </main>
 
   <!-- MODAL 1: CONFIGURATION -->
-  <div id="configModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+  <div id="configModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" style="display: none;">
     <div class="white-card rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl bg-white max-h-[90vh] overflow-y-auto custom-scrollbar">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-gear text-emerald-600"></i>
           Pengaturan URL & Logo
         </h3>
-        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600">
+        <button type="button" onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer p-1">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
 
       <div class="space-y-3 text-xs text-slate-700">
-        <label class="block font-semibold text-slate-800">1. Google Apps Script Web App URL:</label>
+        <label for="scriptUrlInput" class="block font-semibold text-slate-800">1. Google Apps Script Web App URL:</label>
         <input type="text" id="scriptUrlInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 text-xs focus:ring-2 focus:ring-emerald-500 outline-none font-mono" placeholder="https://script.google.com/macros/s/.../exec">
 
-        <label class="block font-semibold text-slate-800 pt-1">2. ID File Google Drive Logo:</label>
+        <label for="driveLogoInput" class="block font-semibold text-slate-800 pt-1">2. ID File Google Drive Logo:</label>
         <input type="text" id="driveLogoInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 text-xs focus:ring-2 focus:ring-emerald-500 outline-none font-mono" placeholder="1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi">
       </div>
 
@@ -469,21 +470,21 @@
       </div>
 
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeConfigModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">Batal</button>
-        <button onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm">Simpan Pengaturan</button>
+        <button type="button" onclick="closeConfigModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">Batal</button>
+        <button type="button" onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer">Simpan Pengaturan</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL 2: SAMPLE QR CODES -->
-  <div id="sampleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+  <div id="sampleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" style="display: none;">
     <div class="white-card rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar bg-white">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-qrcode text-emerald-600"></i>
           Contoh QR Code Santri Siap Scan
         </h3>
-        <button onclick="closeSampleModal()" class="text-slate-400 hover:text-slate-600">
+        <button type="button" onclick="closeSampleModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer p-1">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
@@ -509,574 +510,521 @@
       </div>
 
       <div class="pt-2 border-t border-slate-100 text-center">
-        <button onclick="closeSampleModal()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm">Tutup</button>
+        <button type="button" onclick="closeSampleModal()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer">Tutup</button>
       </div>
     </div>
   </div>
 
+  <!-- JAVASCRIPT LOGIC -->
   <script>
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7gfWLT8qCDhZTnX-bE2QrWEsAPoHNtktDaTlDszUVUyydC4tElSC__E57Dh3n2ZJd/exec";
     const DEFAULT_LOGO_DRIVE_ID = "1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
 
-    let currentScriptUrl = localStorage.getItem("presensi_script_url") || DEFAULT_SCRIPT_URL;
-    // Otomatis memperbarui ke URL baru jika masih menggunakan URL default lama
-    if (currentScriptUrl.includes("AKfycbyR7Vm0G1_TKiJTfXLFIpCiNsIKvUHe6MOH2cQBs-7vXB8IUEABg1wJqcsUpvzdiJu9")) {
-      currentScriptUrl = DEFAULT_SCRIPT_URL;
-      localStorage.setItem("presensi_script_url", currentScriptUrl);
-    }
+    let currentScriptUrl = DEFAULT_SCRIPT_URL;
+    try {
+      currentScriptUrl = localStorage.getItem("presensi_script_url") || DEFAULT_SCRIPT_URL;
+    } catch(e) {}
 
-    let customLogoDriveId = localStorage.getItem("presensi_logo_drive_id") || DEFAULT_LOGO_DRIVE_ID;
+    let customLogoDriveId = DEFAULT_LOGO_DRIVE_ID;
+    try {
+      customLogoDriveId = localStorage.getItem("presensi_logo_drive_id") || DEFAULT_LOGO_DRIVE_ID;
+    } catch(e) {}
 
     let isAudioEnabled = true;
     let isProcessing = false;
     let lastScannedCode = "";
     let lastScannedTime = 0;
-    let selectedGuru = localStorage.getItem("presensi_selected_guru") || "Ustadz Sidik";
+    
+    let selectedGuru = "Ustadz Sidik";
+    try {
+      selectedGuru = localStorage.getItem("presensi_selected_guru") || "Ustadz Sidik";
+    } catch(e) {}
+
     let html5QrCode = null;
     let isCameraActive = false;
 
-    let presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
+    let presensiHistory = [];
+    try {
+      presensiHistory = JSON.parse(localStorage.getItem("presensi_history_logs") || "[]");
+    } catch(e) {
+      presensiHistory = [];
+    }
 
+    // MASTER SANTRI DATA (87 SANTRI LENGKAP & PRESISI)
     const MASTER_SANTRI_LIST = [
-      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman" },
-      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman" },
-      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman" },
-      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman" },
-      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman" },
-      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman" },
-      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman" },
-      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman" },
-      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman" },
-      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman" },
-      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah" },
-      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair" },
-      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair" },
-      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair" },
-      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair" },
-      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair" },
-      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair" },
-      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair" },
-      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali" },
-      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali" },
-      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali" },
-      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali" },
-      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar" },
-      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar" },
-      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar" },
-      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar" },
-      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar" },
-      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar" },
-      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar" },
-      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar" },
-      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar" },
-      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar" },
-      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar" },
-      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar" },
-      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal" },
-      { id: "IDSRQ052", nama: "Alifiandra ahmad hudaya", kelas: "Bilal" },
-      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal" },
-      { id: "IDSRQ054", nama: "Dilara adrena ramadhani", kelas: "Bilal" },
-      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal" },
-      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal" },
-      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal" },
-      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal" },
-      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal" },
-      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal" },
-      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal" },
-      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal" },
-      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal" },
-      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah" },
-      { id: "IDSRQ065", nama: "Arkhan Salman Al-farisi", kelas: "Hamzah" },
-      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah" },
-      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah" },
-      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah" },
-      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah" },
-      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah" },
-      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah" },
-      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah" },
-      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah" },
-      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah" },
-      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah" },
-      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah" },
-      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah" },
-      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar" },
-      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar" },
-      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar" },
-      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar" },
-      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar" },
-      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar" },
-      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman" },
-      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman" },
-      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman" },
-      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali" }
+      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik" },
+      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik" },
+      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
+      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
+      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ052", nama: "Alifiandra ahmad hudaya", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ054", nama: "Dilara adrena ramadhani", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ065", nama: "Arkhan Salman Al-farisi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik" }
     ];
 
-    let LOCAL_STUDENT_DB = {};
-    MASTER_SANTRI_LIST.forEach(s => {
-      LOCAL_STUDENT_DB[s.id] = { nama: s.nama, kelas: s.kelas };
-    });
+    // INITIALIZATION ON PAGE LOAD
+    window.addEventListener("DOMContentLoaded", function() {
+      try {
+        const guruSelectEl = document.getElementById("guruSelect");
+        if (guruSelectEl) guruSelectEl.value = selectedGuru;
 
-    function applyCustomLogo() {
-      const logoContainer = document.getElementById("logoContainer");
-      if (customLogoDriveId && logoContainer) {
-        const logoUrl = `https://lh3.googleusercontent.com/d/${customLogoDriveId}`;
-        logoContainer.innerHTML = `<img src="${logoUrl}" alt="Logo RQ Al-Khansa" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 font-bold text-xs\'>RQ</div>';">`;
-      }
-    }
+        const scriptUrlInput = document.getElementById("scriptUrlInput");
+        if (scriptUrlInput) scriptUrlInput.value = currentScriptUrl;
 
-    function deleteSingleHistory(index) {
-      if (index >= 0 && index < presensiHistory.length) {
-        const deletedItem = presensiHistory[index];
-        
-        presensiHistory.splice(index, 1);
-        saveHistoryToStorage();
+        const driveLogoInput = document.getElementById("driveLogoInput");
+        if (driveLogoInput) driveLogoInput.value = customLogoDriveId;
+
+        const rekapDateInput = document.getElementById("rekapFilterTanggal");
+        if (rekapDateInput) {
+          const today = new Date().toISOString().split('T')[0];
+          rekapDateInput.value = today;
+        }
+
+        initMasterDataDropdowns();
         renderHistoryTable();
         renderRekapTable();
-        updateStats();
+        applyCustomLogo();
 
-        updateAlertStatus("error", `Presensi ${deletedItem.namaSantri} berhasil dibatalkan & dihapus dari Sheet`, "DIBATALKAN");
+        setTimeout(generateSampleQRs, 300);
+      } catch(e) {
+        console.error("Initialization error:", e);
+      }
+    });
 
-        fetch(currentScriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "delete",
-            idSantri: deletedItem.idSantri,
-            namaSantri: deletedItem.namaSantri
-          })
-        }).then(res => res.json()).then(resData => {
-          console.log("Respon hapus dari Google Sheet:", resData);
-        }).catch(err => console.warn("Gagal hapus dari Sheet:", err));
+    // APPLY DRIVE LOGO
+    function applyCustomLogo() {
+      try {
+        if (!customLogoDriveId) return;
+        const logoUrl = `https://drive.google.com/thumbnail?id=${customLogoDriveId}&sz=w200`;
+        const container = document.getElementById("logoContainer");
+        if (container) {
+          container.innerHTML = `<img src="${logoUrl}" alt="Logo Al-Khansa" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 font-bold text-xs\'>RQ</div>';">`;
+        }
+      } catch(e) {}
+    }
+
+    // TAB NAVIGATION SWITCHER
+    function switchTab(tab) {
+      try {
+        const scanContent = document.getElementById("tab-scan-content");
+        const tidakHadirContent = document.getElementById("tab-tidak-hadir-content");
+        const rekapContent = document.getElementById("tab-rekap-content");
+
+        if (scanContent) scanContent.style.display = tab === 'scan' ? 'block' : 'none';
+        if (tidakHadirContent) tidakHadirContent.style.display = tab === 'tidak-hadir' ? 'block' : 'none';
+        if (rekapContent) rekapContent.style.display = tab === 'rekap' ? 'block' : 'none';
+
+        const scanBtn = document.getElementById("tab-scan-btn");
+        const tidakHadirBtn = document.getElementById("tab-tidak-hadir-btn");
+        const rekapBtn = document.getElementById("tab-rekap-btn");
+
+        const activeClass = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap cursor-pointer";
+        const inactiveClass = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer";
+
+        if (scanBtn) scanBtn.className = tab === 'scan' ? activeClass : inactiveClass;
+        if (tidakHadirBtn) tidakHadirBtn.className = tab === 'tidak-hadir' ? activeClass : inactiveClass;
+        if (rekapBtn) rekapBtn.className = tab === 'rekap' ? activeClass : inactiveClass;
+
+        if (tab === 'rekap') {
+          renderRekapTable();
+        }
+      } catch(e) {
+        console.error("Tab switch error:", e);
       }
     }
 
-    function openConfigModal() {
-      document.getElementById("scriptUrlInput").value = currentScriptUrl;
-      document.getElementById("driveLogoInput").value = customLogoDriveId;
-      document.getElementById("configModal").classList.remove("hidden");
+    // UPDATE SELECTED GURU
+    function updateSelectedGuru() {
+      try {
+        const guruSelectEl = document.getElementById("guruSelect");
+        if (guruSelectEl) {
+          selectedGuru = guruSelectEl.value;
+          localStorage.setItem("presensi_selected_guru", selectedGuru);
+        }
+      } catch(e) {}
     }
 
-    function closeConfigModal() {
-      document.getElementById("configModal").classList.add("hidden");
-    }
+    // POPULATE DROPDOWNS WITH ALL 87 MASTER SANTRI
+    function initMasterDataDropdowns() {
+      try {
+        const manualSelect = document.getElementById("manualSantriSelect");
+        const tidakHadirSelect = document.getElementById("tidakHadirSantriSelect");
 
-    function saveSettings() {
-      const newUrl = document.getElementById("scriptUrlInput").value.trim();
-      const newDriveLogo = document.getElementById("driveLogoInput").value.trim();
+        let htmlManual = `<option value="">-- Pilih Nama Santri (87 Santri) --</option>`;
+        let htmlTidakHadir = `<option value="">-- Pilih Nama Santri --</option>`;
 
-      if (newUrl) {
-        currentScriptUrl = newUrl;
-        localStorage.setItem("presensi_script_url", currentScriptUrl);
+        let currentClass = "";
+        MASTER_SANTRI_LIST.forEach(s => {
+          if (s.kelas !== currentClass) {
+            if (currentClass !== "") {
+              htmlManual += `</optgroup>`;
+              htmlTidakHadir += `</optgroup>`;
+            }
+            currentClass = s.kelas;
+            htmlManual += `<optgroup label="Kelas ${currentClass}">`;
+            htmlTidakHadir += `<optgroup label="Kelas ${currentClass}">`;
+          }
+          htmlManual += `<option value="${s.id}">${s.id} - ${s.nama}</option>`;
+          htmlTidakHadir += `<option value="${s.id}">${s.nama} (${s.kelas})</option>`;
+        });
+        if (currentClass !== "") {
+          htmlManual += `</optgroup>`;
+          htmlTidakHadir += `</optgroup>`;
+        }
+
+        if (manualSelect) manualSelect.innerHTML = htmlManual;
+        if (tidakHadirSelect) tidakHadirSelect.innerHTML = htmlTidakHadir;
+      } catch(e) {
+        console.error("Error populating dropdowns:", e);
       }
-
-      customLogoDriveId = newDriveLogo || DEFAULT_LOGO_DRIVE_ID;
-      localStorage.setItem("presensi_logo_drive_id", customLogoDriveId);
-
-      applyCustomLogo();
-      closeConfigModal();
     }
 
-    function playWaterBubbleSound() {
+    // AUDIO PLAYBACK
+    function toggleAudio() {
+      isAudioEnabled = !isAudioEnabled;
+      const icon = document.getElementById("audioIcon");
+      const text = document.getElementById("audioText");
+      if (icon) icon.className = isAudioEnabled ? "fa-solid fa-volume-high text-emerald-600" : "fa-solid fa-volume-xmark text-slate-400";
+      if (text) text.innerText = isAudioEnabled ? "Suara: ON" : "Suara: OFF";
+    }
+
+    function playBeepSound() {
       if (!isAudioEnabled) return;
       try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         osc.type = 'sine';
-        
-        const now = ctx.currentTime;
-        osc.frequency.setValueAtTime(280, now);
-        osc.frequency.exponentialRampToValueAtTime(1150, now + 0.08);
-        osc.frequency.exponentialRampToValueAtTime(380, now + 0.15);
-
-        gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.35, now + 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
         osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.18);
-      } catch (e) {
-        console.warn(e);
-      }
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      } catch(e) {}
     }
 
-    function renderStudentSelect(listData) {
-      const selectEl = document.getElementById("manualSantriSelect");
-      const tidakHadirSelect = document.getElementById("tidakHadirSantriSelect");
-      const syncStatus = document.getElementById("syncStatus");
-      
-      if (!selectEl || !tidakHadirSelect) return;
+    // CAMERA SCANNER CONTROLS
+    function startCamera() {
+      const overlay = document.getElementById("cameraStartOverlay");
+      const badge = document.getElementById("scanStatusBadge");
+      const stopBtn = document.getElementById("stopCamBtn");
 
-      selectEl.innerHTML = '<option value="">-- Pilih Nama Santri (87 Santri) --</option>';
-      tidakHadirSelect.innerHTML = '<option value="">-- Pilih Nama Santri --</option>';
+      if (overlay) overlay.style.display = "none";
+      if (badge) {
+        badge.innerText = "Kamera Aktif";
+        badge.className = "text-[10px] sm:text-xs bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-300";
+      }
+      if (stopBtn) stopBtn.classList.remove("hidden");
 
-      const sortedList = [...listData].sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
-
-      sortedList.forEach(santri => {
-        LOCAL_STUDENT_DB[santri.id] = { nama: santri.nama, kelas: santri.kelas };
+      try {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+        const config = { fps: 20, qrbox: { width: 220, height: 220 } };
         
-        const opt1 = document.createElement("option");
-        opt1.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
-        opt1.text = `[${santri.kelas}] ${santri.nama} (${santri.id})`;
-        selectEl.appendChild(opt1);
-
-        const opt2 = document.createElement("option");
-        opt2.value = `${santri.id}|${santri.nama}|${santri.kelas}`;
-        opt2.text = `[${santri.kelas}] ${santri.nama}`;
-        tidakHadirSelect.appendChild(opt2);
-      });
-
-      if (syncStatus) {
-        syncStatus.innerHTML = `<i class="fa-solid fa-check-double text-emerald-600"></i> ${listData.length} Santri Siap Terhubung`;
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onScanSuccess
+        ).catch(err => {
+          console.error("Camera start error:", err);
+          showAlert("GAGAL KAMERA", "Gagal membuka kamera: " + err, "error");
+          stopCamera();
+        });
+        isCameraActive = true;
+      } catch(e) {
+        showAlert("ERROR", "Library kamera belum siap. Coba refresh halaman.", "error");
       }
     }
 
-    function fetchStudentData() {
-      const syncStatus = document.getElementById("syncStatus");
-      if (syncStatus) {
-        syncStatus.innerHTML = `<i class="fa-solid fa-rotate animate-spin text-emerald-600"></i> Menghubungkan Google Sheet...`;
+    function stopCamera() {
+      if (html5QrCode && isCameraActive) {
+        html5QrCode.stop().then(() => {
+          isCameraActive = false;
+          resetCameraUI();
+        }).catch(() => {
+          isCameraActive = false;
+          resetCameraUI();
+        });
+      } else {
+        resetCameraUI();
       }
-      
-      fetch(currentScriptUrl)
-        .then(res => res.json())
-        .then(resData => {
-          if (resData && resData.status === "success" && resData.data && resData.data.length > 0) {
-            renderStudentSelect(resData.data);
-            localStorage.setItem("presensi_student_backup", JSON.stringify(resData.data));
-            if (syncStatus) {
-              syncStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-600"></i> ${resData.data.length} Santri Tersinkron Google Sheet`;
-            }
-          } else {
-            loadLocalBackupDb();
-          }
-        })
-        .catch(() => loadLocalBackupDb());
     }
 
-    function loadLocalBackupDb() {
-      const backupData = JSON.parse(localStorage.getItem("presensi_student_backup") || "null");
-      const dataToUse = (backupData && backupData.length > 0) ? backupData : MASTER_SANTRI_LIST;
-      renderStudentSelect(dataToUse);
+    function resetCameraUI() {
+      const overlay = document.getElementById("cameraStartOverlay");
+      const badge = document.getElementById("scanStatusBadge");
+      const stopBtn = document.getElementById("stopCamBtn");
+
+      if (overlay) overlay.style.display = "flex";
+      if (badge) {
+        badge.innerText = "Kamera Nonaktif";
+        badge.className = "text-[10px] sm:text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold border border-slate-200";
+      }
+      if (stopBtn) stopBtn.classList.add("hidden");
     }
 
-    function getShortDayName(dateObj) {
-      const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-      return days[dateObj.getDay()];
-    }
-
-    function getMonthNameIndo(monthIndex) {
-      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-      return months[monthIndex];
-    }
-
-    function formatHariTanggal(dateObj) {
-      const shortDay = getShortDayName(dateObj);
-      const dayNum = dateObj.getDate();
-      const monthName = getMonthNameIndo(dateObj.getMonth());
-      const yearNum = dateObj.getFullYear();
-      return `${shortDay} ${dayNum} ${monthName} ${yearNum}`;
-    }
-
-    async function onScanSuccess(decodedText) {
+    // SCAN SUCCESS HANDLER
+    function onScanSuccess(decodedText) {
       const now = Date.now();
-
-      if (isProcessing || (decodedText === lastScannedCode && now - lastScannedTime < 3000)) {
+      if (decodedText === lastScannedCode && (now - lastScannedTime < 3000)) {
         return;
       }
-
-      isProcessing = true;
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      playWaterBubbleSound();
-
-      const currentDate = new Date();
-      const formattedHariTanggal = formatHariTanggal(currentDate);
-
-      let localLookup = LOCAL_STUDENT_DB[decodedText] || { nama: decodedText, kelas: "-" };
-
-      const logEntry = {
-        id: "PRES-" + Math.random().toString(36).substring(2, 7),
-        idSantri: decodedText,
-        namaSantri: localLookup.nama,
-        kelas: localLookup.kelas,
-        guru: selectedGuru,
-        statusAbsen: "Hadir",
-        hariTanggal: formattedHariTanggal,
-        rawDate: currentDate.toISOString(),
-        statusSheet: "Lokal"
-      };
-
-      presensiHistory.unshift(logEntry);
-      saveHistoryToStorage();
-      renderHistoryTable();
-      updateStats();
-
-      updateAlertStatus("success", `Alhamdulillah sudah masuk: ${localLookup.nama}`, "PRESENSI BERHASIL", `Kelas: ${localLookup.kelas} | Pengajar: ${selectedGuru}`);
-
-      fetch(currentScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "add",
-          nis: decodedText,
-          idSantri: decodedText,
-          namaSantri: localLookup.nama,
-          guru: selectedGuru,
-          status: "Hadir"
-        })
-      }).then(res => res.json()).then(resData => {
-        if (resData && resData.status === "success") {
-          logEntry.statusSheet = "Tersimpan";
-          saveHistoryToStorage();
-          renderHistoryTable();
-          updateStats();
-        }
-      }).catch(err => console.warn(err));
-
-      setTimeout(() => {
-        isProcessing = false;
-      }, 800);
+      playBeepSound();
+      processPresensiData(decodedText, "Hadir");
     }
 
-    function onManualSelectChange() {
-      const val = document.getElementById("manualSantriSelect").value;
-      if (val) {
-        document.getElementById("manualNamaInput").value = "";
-      }
-    }
+    // SUBMIT MANUAL ATTENDANCE
+    function submitManualPresensi(status) {
+      const selectEl = document.getElementById("manualSantriSelect");
+      const inputEl = document.getElementById("manualNamaInput");
 
-    function submitManualPresensi(statusParam = "Hadir") {
-      const selectVal = document.getElementById("manualSantriSelect").value;
-      const manualName = document.getElementById("manualNamaInput").value.trim();
-
-      let finalId = "MANUAL-" + Math.floor(100 + Math.random() * 900);
-      let finalNama = "";
-      let finalKelas = "-";
-
-      if (manualName) {
-        finalNama = manualName;
-      } else if (selectVal) {
-        const parts = selectVal.split("|");
-        finalId = parts[0] || finalId;
-        finalNama = parts[1] || "";
-        finalKelas = parts[2] || "-";
+      let code = "";
+      if (selectEl && selectEl.value) {
+        code = selectEl.value;
+      } else if (inputEl && inputEl.value.trim() !== "") {
+        code = inputEl.value.trim();
       } else {
-        updateAlertStatus("error", "Pilih nama santri atau ketikkan nama santri terlebih dahulu!", "PERHATIAN");
+        showAlert("PERHATIAN", "Pilih nama santri terdaftar atau ketik nama manual!", "warning");
         return;
       }
 
-      playWaterBubbleSound();
-
-      const currentDate = new Date();
-      const formattedHariTanggal = formatHariTanggal(currentDate);
-
-      const logEntry = {
-        id: "PRES-" + Math.random().toString(36).substring(2, 7),
-        idSantri: finalId,
-        namaSantri: finalNama,
-        kelas: finalKelas,
-        guru: selectedGuru,
-        statusAbsen: statusParam,
-        hariTanggal: formattedHariTanggal,
-        rawDate: currentDate.toISOString(),
-        statusSheet: "Lokal"
-      };
-
-      presensiHistory.unshift(logEntry);
-      saveHistoryToStorage();
-      renderHistoryTable();
-      updateStats();
-
-      updateAlertStatus(statusParam === "Hadir" ? "success" : "error", `Status dicatat (${statusParam}): ${finalNama}`, "PRESENSI TERCATAT", `Kelas: ${finalKelas} | Status: ${statusParam}`);
-
-      document.getElementById("manualSantriSelect").value = "";
-      document.getElementById("manualNamaInput").value = "";
-
-      fetch(currentScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "add",
-          nis: finalId,
-          idSantri: finalId,
-          namaSantri: finalNama,
-          guru: selectedGuru,
-          status: statusParam
-        })
-      }).then(res => res.json()).then(resData => {
-        if (resData && resData.status === "success") {
-          logEntry.statusSheet = "Tersimpan";
-          saveHistoryToStorage();
-          renderHistoryTable();
-          updateStats();
-        }
-      }).catch(err => console.warn(err));
+      playBeepSound();
+      processPresensiData(code, status);
+      if (selectEl) selectEl.value = "";
+      if (inputEl) inputEl.value = "";
     }
 
+    // SUBMIT ABSENCE MANUAL (TAB 2)
     function submitKetidakhadiranManual() {
-      const selectVal = document.getElementById("tidakHadirSantriSelect").value;
-      const statusAbsenVal = document.getElementById("tidakHadirStatusSelect").value;
+      const selectEl = document.getElementById("tidakHadirSantriSelect");
+      const statusEl = document.getElementById("tidakHadirStatusSelect");
 
-      if (!selectVal) {
-        updateAlertStatus("error", "Pilih nama santri terlebih dahulu!", "PERHATIAN");
+      if (!selectEl || !selectEl.value) {
+        showAlert("PERHATIAN", "Pilih nama santri terlebih dahulu!", "warning");
         return;
       }
 
-      const parts = selectVal.split("|");
-      const finalId = parts[0];
-      const finalNama = parts[1];
-      const finalKelas = parts[2] || "-";
+      const idSantri = selectEl.value;
+      const status = statusEl ? statusEl.value : "Tidak Hadir";
 
-      playWaterBubbleSound();
-
-      const currentDate = new Date();
-      const formattedHariTanggal = formatHariTanggal(currentDate);
-
-      const logEntry = {
-        id: "PRES-" + Math.random().toString(36).substring(2, 7),
-        idSantri: finalId,
-        namaSantri: finalNama,
-        kelas: finalKelas,
-        guru: selectedGuru,
-        statusAbsen: statusAbsenVal,
-        hariTanggal: formattedHariTanggal,
-        rawDate: currentDate.toISOString(),
-        statusSheet: "Lokal"
-      };
-
-      presensiHistory.unshift(logEntry);
-      saveHistoryToStorage();
-      renderHistoryTable();
-      updateStats();
-
-      updateAlertStatus("error", `Ketidakhadiran [${statusAbsenVal}] dicatat: ${finalNama}`, "STATUS DISIMPAN", `Kelas: ${finalKelas}`);
-      document.getElementById("tidakHadirSantriSelect").value = "";
-
-      fetch(currentScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "add",
-          nis: finalId,
-          idSantri: finalId,
-          namaSantri: finalNama,
-          guru: selectedGuru,
-          status: statusAbsenVal
-        })
-      }).then(res => res.json()).then(resData => {
-        if (resData && resData.status === "success") {
-          logEntry.statusSheet = "Tersimpan";
-          saveHistoryToStorage();
-          renderHistoryTable();
-          updateStats();
-        }
-      }).catch(err => console.warn(err));
+      playBeepSound();
+      processPresensiData(idSantri, status);
+      selectEl.value = "";
     }
 
-    function setStatusSingleSantri(idSantri, namaSantri, kelasSantri, statusNew) {
-      const currentDate = new Date();
-      const formattedHariTanggal = formatHariTanggal(currentDate);
+    // PROCESS PRESENSI CORE LOGIC
+    function processPresensiData(codeOrId, status) {
+      let santri = MASTER_SANTRI_LIST.find(s => s.id.toLowerCase() === codeOrId.toLowerCase());
+      
+      let idSantri = santri ? santri.id : (codeOrId.startsWith("IDSRQ") ? codeOrId : "MANUAL");
+      let namaSantri = santri ? santri.nama : codeOrId;
+      let kelasSantri = santri ? santri.kelas : "-";
+      let guruPilih = santri ? santri.guru : selectedGuru;
 
-      const logEntry = {
-        id: "PRES-" + Math.random().toString(36).substring(2, 7),
+      const now = new Date();
+      const timeZone = "Asia/Jakarta";
+      const formattedDateTime = now.toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric"
+      }) + " " + now.toLocaleTimeString("id-ID", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      });
+
+      const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const hariIndo = dayNames[now.getDay()];
+
+      const record = {
+        key: Math.random().toString(36).substring(2, 10),
         idSantri: idSantri,
         namaSantri: namaSantri,
         kelas: kelasSantri,
-        guru: selectedGuru,
-        statusAbsen: statusNew,
-        hariTanggal: formattedHariTanggal,
-        rawDate: currentDate.toISOString(),
-        statusSheet: "Lokal"
+        guru: guruPilih,
+        waktu: formattedDateTime,
+        hari: hariIndo,
+        status: status,
+        timestamp: Date.now()
       };
 
-      presensiHistory.unshift(logEntry);
-      saveHistoryToStorage();
-      renderRekapTable();
+      // Push to local history
+      presensiHistory.unshift(record);
+      try {
+        localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
+      } catch(e) {}
+
       renderHistoryTable();
-      updateStats();
+      renderRekapTable();
+
+      showAlert("BERHASIL", `${namaSantri} (${kelasSantri}) - Status: ${status}`, "success");
+
+      // Send POST to Google Apps Script
+      sendToGoogleSheets(record);
+    }
+
+    // SEND RECORD TO GOOGLE SHEETS VIA FETCH
+    function sendToGoogleSheets(record) {
+      if (!currentScriptUrl) return;
+
+      const payload = {
+        action: "save",
+        idSantri: record.idSantri,
+        namaSantri: record.namaSantri,
+        kelas: record.kelas,
+        guru: record.guru,
+        status: record.status,
+        waktu: record.waktu,
+        hari: record.hari
+      };
 
       fetch(currentScriptUrl, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "add",
-          nis: idSantri,
-          idSantri: idSantri,
-          namaSantri: namaSantri,
-          guru: selectedGuru,
-          status: statusNew
-        })
-      }).then(res => res.json()).then(resData => {
-        if (resData && resData.status === "success") {
-          logEntry.statusSheet = "Tersimpan";
-          saveHistoryToStorage();
-          renderRekapTable();
-          renderHistoryTable();
-        }
-      }).catch(err => console.warn(err));
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        console.log("Presensi successfully dispatched to Google Sheets!");
+      }).catch(err => {
+        console.error("Failed sending to Google Sheets:", err);
+      });
     }
 
-    function updateAlertStatus(type, message, title, subText = "") {
-      const alertEl = document.getElementById("statusAlert");
-      const iconEl = document.getElementById("statusAlertIcon");
-      const titleEl = document.getElementById("statusAlertTitle");
-      const msgEl = document.getElementById("statusAlertMessage");
-      const subEl = document.getElementById("statusAlertSub");
+    // DELETE SINGLE RECORD AUTOMATICALLY (CLIENT + GOOGLE SHEETS)
+    function deleteSingleHistory(index) {
+      if (index < 0 || index >= presensiHistory.length) return;
 
-      if (!alertEl) return;
+      const itemToDelete = presensiHistory[index];
 
-      titleEl.innerText = title;
-      msgEl.innerText = message;
+      // Remove from local array
+      presensiHistory.splice(index, 1);
+      try {
+        localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
+      } catch(e) {}
 
-      if (subText) {
-        subEl.innerText = subText;
-        subEl.classList.remove("hidden");
-      } else {
-        subEl.classList.add("hidden");
-      }
+      renderHistoryTable();
+      renderRekapTable();
 
-      if (type === "success") {
-        alertEl.className = "bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
-        iconEl.className = "w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg flex-shrink-0 border border-emerald-400";
-        iconEl.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
-      } else {
-        alertEl.className = "bg-amber-50 border-2 border-amber-400 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
-        iconEl.className = "w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg flex-shrink-0 border border-amber-400";
-        iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+      showAlert("DIHAPUS", `Presensi ${itemToDelete.namaSantri} telah dibatalkan.`, "warning");
+
+      // Dispatch delete action to Google Sheet
+      if (currentScriptUrl) {
+        fetch(currentScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete",
+            idSantri: itemToDelete.idSantri,
+            namaSantri: itemToDelete.namaSantri
+          })
+        }).catch(err => console.error("Error sending delete action:", err));
       }
     }
 
-    function updateSelectedGuru() {
-      selectedGuru = document.getElementById("guruSelect").value;
-      localStorage.setItem("presensi_selected_guru", selectedGuru);
+    // CLEAR ALL HISTORY
+    function clearHistory() {
+      presensiHistory = [];
+      try {
+        localStorage.removeItem("presensi_history_logs");
+      } catch(e) {}
+      renderHistoryTable();
+      renderRekapTable();
+      showAlert("BERSIH", "Seluruh riwayat lokal telah dibersihkan.", "warning");
     }
 
+    // RENDER HISTORY TABLE
     function renderHistoryTable() {
       const tbody = document.getElementById("historyTableBody");
+      const statTotal = document.getElementById("statTotal");
+      const statSuccess = document.getElementById("statSuccess");
+      const statLocal = document.getElementById("statLocal");
+
+      if (statTotal) statTotal.innerText = presensiHistory.length;
+      if (statSuccess) statSuccess.innerText = presensiHistory.length;
+      if (statLocal) statLocal.innerText = presensiHistory.length;
+
       if (!tbody) return;
 
       if (presensiHistory.length === 0) {
@@ -1085,293 +1033,256 @@
             <td colspan="7" class="py-8 text-center text-slate-400 italic">
               Belum ada data presensi yang discan hari ini.
             </td>
-          </tr>
-        `;
+          </tr>`;
         return;
       }
 
-      tbody.innerHTML = presensiHistory.map((item, idx) => {
-        let statusBadge = "🟢 Hadir";
-        if (item.statusAbsen === "Sakit") statusBadge = "🔵 Sakit";
-        else if (item.statusAbsen === "Izin") statusBadge = "🟡 Izin";
-        else if (item.statusAbsen === "Tidak Hadir" || item.statusAbsen === "Alfa") statusBadge = "🔴 Tidak Hadir";
+      let html = "";
+      presensiHistory.forEach((item, idx) => {
+        let statusBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">🟢 Hadir</span>`;
+        if (item.status === "Sakit") {
+          statusBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold text-[10px]">🔵 Sakit</span>`;
+        } else if (item.status === "Izin") {
+          statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold text-[10px]">🟡 Izin</span>`;
+        } else if (item.status === "Tidak Hadir" || item.status === "Alfa") {
+          statusBadge = `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold text-[10px]">🔴 Tidak Hadir</span>`;
+        }
 
-        return `
+        html += `
           <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-2 text-center">
-              <button onclick="deleteSingleHistory(${idx})" title="Hapus/Batal Absen Santri Ini" class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition flex items-center justify-center mx-auto shadow-sm">
+            <td class="py-2.5 px-3 text-center">
+              <button type="button" onclick="deleteSingleHistory(${idx})" title="Batal / Hapus Presensi Ini" class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition flex items-center justify-center mx-auto cursor-pointer active:scale-95">
                 <i class="fa-solid fa-trash-can text-xs"></i>
               </button>
             </td>
-            <td class="py-2.5 px-3 font-mono text-slate-600">${item.hariTanggal}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-[11px] text-slate-600 font-mono">${item.hari}, ${item.waktu}</td>
             <td class="py-2.5 px-3 font-bold text-slate-800">${item.namaSantri}</td>
-            <td class="py-2.5 px-3 text-slate-600">${item.kelas}</td>
+            <td class="py-2.5 px-3 font-semibold text-emerald-700">${item.kelas}</td>
             <td class="py-2.5 px-3 text-slate-600">${item.guru}</td>
-            <td class="py-2.5 px-3 text-center font-bold">${statusBadge}</td>
-            <td class="py-2.5 px-3 text-center">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.statusSheet === 'Tersimpan' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
-                <i class="fa-solid ${item.statusSheet === 'Tersimpan' ? 'fa-check' : 'fa-floppy-disk'} mr-1"></i>
-                ${item.statusSheet}
-              </span>
+            <td class="py-2.5 px-3 text-center">${statusBadge}</td>
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold text-[10px]">✓ Tersimpan</span>
             </td>
-          </tr>
-        `;
-      }).join('');
+          </tr>`;
+      });
+
+      tbody.innerHTML = html;
     }
 
+    // RENDER REKAP TABLE PER KELAS
     function renderRekapTable() {
-      const kelasFilter = document.getElementById("rekapFilterKelas").value;
-      const tanggalFilter = document.getElementById("rekapFilterTanggal").value;
+      const classSelect = document.getElementById("rekapFilterKelas");
+      const dateInput = document.getElementById("rekapFilterTanggal");
       const tbody = document.getElementById("rekapTableBody");
-      if (!tbody) return;
 
-      const todayStr = formatHariTanggal(new Date());
+      const totalHadirEl = document.getElementById("rekapTotalHadir");
+      const totalAbsenEl = document.getElementById("rekapTotalAbsen");
+      const classEl = document.getElementById("rekapKelasTerpilih");
+      const dateEl = document.getElementById("rekapTanggalTerpilih");
 
-      let studentListToRender = MASTER_SANTRI_LIST;
+      const selectedClass = classSelect ? classSelect.value : "SEMUA";
+      const selectedDate = dateInput ? dateInput.value : "";
 
-      if (kelasFilter !== "SEMUA") {
-        studentListToRender = MASTER_SANTRI_LIST.filter(s => s.kelas === kelasFilter);
+      if (classEl) classEl.innerText = selectedClass === "SEMUA" ? "Semua Kelas" : `Kelas ${selectedClass}`;
+      if (dateEl) dateEl.innerText = selectedDate || "Hari Ini";
+
+      let filteredSantri = MASTER_SANTRI_LIST;
+      if (selectedClass !== "SEMUA") {
+        filteredSantri = MASTER_SANTRI_LIST.filter(s => s.kelas === selectedClass);
       }
 
-      let totalHadirCount = 0;
-      let totalAbsenCount = 0;
+      let countHadir = 0;
+      let countAbsen = 0;
 
-      const rowsHtml = studentListToRender.map((santri, index) => {
-        const foundLog = presensiHistory.find(item => {
-          const isSameId = item.idSantri === santri.id;
-          if (tanggalFilter) {
-            const itemDate = new Date(item.rawDate).toISOString().split('T')[0];
-            return isSameId && itemDate === tanggalFilter;
-          }
-          return isSameId && item.hariTanggal === todayStr;
-        });
+      let html = "";
+      filteredSantri.forEach((santri, idx) => {
+        // Search if santri has attendance log today
+        const log = presensiHistory.find(h => h.idSantri === santri.id || h.namaSantri.toLowerCase() === santri.nama.toLowerCase());
 
         let statusText = "⚪ Belum Absen";
-        let statusBadgeClass = "bg-slate-100 text-slate-600 border-slate-200";
-        let guruName = "-";
-        let dateStr = tanggalFilter || todayStr;
+        let statusBadge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full font-bold text-[10px]">⚪ Belum Absen</span>`;
+        let recordDate = "-";
 
-        if (foundLog) {
-          guruName = foundLog.guru || selectedGuru;
-          dateStr = foundLog.hariTanggal;
-          if (foundLog.statusAbsen === "Hadir" || !foundLog.statusAbsen) {
-            statusText = "🟢 Hadir";
-            statusBadgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
-            totalHadirCount++;
-          } else if (foundLog.statusAbsen === "Sakit") {
-            statusText = "🔵 Sakit";
-            statusBadgeClass = "bg-blue-100 text-blue-800 border-blue-200";
-            totalAbsenCount++;
-          } else if (foundLog.statusAbsen === "Izin") {
-            statusText = "🟡 Izin";
-            statusBadgeClass = "bg-amber-100 text-amber-800 border-amber-200";
-            totalAbsenCount++;
-          } else {
-            statusText = "🔴 Tidak Hadir";
-            statusBadgeClass = "bg-red-100 text-red-800 border-red-200";
-            totalAbsenCount++;
+        if (log) {
+          statusText = log.status;
+          recordDate = `${log.hari}, ${log.waktu}`;
+          if (log.status === "Hadir") {
+            countHadir++;
+            statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-full font-bold text-[10px]">🟢 Hadir</span>`;
+          } else if (log.status === "Sakit") {
+            countAbsen++;
+            statusBadge = `<span class="bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-1 rounded-full font-bold text-[10px]">🔵 Sakit</span>`;
+          } else if (log.status === "Izin") {
+            countAbsen++;
+            statusBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full font-bold text-[10px]">🟡 Izin</span>`;
+          } else if (log.status === "Tidak Hadir" || log.status === "Alfa") {
+            countAbsen++;
+            statusBadge = `<span class="bg-red-100 text-red-800 border border-red-300 px-2.5 py-1 rounded-full font-bold text-[10px]">🔴 Tidak Hadir</span>`;
           }
         }
 
-        return `
+        html += `
           <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-3 text-slate-400">${index + 1}</td>
-            <td class="py-2.5 px-3 font-mono text-slate-600">${dateStr}</td>
+            <td class="py-2.5 px-3 text-slate-500 font-bold">${idx + 1}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-[11px] text-slate-600 font-mono">${recordDate}</td>
             <td class="py-2.5 px-3 font-bold text-slate-800">${santri.nama}</td>
-            <td class="py-2.5 px-3 text-slate-600">${santri.kelas}</td>
-            <td class="py-2.5 px-3 text-slate-600">${guruName}</td>
-            <td class="py-2.5 px-3 text-center">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusBadgeClass}">
-                ${statusText}
-              </span>
-            </td>
+            <td class="py-2.5 px-3 font-semibold text-emerald-700">${santri.kelas}</td>
+            <td class="py-2.5 px-3 text-slate-600">${santri.guru}</td>
+            <td class="py-2.5 px-3 text-center">${statusBadge}</td>
             <td class="py-2.5 px-3 text-center">
               <div class="flex items-center justify-center gap-1">
-                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Hadir')" class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold hover:bg-emerald-200">Hadir</button>
-                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Sakit')" class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold hover:bg-blue-200">Sakit</button>
-                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Izin')" class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold hover:bg-amber-200">Izin</button>
-                <button onclick="setStatusSingleSantri('${santri.id}', '${santri.nama}', '${santri.kelas}', 'Tidak Hadir')" class="px-1.5 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-bold hover:bg-red-200">Alfa</button>
+                <button type="button" onclick="processPresensiData('${santri.id}', 'Hadir')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-[10px] font-bold cursor-pointer">Hadir</button>
+                <button type="button" onclick="processPresensiData('${santri.id}', 'Sakit')" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 rounded-lg text-[10px] font-bold cursor-pointer">Sakit</button>
+                <button type="button" onclick="processPresensiData('${santri.id}', 'Izin')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-lg text-[10px] font-bold cursor-pointer">Izin</button>
+                <button type="button" onclick="processPresensiData('${santri.id}', 'Tidak Hadir')" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded-lg text-[10px] font-bold cursor-pointer">Alfa</button>
               </div>
             </td>
-          </tr>
-        `;
-      }).join('');
+          </tr>`;
+      });
 
-      document.getElementById("rekapTotalHadir").innerText = totalHadirCount;
-      document.getElementById("rekapTotalAbsen").innerText = totalAbsenCount;
-      document.getElementById("rekapKelasTerpilih").innerText = kelasFilter === "SEMUA" ? "Semua Kelas" : "Kelas " + kelasFilter;
-      document.getElementById("rekapTanggalTerpilih").innerText = tanggalFilter ? tanggalFilter : "Hari Ini";
-
-      tbody.innerHTML = rowsHtml;
+      if (totalHadirEl) totalHadirEl.innerText = countHadir;
+      if (totalAbsenEl) totalAbsenEl.innerText = countAbsen;
+      if (tbody) tbody.innerHTML = html;
     }
 
-    function updateStats() {
-      const total = presensiHistory.length;
-      const success = presensiHistory.filter(i => i.statusSheet === "Tersimpan").length;
-      const local = presensiHistory.filter(i => i.statusSheet === "Lokal").length;
+    // SHOW ALERT
+    function showAlert(title, message, type = "info") {
+      const alertBox = document.getElementById("statusAlert");
+      const alertIcon = document.getElementById("statusAlertIcon");
+      const alertTitle = document.getElementById("statusAlertTitle");
+      const alertMsg = document.getElementById("statusAlertMessage");
 
-      document.getElementById("statTotal").innerText = total;
-      document.getElementById("statSuccess").innerText = success;
-      document.getElementById("statLocal").innerText = local;
-    }
+      if (!alertBox || !alertTitle || !alertMsg) return;
 
-    function saveHistoryToStorage() {
-      localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
-    }
+      alertTitle.innerText = title;
+      alertMsg.innerText = message;
 
-    function clearHistory() {
-      presensiHistory = [];
-      saveHistoryToStorage();
-      renderHistoryTable();
-      renderRekapTable();
-      updateStats();
-      updateAlertStatus("error", "Seluruh riwayat presensi lokal telah dibersihkan", "DISELURUHKAN");
-    }
-
-    function toggleAudio() {
-      isAudioEnabled = !isAudioEnabled;
-      document.getElementById("audioText").innerText = isAudioEnabled ? "Suara: ON" : "Suara: OFF";
-      document.getElementById("audioIcon").className = isAudioEnabled ? "fa-solid fa-volume-high text-emerald-600" : "fa-solid fa-volume-xmark text-slate-400";
-    }
-
-    function switchTab(tabName) {
-      const scanBtn = document.getElementById("tab-scan-btn");
-      const tidakHadirBtn = document.getElementById("tab-tidak-hadir-btn");
-      const rekapBtn = document.getElementById("tab-rekap-btn");
-
-      const scanContent = document.getElementById("tab-scan-content");
-      const tidakHadirContent = document.getElementById("tab-tidak-hadir-content");
-      const rekapContent = document.getElementById("tab-rekap-content");
-
-      scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
-      tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
-      rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-transparent text-slate-500 hover:text-emerald-700 text-sm sm:text-base font-bold flex items-center gap-2 transition whitespace-nowrap";
-
-      scanContent.classList.add("hidden");
-      tidakHadirContent.classList.add("hidden");
-      rekapContent.classList.add("hidden");
-
-      if (tabName === "scan") {
-        scanBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
-        scanContent.classList.remove("hidden");
-      } else if (tabName === "tidak-hadir") {
-        tidakHadirBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
-        tidakHadirContent.classList.remove("hidden");
-      } else if (tabName === "rekap") {
-        rekapBtn.className = "py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap";
-        rekapContent.classList.remove("hidden");
-        renderRekapTable();
+      if (type === "success") {
+        alertBox.className = "bg-emerald-50 border border-emerald-300 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
+        if (alertIcon) alertIcon.className = "w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg flex-shrink-0 border border-emerald-400";
+      } else if (type === "warning") {
+        alertBox.className = "bg-amber-50 border border-amber-300 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
+        if (alertIcon) alertIcon.className = "w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg flex-shrink-0 border border-amber-400";
+      } else {
+        alertBox.className = "bg-red-50 border border-red-300 rounded-2xl p-3.5 sm:p-4 shadow-sm flex items-center space-x-3 transition-all";
+        if (alertIcon) alertIcon.className = "w-10 h-10 rounded-xl bg-red-100 text-red-800 flex items-center justify-center text-lg flex-shrink-0 border border-red-400";
       }
     }
 
-    function startCamera() {
-      if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-      }
-
-      const config = { fps: 25, qrbox: { width: 180, height: 180 } };
-
-      html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-        .then(() => {
-          isCameraActive = true;
-          document.getElementById("cameraStartOverlay").classList.add("hidden");
-          document.getElementById("stopCamBtn").classList.remove("hidden");
-          document.getElementById("scanStatusBadge").innerText = "Kamera Aktif";
-          document.getElementById("scanStatusBadge").className = "text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200";
-        })
-        .catch(() => {
-          html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
-            .then(() => {
-              isCameraActive = true;
-              document.getElementById("cameraStartOverlay").classList.add("hidden");
-              document.getElementById("stopCamBtn").classList.remove("hidden");
-              document.getElementById("scanStatusBadge").innerText = "Kamera Aktif";
-              document.getElementById("scanStatusBadge").className = "text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200";
-            })
-            .catch(err => {
-              updateAlertStatus("error", "Gagal membuka kamera: " + err, "ERR KAMERA");
-            });
-        });
-    }
-
-    function stopCamera() {
-      if (html5QrCode && isCameraActive) {
-        html5QrCode.stop().then(() => {
-          isCameraActive = false;
-          document.getElementById("cameraStartOverlay").classList.remove("hidden");
-          document.getElementById("stopCamBtn").classList.add("hidden");
-          document.getElementById("scanStatusBadge").innerText = "Kamera Nonaktif";
-          document.getElementById("scanStatusBadge").className = "text-[10px] sm:text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold border border-slate-200";
-        }).catch(err => console.error(err));
-      }
-    }
-
+    // EXPORT TO CSV
     function exportCSV() {
       if (presensiHistory.length === 0) {
-        updateAlertStatus("error", "Tidak ada data untuk di-export!", "PERHATIAN");
+        showAlert("PERHATIAN", "Tidak ada data riwayat untuk diexport!", "warning");
         return;
       }
-      let csv = "Hari / Tanggal,ID Santri,Nama Santri,Kelas,Guru,Keterangan,Status Sheet\n";
-      presensiHistory.forEach(row => {
-        csv += `"${row.hariTanggal}","${row.idSantri}","${row.namaSantri}","${row.kelas}","${row.guru}","${row.statusAbsen || 'Hadir'}","${row.statusSheet}"\n`;
+      let csv = "ID Santri,Nama Santri,Kelas,Guru,Waktu,Hari,Status\n";
+      presensiHistory.forEach(item => {
+        csv += `"${item.idSantri}","${item.namaSantri}","${item.kelas}","${item.guru}","${item.waktu}","${item.hari}","${item.status}"\n`;
       });
-      downloadFile(csv, `Presensi_Santri_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+      downloadFile(csv, "presensi_santri_rq_alkhansa.csv", "text/csv");
     }
 
     function exportRekapCSV() {
-      const tbody = document.getElementById("rekapTableBody");
-      const rows = tbody.querySelectorAll("tr");
-      if (rows.length === 0 || rows[0].cells.length <= 1) {
-        updateAlertStatus("error", "Tidak ada data rekap untuk di-export!", "PERHATIAN");
-        return;
-      }
-
-      let csv = "No,Hari / Tanggal,Nama Santri,Kelas,Guru,Kehadiran\n";
-      rows.forEach(row => {
-        const cells = row.querySelectorAll("td");
-        if (cells.length >= 6) {
-          csv += `"${cells[0].innerText}","${cells[1].innerText}","${cells[2].innerText}","${cells[3].innerText}","${cells[4].innerText}","${cells[5].innerText.trim()}"\n`;
-        }
+      let csv = "ID Santri,Nama Santri,Kelas,Guru,Status\n";
+      MASTER_SANTRI_LIST.forEach(s => {
+        const log = presensiHistory.find(h => h.idSantri === s.id);
+        const status = log ? log.status : "Belum Absen";
+        csv += `"${s.id}","${s.nama}","${s.kelas}","${s.guru}","${status}"\n`;
       });
-      downloadFile(csv, `Rekap_Presensi_Kelas_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+      downloadFile(csv, "rekap_kelas_rq_alkhansa.csv", "text/csv");
     }
 
     function downloadFile(content, fileName, mimeType) {
       const a = document.createElement('a');
       mimeType = mimeType || 'application/octet-stream';
-
       if (navigator.msSaveBlob) {
         navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
       } else if (URL && 'download' in a) {
         a.href = URL.createObjectURL(new Blob([content], { type: mimeType }));
         a.setAttribute('download', fileName);
         document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        setTimeout(() => {
+          a.click();
+          document.body.removeChild(a);
+        }, 66);
+      } else {
+        location.href = 'data:application/octet-stream,' + encodeURIComponent(content);
+      }
+    }
+
+    // SAMPLE QR GENERATION
+    function generateSampleQRs() {
+      const qrs = [
+        { id: "qr1", text: "IDSRQ001" },
+        { id: "qr2", text: "IDSRQ003" },
+        { id: "qr3", text: "IDSRQ074" }
+      ];
+      qrs.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el && typeof QRCode !== "undefined") {
+          try {
+            el.innerHTML = "";
+            new QRCode(el, {
+              text: item.text,
+              width: 75,
+              height: 75
+            });
+          } catch(e) {}
+        }
+      });
+    }
+
+    // MODAL CONTROL FUNCTIONS
+    function openConfigModal() {
+      const modal = document.getElementById("configModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+      }
+    }
+
+    function closeConfigModal() {
+      const modal = document.getElementById("configModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "none";
       }
     }
 
     function openSampleModal() {
-      document.getElementById("sampleModal").classList.remove("hidden");
-      
-      document.getElementById("qr1").innerHTML = "";
-      document.getElementById("qr2").innerHTML = "";
-      document.getElementById("qr3").innerHTML = "";
-
-      new QRCode(document.getElementById("qr1"), { text: "IDSRQ001", width: 80, height: 80 });
-      new QRCode(document.getElementById("qr2"), { text: "IDSRQ003", width: 80, height: 80 });
-      new QRCode(document.getElementById("qr3"), { text: "IDSRQ074", width: 80, height: 80 });
+      const modal = document.getElementById("sampleModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+        generateSampleQRs();
+      }
     }
 
-    window.onload = function() {
-      document.getElementById("guruSelect").value = selectedGuru;
+    function closeSampleModal() {
+      const modal = document.getElementById("sampleModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "none";
+      }
+    }
+
+    function saveSettings() {
+      const scriptUrlInput = document.getElementById("scriptUrlInput");
+      const driveLogoInput = document.getElementById("driveLogoInput");
+
+      if (scriptUrlInput) {
+        currentScriptUrl = scriptUrlInput.value.trim();
+        try { localStorage.setItem("presensi_script_url", currentScriptUrl); } catch(e) {}
+      }
+      if (driveLogoInput) {
+        customLogoDriveId = driveLogoInput.value.trim();
+        try { localStorage.setItem("presensi_logo_drive_id", customLogoDriveId); } catch(e) {}
+      }
 
       applyCustomLogo();
-      renderStudentSelect(MASTER_SANTRI_LIST);
-      renderHistoryTable();
-      updateStats();
-      fetchStudentData();
-    };
+      closeConfigModal();
+      showAlert("PENGATURAN DISIMPAN", "URL Google Script & Logo berhasil diperbarui!", "success");
+    }
   </script>
 </body>
 </html>
