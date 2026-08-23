@@ -100,7 +100,7 @@
     </div>
   </header>
 
-  <!-- TAB NAVIGATION -->
+  <!-- TAB NAVIGATION (1: PEMINDAI, 2: KETIDAKHADIRAN, 3: REKAP KELAS) -->
   <div class="bg-white border-b border-emerald-100 px-4 sm:px-6 sticky top-16 sm:top-20 z-30 shadow-xs">
     <div class="max-w-5xl mx-auto flex space-x-2 sm:space-x-4 overflow-x-auto custom-scrollbar">
       <button type="button" onclick="switchTab('scan')" id="tab-scan-btn" class="py-3.5 px-3 sm:px-5 border-b-2 border-emerald-600 text-emerald-700 text-sm sm:text-base font-extrabold flex items-center gap-2 transition whitespace-nowrap cursor-pointer">
@@ -555,7 +555,7 @@
       presensiHistory = [];
     }
 
-    // MASTER SANTRI DATA (87 SANTRI LENGKAP DENGAN GURU MASING-MASING)
+    // MASTER SANTRI DATA (87 SANTRI LENGKAP PRESISI DENGAN GOOGLE SHEET)
     const MASTER_SANTRI_LIST = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
@@ -672,7 +672,7 @@
         // Ambil riwayat dari Google Sheet untuk pertama kali
         fetchHistoryFromSheets();
 
-        // Auto-Sync dari Cloud Google Sheets setiap 8 detik
+        // Auto-Sync dari Cloud Google Sheets setiap 8 detik (Real-time Multi-Device)
         setInterval(fetchHistoryFromSheets, 8000);
 
         setTimeout(generateSampleQRs, 300);
@@ -681,18 +681,40 @@
       }
     });
 
-    // AMBIL DATA RIWAYAT CLOUD DARI GOOGLE SHEETS
+    // AMBIL DATA RIWAYAT CLOUD DARI GOOGLE SHEETS DENGAN CACHE-BUSTING
     function fetchHistoryFromSheets() {
       if (!currentScriptUrl) return;
 
-      fetch(currentScriptUrl)
+      const syncUrl = currentScriptUrl + (currentScriptUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+
+      fetch(syncUrl)
         .then(response => response.json())
         .then(data => {
-          if (data && data.status === "online" && Array.isArray(data.history)) {
-            presensiHistory = data.history;
+          if (data && (data.status === "online" || data.status === "success") && Array.isArray(data.history)) {
+            
+            // Cocokkan data dari sheet dengan master santri
+            presensiHistory = data.history.map(item => {
+              const masterMatch = MASTER_SANTRI_LIST.find(s => 
+                s.id.toLowerCase() === item.idSantri.toLowerCase() ||
+                s.nama.toLowerCase() === item.namaSantri.toLowerCase()
+              );
+              
+              return {
+                key: item.key || Math.random().toString(36).substring(2, 10),
+                idSantri: masterMatch ? masterMatch.id : (item.idSantri || "MANUAL"),
+                namaSantri: masterMatch ? masterMatch.nama : (item.namaSantri || "Santri"),
+                kelas: masterMatch ? masterMatch.kelas : (item.kelas || "-"),
+                guru: masterMatch ? masterMatch.guru : (item.guru || selectedGuru),
+                waktu: item.waktu || "-",
+                hari: item.hari || "-",
+                status: item.status || "Hadir"
+              };
+            });
+
             try {
               localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
             } catch(e) {}
+
             renderHistoryTable();
             renderRekapTable();
           }
@@ -939,7 +961,6 @@
       let guruPilih = santri ? santri.guru : selectedGuru;
 
       const now = new Date();
-      const timeZone = "Asia/Jakarta";
       const formattedDateTime = now.toLocaleDateString("id-ID", {
         day: "2-digit", month: "2-digit", year: "numeric"
       }) + " " + now.toLocaleTimeString("id-ID", {
@@ -961,7 +982,7 @@
         timestamp: Date.now()
       };
 
-      // Push to local history
+      // Simpan ke riwayat lokal
       presensiHistory.unshift(record);
       try {
         localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
@@ -1010,7 +1031,7 @@
 
       const itemToDelete = presensiHistory[index];
 
-      // Remove from local array
+      // Hapus dari memori lokal
       presensiHistory.splice(index, 1);
       try {
         localStorage.setItem("presensi_history_logs", JSON.stringify(presensiHistory));
@@ -1021,7 +1042,7 @@
 
       showAlert("DIHAPUS", `Presensi ${itemToDelete.namaSantri} telah dibatalkan.`, "warning");
 
-      // Dispatch delete action to Google Sheet
+      // Kirim perintah hapus baris ke Google Sheet
       if (currentScriptUrl) {
         fetch(currentScriptUrl, {
           method: "POST",
@@ -1131,7 +1152,7 @@
 
       let html = "";
       filteredSantri.forEach((santri, idx) => {
-        // Cari apakah santri memiliki catatan presensi
+        // Cari catatan presensi santri
         const log = presensiHistory.find(h => h.idSantri === santri.id || h.namaSantri.toLowerCase() === santri.nama.toLowerCase());
 
         let statusText = "⚪ Belum Absen";
