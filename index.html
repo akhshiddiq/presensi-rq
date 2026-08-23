@@ -515,10 +515,16 @@
   </div>
 
   <script>
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyR7Vm0G1_TKiJTfXLFIpCiNsIKvUHe6MOH2cQBs-7vXB8IUEABg1wJqcsUpvzdiJu9/exec";
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7gfWLT8qCDhZTnX-bE2QrWEsAPoHNtktDaTlDszUVUyydC4tElSC__E57Dh3n2ZJd/exec";
     const DEFAULT_LOGO_DRIVE_ID = "1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
 
     let currentScriptUrl = localStorage.getItem("presensi_script_url") || DEFAULT_SCRIPT_URL;
+    // Otomatis memperbarui ke URL baru jika masih menggunakan URL default lama
+    if (currentScriptUrl.includes("AKfycbyR7Vm0G1_TKiJTfXLFIpCiNsIKvUHe6MOH2cQBs-7vXB8IUEABg1wJqcsUpvzdiJu9")) {
+      currentScriptUrl = DEFAULT_SCRIPT_URL;
+      localStorage.setItem("presensi_script_url", currentScriptUrl);
+    }
+
     let customLogoDriveId = localStorage.getItem("presensi_logo_drive_id") || DEFAULT_LOGO_DRIVE_ID;
 
     let isAudioEnabled = true;
