@@ -5,21 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Presensi Santri RQ Al-Khansa</title>
 
-  <!-- 1. MUAT LIBRARY TAILWIND TERLEBIH DAHULU -->
+  <!-- 1. TAILWIND CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- 2. KONFIGURASI TEMA WARNA LOGO RQ AL-KHANSA -->
+  <!-- 2. KONFIGURASI TEMA WARNA (Hijau Muda, Hijau Tua, Kuning/Emas) -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             brand: {
-              green: '#065f46',      /* Hijau Tua Logo (Emerald 800) */
-              light: '#f8fafc',      /* Latar Belakang Abu-abu terang/putih */
+              green: '#059669',      /* Hijau Muda (Emerald 600) untuk Header & Tombol Utama */
+              border: '#064e3b',     /* Hijau Tua (Emerald 900) untuk Pinggiran / Bawah Header */
+              light: '#f8fafc',      /* Latar Belakang Abu-abu terang / putih */
               accent: '#d97706',     /* Kuning/Emas Logo (Amber 600) */
               dark: '#022c22',       /* Hijau Sangat Gelap */
-              gold: '#fbbf24'        /* Kuning Terang (Amber 400) */
+              gold: '#fbbf24',       /* Kuning Terang (Amber 400) */
+              button: '#047857'      /* Hijau Sedang (Emerald 700) */
             }
           },
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
@@ -33,10 +35,9 @@
     }
   </script>
 
-  <!-- 3. LIBRARY EKSTERNAL (FontAwesome, HTML5-QRCode, Tone.js, SweetAlert2) -->
+  <!-- 3. LIBRARY EKSTERNAL (FontAwesome, HTML5-QRCode, SweetAlert2) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
@@ -50,11 +51,12 @@
     
     /* --- Ornamen Islami / Geometric Pattern pada Header --- */
     .bg-islamic-pattern {
-      background-color: #065f46; 
-      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-color: #059669; /* Hijau Muda */
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4H-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      border-bottom: 6px solid #064e3b; /* Pinggir Hijau Tua */
     }
 
-    /* --- Navigasi Pill Modern --- */
+    /* --- Navigasi Tab Pill Modern --- */
     .nav-btn { 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
       color: #64748b; 
@@ -66,13 +68,13 @@
     }
     .nav-btn:hover:not(.active) { 
       background-color: #f1f5f9; 
-      color: #065f46;
+      color: #047857;
       border-color: #e2e8f0;
     }
     .nav-btn.active { 
-      background-color: #065f46; 
+      background-color: #047857; /* Hijau Sedang */
       color: #ffffff; 
-      box-shadow: 0 4px 14px 0 rgba(6, 95, 70, 0.39);
+      box-shadow: 0 4px 14px 0 rgba(4, 120, 87, 0.39);
     }
 
     /* --- Desain Card (Kartu) Elegan --- */
@@ -88,13 +90,13 @@
     }
     .feature-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 20px 40px -15px rgba(6, 95, 70, 0.1);
+      box-shadow: 0 20px 40px -15px rgba(4, 120, 87, 0.1);
     }
     .feature-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; height: 4px;
-      background: linear-gradient(90deg, #065f46, #d97706);
+      background: linear-gradient(90deg, #059669, #fbbf24);
       opacity: 0; transition: opacity 0.3s ease;
     }
     .feature-card:hover::before { opacity: 1; }
@@ -119,11 +121,10 @@
     }
     .modern-input:focus {
       background-color: #ffffff;
-      border-color: #065f46;
-      box-shadow: 0 0 0 4px rgba(6, 95, 70, 0.1);
+      border-color: #059669;
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
     }
     
-    /* Sticky Header untuk Tabel Riwayat */
     .table-container {
         max-height: 440px;
         overflow-y: auto;
@@ -132,19 +133,14 @@
         position: sticky;
         top: 0;
         z-index: 10;
-        background-color: #ecfdf5; /* emerald-50 */
+        background-color: #ecfdf5;
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
 
-  <!-- Header Sekolah Pengajian (Pattern Islami) -->
   <header class="bg-islamic-pattern text-white px-4 py-4 md:px-8 md:py-6 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-lg">
     <div class="flex items-center gap-4 w-full sm:w-auto mb-4 sm:mb-0">
-      <!-- Logo -->
-      <div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full p-1 shadow-gold border-2 border-brand-gold/30 flex-shrink-0 overflow-hidden relative">
-        <img src="https://drive.google.com/uc?export=view&id=1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo RQ" class="w-full h-full object-cover rounded-full bg-white relative z-10" onerror="this.src='https://placehold.co/100x100/065f46/ffffff?text=RQ'">
-      </div>
       <div>
         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
            <h1 class="text-xl md:text-2xl font-extrabold tracking-tight drop-shadow-md">
@@ -159,19 +155,17 @@
     </div>
     
     <div class="flex items-center gap-3 self-end sm:self-auto">
-      <button onclick="toggleAudio()" class="w-10 h-10 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/20">
+      <button onclick="toggleAudio()" class="w-10 h-10 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/20" title="Suara Beep Aktif/Mati">
         <i id="audioIcon" class="fas fa-volume-up text-sm"></i>
       </button>
-      <button onclick="bukaModalUrl()" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-xl text-xs font-bold text-white shadow-gold transition-all">
+      <button onclick="bukaModalUrl()" class="flex items-center gap-2 px-4 py-2 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-xl text-xs font-bold text-white shadow-gold transition-all">
         <i class="fas fa-cog text-white"></i> Pengaturan
       </button>
     </div>
   </header>
 
-  <!-- Main Content Area -->
   <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex flex-col gap-6">
     
-    <!-- Tab Navigasi Horizontal (Scrollable on mobile) -->
     <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-100/50 flex overflow-x-auto gap-2 hide-scrollbar sticky top-4 z-30 backdrop-blur-xl bg-white/80">
       <button onclick="switchTab('live')" id="tab-live" class="nav-btn active flex items-center gap-2">
         <i class="fas fa-camera-retro"></i> Pemindai & Manual
@@ -182,6 +176,9 @@
       <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-btn flex items-center gap-2">
         <i class="fas fa-calendar-alt"></i> Kalender Kelas
       </button>
+      <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-btn flex items-center gap-2">
+        <i class="fas fa-users"></i> Absen Per Kelas
+      </button>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
@@ -189,7 +186,7 @@
         <i class="fas fa-wifi-slash mt-1"></i>
         <div>
            <h4 class="font-bold text-sm">Koneksi Terputus</h4>
-           <p class="text-xs mt-1">Sistem sedang mencoba menghubungkan kembali ke Google Server...</p>
+           <p class="text-xs mt-1">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p>
         </div>
     </div>
 
@@ -205,13 +202,12 @@
                 <span class="text-sm font-semibold text-gray-700">Sistem Siap (0 Delay Sync)</span>
             </div>
             <div class="text-xs font-mono text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 truncate max-w-full" id="scriptUrlDisplay">
-               URL: Menghubungkan...
+               URL: Terhubung ke Google Sheet
             </div>
         </div>
 
-        <!-- Grid Layout Kiri-Kanan (Laptop) / Atas-Bawah (Mobile) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Kolom Kiri: Area Scanner & Manual -->
+            <!-- Kolom Kiri: Scanner & Manual -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- Card Scanner -->
                 <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4]">
@@ -225,8 +221,6 @@
                         <!-- Area Kamera -->
                         <div id="reader-container" class="hidden relative rounded-xl overflow-hidden border-2 border-emerald-500 shadow-inner bg-black mb-4 mx-auto aspect-square w-full max-w-[280px]">
                              <div id="reader" class="w-full h-full object-cover"></div>
-                             
-                             <!-- Garis Laser Pemindai -->
                              <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
                                  <div class="w-[70%] h-[70%] border-2 border-white/50 relative">
                                     <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-brand-gold -mt-1 -ml-1"></div>
@@ -238,7 +232,6 @@
                              </div>
                         </div>
 
-                        <!-- Tombol Kamera ON/OFF -->
                         <button id="btnToggleCam" onclick="toggleCamera()" class="w-full py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2">
                             <i class="fas fa-video"></i> Nyalakan Kamera
                         </button>
@@ -255,15 +248,9 @@
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih dari 87 Santri Terdaftar</label>
                             <select id="santriSelect" class="modern-input">
-                                <option value="">-- Pilih Nama Santri --</option>
+                                <option value="">-- Pilih Kelas - Nama Santri --</option>
                             </select>
                         </div>
-                        
-                        <div class="text-center relative">
-                            <hr class="border-gray-200">
-                            <span class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-[10px] text-gray-400 font-bold uppercase">ATAU</span>
-                        </div>
-
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Ketidakhadiran</label>
                             <select id="statusManual" class="modern-input border-amber-200 bg-amber-50 focus:border-brand-accent text-brand-accent font-semibold">
@@ -289,7 +276,6 @@
                            <p class="text-xs text-gray-500 mt-1">Data tersinkron otomatis antar perangkat & Google Sheet.</p>
                         </div>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <!-- Tombol Hapus Semua dihilangkan agar riwayat tidak mudah terhapus -->
                             <button onclick="downloadCSV('Riwayat_Hari_Ini.csv')" class="flex-grow sm:flex-grow-0 bg-brand-green text-white px-4 py-2 rounded-lg text-xs font-bold transition-all hover:bg-[#047857] shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 border border-brand-green">
                                <i class="fas fa-file-excel"></i> CSV
                             </button>
@@ -308,11 +294,9 @@
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody" class="text-sm divide-y divide-gray-50">
-                                <!-- Data Riwayat akan di-render di sini via JS -->
                             </tbody>
                         </table>
                     </div>
-                    <!-- Empty State (Fallback jika riwayat kosong) -->
                     <div id="emptyHistory" class="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 flex-grow">
                          <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
                          <p class="text-sm font-medium">Belum ada data presensi yang masuk hari ini.</p>
@@ -322,11 +306,9 @@
         </div>
     </div>
 
-    <!-- ================= TAB 2: LAPORAN BULANAN (REKAP PER KELAS) ================= -->
+    <!-- ================= TAB 2: LAPORAN BULANAN ================= -->
     <div id="view-rekap" class="hidden animate-fade-in">
         <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
-          
-          <!-- Bagian Filter -->
           <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
               <div class="flex items-center gap-3 mb-5">
                  <div class="w-10 h-10 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center"><i class="fas fa-filter"></i></div>
@@ -357,7 +339,6 @@
               </div>
           </div>
 
-          <!-- Bagian Ringkasan Angka (Stats) -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 sm:p-6 border-b border-gray-100">
              <div class="bg-white p-4 border border-emerald-100 rounded-xl shadow-sm text-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total Hadir</span>
@@ -376,7 +357,6 @@
              </div>
           </div>
           
-          <!-- Tabel Rekapitulasi -->
           <div class="overflow-x-auto w-full hide-scrollbar">
               <table class="w-full text-left border-collapse min-w-[700px]">
                   <thead>
@@ -390,14 +370,13 @@
                       </tr>
                   </thead>
                   <tbody id="rekapTableBody" class="text-sm divide-y divide-gray-100">
-                      <!-- Data tabel laporan disisipkan oleh JavaScript -->
                   </tbody>
               </table>
           </div>
         </div>
     </div>
 
-    <!-- ================= TAB 3: KALENDER PER KELAS ================= -->
+    <!-- ================= TAB 3: KALENDER KELAS ================= -->
     <div id="view-kalender" class="hidden animate-fade-in">
         <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
           <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
@@ -438,7 +417,6 @@
               </div>
           </div>
 
-          <!-- Legenda Warna -->
           <div class="p-4 border-b border-gray-100 bg-white flex flex-wrap gap-4 justify-center text-xs font-bold text-gray-600">
              <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-emerald-500"></div> Hadir</span>
              <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-blue-500"></div> Sakit</span>
@@ -447,14 +425,11 @@
              <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-gray-100 border border-gray-200"></div> Kosong</span>
           </div>
 
-          <!-- Area Kalender Horizontal (Scroll Kanan/Kiri) -->
           <div class="p-0 overflow-x-auto relative w-full border-b border-gray-100" style="max-height: 60vh;">
                <table class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-max">
                    <thead class="bg-emerald-50 text-brand-green sticky top-0 z-20">
                        <tr>
-                           <!-- Kolom Nama Siswa Di-freeze (Sticky Kiri) -->
                            <th class="p-3 border-r border-emerald-100 sticky left-0 bg-emerald-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-48 max-w-[200px]">Nama Santri</th>
-                           <!-- Kolom Tanggal 1-31 (Dihasilkan melalui JS) -->
                            <script>
                                for(let d=1; d<=31; d++) {
                                    document.write(`<th class="p-2 min-w-[30px] text-center border-r border-emerald-100 font-bold">${d}</th>`);
@@ -463,10 +438,67 @@
                        </tr>
                    </thead>
                    <tbody id="kalenderBody" class="divide-y divide-gray-100 text-gray-700">
-                        <!-- Baris siswa dihasilkan via JS -->
                         <tr><td colspan="32" class="p-8 text-center text-gray-400">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>
                    </tbody>
                </table>
+          </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 4: ABSEN PER KELAS (HORIZONTAL) ================= -->
+    <div id="view-persiswa" class="hidden animate-fade-in space-y-6">
+        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+          <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
+              <div class="flex items-center gap-3 mb-5">
+                 <div class="w-10 h-10 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center"><i class="fas fa-users"></i></div>
+                 <div>
+                    <h2 class="font-extrabold text-gray-800 text-lg">Absen Kalender Per Kelas</h2>
+                    <p class="text-xs text-gray-500">Pilih kelas & bulan untuk melihat rekapitulasi kalender seluruh siswa sekaligus.</p>
+                 </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
+                    <select id="persiswaKelasSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white font-bold text-brand-green"></select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Bulan</label>
+                    <select id="persiswaBulanSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white">
+                        <option value="0">Januari</option>
+                        <option value="1">Februari</option>
+                        <option value="2">Maret</option>
+                        <option value="3">April</option>
+                        <option value="4">Mei</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">Agustus</option>
+                        <option value="8">September</option>
+                        <option value="9">Oktober</option>
+                        <option value="10">November</option>
+                        <option value="11">Desember</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Tahun</label>
+                    <select id="persiswaTahunSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white"></select>
+                 </div>
+              </div>
+          </div>
+
+          <!-- Legenda Warna -->
+          <div class="p-4 border-b border-gray-100 bg-white flex flex-wrap gap-6 justify-center text-xs font-bold text-gray-700">
+             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-emerald-500 shadow-sm"></div> Hadir</span>
+             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-blue-500 shadow-sm"></div> Sakit</span>
+             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-amber-500 shadow-sm"></div> Izin</span>
+             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-red-500 shadow-sm"></div> Tidak Hadir (Alfa)</span>
+             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-gray-100 border border-gray-200"></div> Belum Ada Data</span>
+          </div>
+
+          <div class="p-4 overflow-x-auto relative w-full" style="max-height: 65vh;">
+               <div id="persiswaContainer" class="space-y-4 min-w-[900px]">
+                   <!-- Konten per siswa akan di-generate via JS -->
+               </div>
           </div>
         </div>
     </div>
@@ -477,47 +509,38 @@
     <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-camera text-base mb-0.5"></i> Pemindai</button>
     <button onclick="switchTab('rekap')" id="mob-rekap" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-chart-pie text-base mb-0.5"></i> Laporan</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-calendar-alt text-base mb-0.5"></i> Kalender</button>
+    <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-users text-base mb-0.5"></i> Per Kelas</button>
   </nav>
 
   <!-- Modal Pengaturan -->
   <div id="settingModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <!-- Backdrop Blur -->
     <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="tutupModalUrl()"></div>
-    <!-- Modal Content -->
     <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full relative z-10 animate-fade-in border border-gray-100">
         <div class="flex justify-between items-center mb-5 border-b border-gray-100 pb-3">
             <h3 class="text-lg font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem</h3>
             <button onclick="tutupModalUrl()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
         </div>
-        
         <div class="space-y-4 mb-6">
             <div>
                <label class="block text-xs font-bold text-gray-700 mb-1">URL Google Apps Script</label>
                <input type="text" id="inputUrlSheet" class="modern-input font-mono text-[10px]" placeholder="https://script.google.com/macros/s/...">
-               <p class="text-[10px] text-gray-400 mt-1.5"><i class="fas fa-info-circle"></i> Wajib diisi untuk menghubungkan web ke Database Google Sheet Anda.</p>
             </div>
-            <!-- Fitur Sinkronisasi -->
             <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-3">
                <div class="text-brand-green mt-0.5"><i class="fas fa-sync-alt"></i></div>
                <div>
                   <h4 class="text-xs font-bold text-brand-green">Auto-Sync Aktif</h4>
-                  <p class="text-[10px] text-gray-600 mt-0.5">Aplikasi secara otomatis menyinkronkan data antar HP & Laptop setiap 4 detik tanpa menekan tombol refresh.</p>
+                  <p class="text-[10px] text-gray-600 mt-0.5">Sinkronisasi otomatis aktif setiap 4 detik.</p>
                </div>
             </div>
         </div>
-
-        <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3.5 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95">
-           Simpan Pengaturan
-        </button>
+        <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3.5 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95">Simpan Pengaturan</button>
     </div>
   </div>
 
-  <!-- Audio Files (Base64 untuk offline support) -->
   <audio id="beepOk" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
   <audio id="beepError" src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3" preload="auto"></audio>
 
   <script>
-    // ================= DATA MASTER 87 SANTRI (Sinkronisasi dengan Google Sheet) =================
     const masterDataSantri = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ002", nama: "M Zaidan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
@@ -608,15 +631,10 @@
       { id: "IDSRQ087", nama: "Abyan", kelas: "Utsman", guru: "Ustadz Sidik" }
     ];
 
-    // ================= VARIABEL GLOBAL & SISTEM URL =================
-    // URL Google Apps Script yang SAH dari Anda.
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
-    
-    // Auto-Set URL jika localStorage kosong atau salah
-    if(!localStorage.getItem('scriptUrlSheet') || localStorage.getItem('scriptUrlSheet') !== DEFAULT_SCRIPT_URL){
+    if(!localStorage.getItem('scriptUrlSheet')) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
     }
-    
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
     let presensiHistory = []; 
     let syncInterval;
@@ -625,13 +643,12 @@
     let isProcessing = false;
     let isCameraOn = false;
 
-    // ================= FUNGSI AUDIO & ALERT =================
     function playBeep(type) {
       if (!audioEnabled) return;
       try {
         if(type === 'ok') document.getElementById('beepOk').play();
         else if(type === 'error') document.getElementById('beepError').play();
-      } catch(e) { console.log("Audio play diizinkan setelah interaksi pengguna."); }
+      } catch(e) {}
     }
 
     function toggleAudio() {
@@ -643,56 +660,39 @@
       toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
     });
 
-    // ================= NAVIGASI TAB (SINGLE PAGE APP LOGIC) =================
     function switchTab(tabId) {
-      document.getElementById('view-live').classList.add('hidden');
-      document.getElementById('view-rekap').classList.add('hidden');
-      document.getElementById('view-kalender').classList.add('hidden');
-      
-      document.getElementById(`view-${tabId}`).classList.remove('hidden');
-      
-      // Update UI Tabs
-      ['live', 'rekap', 'kalender'].forEach(id => {
+      ['live', 'rekap', 'kalender', 'persiswa'].forEach(id => {
+         document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`);
          let mBtn = document.getElementById(`mob-${id}`);
-         if(dBtn) {
-             dBtn.classList.remove('active');
-             dBtn.classList.add('text-gray-500');
-         }
-         if(mBtn) {
-             mBtn.classList.remove('text-brand-green', 'active');
-             mBtn.classList.add('text-gray-400');
-         }
+         if(dBtn) { dBtn.classList.remove('active'); dBtn.classList.add('text-gray-500'); }
+         if(mBtn) { mBtn.classList.remove('text-brand-green', 'active'); mBtn.classList.add('text-gray-400'); }
       });
       
+      document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
       document.getElementById(`tab-${tabId}`)?.classList.add('active');
       document.getElementById(`tab-${tabId}`)?.classList.remove('text-gray-500');
       let mobBtn = document.getElementById(`mob-${tabId}`);
-      if(mobBtn){
-          mobBtn.classList.add('active', 'text-brand-green');
-          mobBtn.classList.remove('text-gray-400');
-      }
+      if(mobBtn){ mobBtn.classList.add('active', 'text-brand-green'); mobBtn.classList.remove('text-gray-400'); }
 
       if(tabId === 'rekap') renderRekapTable();
       if(tabId === 'kalender') prepareKalenderOptions();
+      if(tabId === 'persiswa') preparePerSiswaOptions();
     }
 
-    // ================= KONTROL KAMERA (ON/OFF) =================
     async function toggleCamera() {
         const btn = document.getElementById('btnToggleCam');
         const camContainer = document.getElementById('reader-container');
         
         if(isCameraOn) {
-            // MATIKAN
             try {
                 if(html5QrCode) await html5QrCode.stop();
                 isCameraOn = false;
                 camContainer.classList.add('hidden');
                 btn.innerHTML = '<i class="fas fa-video"></i> Nyalakan Kamera';
                 btn.className = "w-full py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2";
-            } catch(e) { console.warn("Gagal stop:", e); }
+            } catch(e) {}
         } else {
-            // NYALAKAN
             camContainer.classList.remove('hidden');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghubungkan Kamera...';
             btn.className = "w-full py-3.5 bg-gray-400 text-white rounded-xl font-bold flex justify-center items-center gap-2";
@@ -700,7 +700,7 @@
             try {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 await html5QrCode.start(
-                   { facingMode: "environment" }, // Kamera Belakang
+                   { facingMode: "environment" },
                    { fps: 10, qrbox: { width: 250, height: 250 } },
                    (decodedText) => { processScanResult(decodedText); }
                 );
@@ -708,7 +708,6 @@
                 btn.innerHTML = '<i class="fas fa-video-slash"></i> Matikan Kamera';
                 btn.className = "w-full py-3.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2";
             } catch (err) {
-                console.warn("Kamera ditolak/error:", err);
                 camContainer.classList.add('hidden');
                 isCameraOn = false;
                 btn.innerHTML = '<i class="fas fa-video"></i> Nyalakan Kamera';
@@ -717,14 +716,13 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Akses Kamera Terbatas',
-                    text: 'Browser/perangkat Anda menolak atau tidak memiliki akses kamera (sering terjadi di pratinjau editor). Silakan gunakan mode Input Manual.',
+                    text: 'Browser/perangkat Anda menolak atau tidak memiliki akses kamera (iframe preview). Silakan gunakan mode Input Manual.',
                     confirmButtonColor: '#065f46'
                 });
             }
         }
     }
 
-    // ================= PROSES PRESENSI (SCAN & MANUAL) =================
     function processScanResult(decodedText) {
        if (isProcessing) return;
        playBeep('ok');
@@ -736,32 +734,26 @@
     function processAbsenManual() {
        const select = document.getElementById('santriSelect');
        const status = document.getElementById('statusManual').value;
-       
        if (select.value === "") {
            Toast.fire({ icon: 'warning', title: 'Pilih nama santri dahulu!' });
            return;
        }
-       
        const santri = masterDataSantri.find(s => s.id === select.value);
        if (santri) {
            postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, status);
-           select.value = ""; // Reset setelah absen
+           select.value = "";
        }
     }
 
     function postDataToGoogle(idSantri, namaSantri, kelas, guru, status) {
        if (isProcessing) return;
        isProcessing = true;
-       
        const unikey = "temp_" + Date.now();
-       
-       // Tambahkan data ke tabel lokal SEGERA (0 Delay feeling)
        const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: getLocalWaktu(), hari: getLocalHari(), status, sync: 'loading' };
        if(!Array.isArray(presensiHistory)) presensiHistory = [];
        presensiHistory.unshift(tempRecord);
        renderHistoryTable();
 
-       // Kirim ke Google Script
        fetch(SCRIPT_URL, {
            method: 'POST',
            body: new URLSearchParams({ idSantri, namaSantri, kelas, guru, status, key: unikey })
@@ -771,7 +763,7 @@
            isProcessing = false;
            if(data.status === 'success') {
                Toast.fire({ icon: 'success', title: `${namaSantri} (${status}) Berhasil!` });
-               fetchHistoryFromSheets(); // Sinkronisasi ulang secara presisi
+               fetchHistoryFromSheets();
            } else {
                playBeep('error');
                Toast.fire({ icon: 'error', title: 'Gagal mencatat di server.' });
@@ -785,7 +777,6 @@
 
     function hapusData(key, event) {
         if(event) event.stopPropagation();
-        
         Swal.fire({
             title: 'Batalkan Presensi?',
             text: "Data akan dihapus dari sistem.",
@@ -796,11 +787,8 @@
             confirmButtonText: 'Ya, Batalkan!'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Hapus lokal dulu
                 presensiHistory = presensiHistory.filter(item => item.key !== key);
                 renderHistoryTable();
-                
-                // Hapus di Google Sheet (Minta penghapusan berdasarkan Key/Waktu)
                 fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: new URLSearchParams({ action: 'delete', idSantri: key })
@@ -809,10 +797,8 @@
         });
     }
 
-    // ================= SINKRONISASI & TAMPILAN DATA =================
     function fetchHistoryFromSheets() {
         if(!SCRIPT_URL.includes("macros/s/")) return;
-        
         document.getElementById('scriptUrlDisplay').innerHTML = '<i class="fas fa-spinner fa-spin text-brand-green mr-1"></i> Syncing...';
         
         fetch(SCRIPT_URL)
@@ -820,12 +806,12 @@
         .then(data => {
             document.getElementById('offlineAlert').classList.add('hidden');
             document.getElementById('scriptUrlDisplay').innerHTML = '<i class="fas fa-check-circle text-brand-green mr-1"></i> Connected';
-            
             if(data.status === 'online' && Array.isArray(data.history)) {
                 presensiHistory = data.history;
                 renderHistoryTable();
-                if(document.getElementById('view-rekap').classList.contains('hidden') === false) renderRekapTable();
-                if(document.getElementById('view-kalender').classList.contains('hidden') === false) renderClassCalendar();
+                if(!document.getElementById('view-rekap').classList.contains('hidden')) renderRekapTable();
+                if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
+                if(!document.getElementById('view-persiswa').classList.contains('hidden')) renderPerSiswaCalendar();
             }
         })
         .catch(err => {
@@ -837,23 +823,17 @@
     function renderHistoryTable() {
         const tbody = document.getElementById('historyTableBody');
         const emptyState = document.getElementById('emptyHistory');
-        
         if (!presensiHistory || presensiHistory.length === 0) {
             tbody.innerHTML = '';
             emptyState.classList.remove('hidden');
             return;
         }
-        
         emptyState.classList.add('hidden');
         let html = '';
-        
-        // Tampilkan maks 50 data terbaru agar UI tidak lambat
-        const recentData = presensiHistory.slice(0, 50);
-        
-        recentData.forEach(item => {
+        presensiHistory.slice(0, 50).forEach(item => {
             let statusBadge = '';
             const stLow = String(item.status).toLowerCase();
-            if(stLow.includes('hadir')) statusBadge = `<span class="bg-emerald-100 text-brand-green px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-check-circle"></i> Hadir</span>`;
+            if(stLow.includes('hadir') && !stLow.includes('tidak')) statusBadge = `<span class="bg-emerald-100 text-brand-green px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-check-circle"></i> Hadir</span>`;
             else if(stLow.includes('sakit')) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-bed"></i> Sakit</span>`;
             else if(stLow.includes('izin')) statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-envelope"></i> Izin</span>`;
             else statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-times-circle"></i> Alfa</span>`;
@@ -865,16 +845,9 @@
                             <i class="fas fa-trash-alt text-xs"></i>
                         </button>
                     </td>
-                    <td class="p-3">
-                        <p class="font-bold text-gray-700 whitespace-nowrap">${item.hari}</p>
-                        <p class="text-xs text-gray-400 font-mono">${item.waktu}</p>
-                    </td>
-                    <td class="p-3">
-                        <p class="font-bold text-gray-800">${item.namaSantri}</p>
-                    </td>
-                    <td class="p-3">
-                        <span class="text-xs font-bold text-brand-green">${item.kelas}</span>
-                    </td>
+                    <td class="p-3"><p class="font-bold text-gray-700 whitespace-nowrap">${item.hari}</p><p class="text-xs text-gray-400 font-mono">${item.waktu}</p></td>
+                    <td class="p-3"><p class="font-bold text-gray-800">${item.namaSantri}</p></td>
+                    <td class="p-3"><span class="text-xs font-bold text-brand-green">${item.kelas}</span></td>
                     <td class="p-3">${statusBadge}</td>
                 </tr>
             `;
@@ -882,25 +855,12 @@
         tbody.innerHTML = html;
     }
 
-    // ================= FUNGSI BANTUAN TANGGAL =================
-    // Fungsi ini bisa membaca berbagai format, bahkan jika ada "Kamis, 20/08/2026"
     function parseGoogleSheetDate(dateString) {
         if (!dateString) return null;
         try {
-            // Hapus nama hari jika ada (misal "Kamis, ")
-            let cleanStr = dateString.split(',').pop().trim(); 
-            // Ambil bagian tanggalnya saja (pisahkan dari jam)
-            let datePart = cleanStr.split(' ')[0]; // Contoh: 22/08/2026 atau 2026-08-22
-            
-            if (datePart.includes('/')) {
-                // Format dd/mm/yyyy
-                let parts = datePart.split('/');
-                if(parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
-            } else if (datePart.includes('-')) {
-                // Format yyyy-mm-dd
-                return new Date(datePart);
-            }
-            return new Date(cleanStr); // Fallback bawaan
+            let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) return new Date(match[3], match[2] - 1, match[1]);
+            return new Date(dateString);
         } catch(e) { return null; }
     }
 
@@ -910,11 +870,9 @@
     }
     
     function getLocalHari() {
-        const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-        return days[new Date().getDay()];
+        return ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][new Date().getDay()];
     }
 
-    // ================= LAPORAN BULANAN / REKAP (TAB 2) =================
     function renderRekapTable() {
         const kelasFilter = document.getElementById('rekapFilterKelas').value;
         const startDateStr = document.getElementById('rekapFilterTanggalMulai').value;
@@ -922,7 +880,6 @@
         const tbody = document.getElementById('rekapTableBody');
         
         if(!Array.isArray(presensiHistory)) presensiHistory = [];
-
         let start = startDateStr ? new Date(startDateStr) : null;
         let end = endDateStr ? new Date(endDateStr) : null;
         if (start) start.setHours(0, 0, 0, 0);
@@ -932,19 +889,13 @@
             let itemDate = parseGoogleSheetDate(item.waktu);
             let classMatch = (kelasFilter === "Semua Kelas" || item.kelas === kelasFilter);
             let dateMatch = true;
-            
-            if (itemDate && start && end) {
-                dateMatch = (itemDate >= start && itemDate <= end);
-            } else if (itemDate && start) {
-                dateMatch = (itemDate >= start);
-            } else if (itemDate && end) {
-                dateMatch = (itemDate <= end);
-            }
+            if (itemDate && start && end) dateMatch = (itemDate >= start && itemDate <= end);
+            else if (itemDate && start) dateMatch = (itemDate >= start);
+            else if (itemDate && end) dateMatch = (itemDate <= end);
             return classMatch && dateMatch;
         });
 
-        let totalHadir = 0; let totalAbsen = 0; let html = '';
-        
+        let totalHadir = 0, totalAbsen = 0, html = '';
         if (filterResult.length === 0) {
             html = `<tr><td colspan="6" class="p-8 text-center text-gray-400 font-medium">Data presensi tidak ditemukan pada filter ini.</td></tr>`;
         } else {
@@ -952,10 +903,7 @@
                 const st = String(item.status).toLowerCase();
                 let isHadir = st.includes('hadir') && !st.includes('tidak');
                 if (isHadir) totalHadir++; else totalAbsen++;
-                
-                let badge = isHadir 
-                   ? `<span class="px-2 py-1 bg-emerald-100 text-brand-green text-[10px] font-extrabold rounded"><i class="fas fa-check"></i> Hadir</span>` 
-                   : `<span class="px-2 py-1 bg-amber-100 text-brand-accent text-[10px] font-extrabold rounded"><i class="fas fa-times"></i> ${item.status}</span>`;
+                let badge = isHadir ? `<span class="px-2 py-1 bg-emerald-100 text-brand-green text-[10px] font-extrabold rounded"><i class="fas fa-check"></i> Hadir</span>` : `<span class="px-2 py-1 bg-amber-100 text-brand-accent text-[10px] font-extrabold rounded"><i class="fas fa-times"></i> ${item.status}</span>`;
 
                 html += `
                     <tr class="hover:bg-gray-50 transition-colors">
@@ -969,33 +917,25 @@
                 `;
             });
         }
-
         tbody.innerHTML = html;
         document.getElementById('statTotalHadir').innerText = totalHadir;
         document.getElementById('statTotalAbsen').innerText = totalAbsen;
         document.getElementById('statKelasTampil').innerText = kelasFilter;
     }
 
-    // ================= KALENDER KELAS HORIZONTAL (TAB 3) =================
     function prepareKalenderOptions() {
         const selKelas = document.getElementById('kalenderKelasSelect');
         const selTahun = document.getElementById('kalenderTahunSelect');
-        
-        // Isi Kelas Unik
         const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
         if(selKelas.options.length <= 1) {
             selKelas.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
         }
-        
-        // Isi Tahun
         if(selTahun.options.length === 0) {
             const currentYear = new Date().getFullYear();
             for(let y = currentYear - 1; y <= currentYear + 2; y++) {
                 selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
             }
         }
-        
-        // Set Bulan Ini
         document.getElementById('kalenderBulanSelect').value = new Date().getMonth();
         renderClassCalendar();
     }
@@ -1005,8 +945,6 @@
         const selBulan = parseInt(document.getElementById('kalenderBulanSelect').value);
         const selTahun = parseInt(document.getElementById('kalenderTahunSelect').value);
         const tbody = document.getElementById('kalenderBody');
-        
-        // Cari semua santri di kelas tersebut
         const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
         
         if(studentsInClass.length === 0) {
@@ -1015,64 +953,127 @@
         }
 
         let html = '';
-        
         studentsInClass.forEach(santri => {
             html += `<tr class="hover:bg-slate-50 transition-colors">`;
-            // Kolom Nama (Sticky)
             html += `<td class="p-3 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${santri.nama}">${santri.nama}</td>`;
             
-            // Loop Tanggal 1 s.d 31
             for (let d = 1; d <= 31; d++) {
-                let cellColor = '';
-                
-                // Cek apakah tanggal ini valid di bulan tersebut
                 let targetDate = new Date(selTahun, selBulan, d);
                 if (targetDate.getMonth() !== selBulan) {
                     html += `<td class="p-2 border-r border-gray-100 bg-gray-50 text-center">-</td>`;
-                    continue; // Skip tanggal tidak valid (misal 31 Feb)
+                    continue;
                 }
 
-                // Cari status presensi santri ini pada tanggal d, bulan selBulan, tahun selTahun
                 let record = presensiHistory.find(item => {
                     let itemDate = parseGoogleSheetDate(item.waktu);
                     if(!itemDate) return false;
-                    
-                    // Gunakan pencocokan ID string karena lebih presisi (mengatasi kapital/kecil)
-                    let nameMatch = false;
-                    if(item.idSantri && item.idSantri.trim().toLowerCase() === santri.id.toLowerCase()) nameMatch = true;
-                    if(item.namaSantri && item.namaSantri.trim().toLowerCase() === santri.nama.toLowerCase()) nameMatch = true;
-                    
-                    return nameMatch &&
-                           itemDate.getDate() === d && 
-                           itemDate.getMonth() === selBulan && 
-                           itemDate.getFullYear() === selTahun;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
                 });
 
                 if (record) {
                     const st = String(record.status).toLowerCase();
-                    if(st.includes('hadir') && !st.includes('tidak')) cellColor = 'bg-emerald-500 shadow-[inset_0_0_0_2px_#fff]'; // Hijau
-                    else if(st.includes('sakit')) cellColor = 'bg-blue-500 shadow-[inset_0_0_0_2px_#fff]'; // Biru
-                    else if(st.includes('izin')) cellColor = 'bg-amber-500 shadow-[inset_0_0_0_2px_#fff]'; // Kuning
-                    else cellColor = 'bg-red-500 shadow-[inset_0_0_0_2px_#fff]'; // Merah Alfa
+                    let colorClass = 'bg-emerald-500';
+                    if(st.includes('sakit')) colorClass = 'bg-blue-500';
+                    else if(st.includes('izin')) colorClass = 'bg-amber-500';
+                    else if(!st.includes('hadir')) colorClass = 'bg-red-500';
                     
-                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[30px]"><div class="w-5 h-5 mx-auto rounded-md ${cellColor}" title="${record.status}"></div></td>`;
+                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[30px]"><div class="w-5 h-5 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
                 } else {
                     html += `<td class="p-1 border-r border-gray-100 min-w-[30px]"><div class="w-5 h-5 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`;
                 }
             }
             html += `</tr>`;
         });
-        
         tbody.innerHTML = html;
     }
 
-    // ================= FUNGSI EKSPORT CSV =================
+    function preparePerSiswaOptions() {
+        const selKelas = document.getElementById('persiswaKelasSelect');
+        const selTahun = document.getElementById('persiswaTahunSelect');
+        const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
+        if(selKelas.options.length <= 1) {
+            selKelas.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        if(selTahun.options.length === 0) {
+            const currentYear = new Date().getFullYear();
+            for(let y = currentYear - 1; y <= currentYear + 2; y++) {
+                selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+            }
+        }
+        document.getElementById('persiswaBulanSelect').value = new Date().getMonth();
+        renderPerSiswaCalendar();
+    }
+
+    function renderPerSiswaCalendar() {
+        const selKelas = document.getElementById('persiswaKelasSelect').value;
+        const selBulan = parseInt(document.getElementById('persiswaBulanSelect').value);
+        const selTahun = parseInt(document.getElementById('persiswaTahunSelect').value);
+        const container = document.getElementById('persiswaContainer');
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+
+        if(studentsInClass.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-400 p-8">Tidak ada santri di kelas ini.</p>`;
+            return;
+        }
+
+        let daysInMonth = new Date(selTahun, selBulan + 1, 0).getDate();
+        let html = '';
+
+        studentsInClass.forEach(santri => {
+            html += `
+                <div class="bg-slate-50 border border-gray-200 rounded-2xl p-4 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 pb-2 border-b border-gray-200 gap-2">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm md:text-base">${santri.nama}</h4>
+                            <p class="text-[11px] text-gray-500 font-mono">Kelas: ${santri.kelas} | Guru: ${santri.guru}</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto hide-scrollbar">
+                        <div class="inline-flex gap-1.5 pb-2">
+            `;
+
+            for(let d = 1; d <= daysInMonth; d++) {
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu);
+                    if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
+                });
+
+                let bgClass = "bg-white border border-gray-200 text-gray-400";
+                let statusText = "Belum Ada Data";
+                if(record) {
+                    const st = String(record.status).toLowerCase();
+                    if(st.includes('hadir') && !st.includes('tidak')) { bgClass = "bg-emerald-500 text-white font-bold shadow-sm"; statusText = "Hadir"; }
+                    else if(st.includes('sakit')) { bgClass = "bg-blue-500 text-white font-bold shadow-sm"; statusText = "Sakit"; }
+                    else if(st.includes('izin')) { bgClass = "bg-amber-500 text-white font-bold shadow-sm"; statusText = "Izin"; }
+                    else { bgClass = "bg-red-500 text-white font-bold shadow-sm"; statusText = "Tidak Hadir (Alfa)"; }
+                }
+
+                html += `
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-gray-500 font-bold mb-1">${d}</span>
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs ${bgClass}" title="Tgl ${d}: ${statusText}">${d}</div>
+                    </div>
+                `;
+            }
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
     function downloadCSV(filename = 'Data.csv') {
         let tbody = document.getElementById('historyTableBody');
-        if(document.getElementById('view-rekap').classList.contains('hidden') === false){
-             tbody = document.getElementById('rekapTableBody');
-        }
-        
+        if(!document.getElementById('view-rekap').classList.contains('hidden')) tbody = document.getElementById('rekapTableBody');
         let rows = tbody.querySelectorAll('tr');
         if (rows.length === 0 || tbody.innerText.includes('Belum ada')) {
             Toast.fire({ icon: 'error', title: 'Tabel kosong' });
@@ -1087,11 +1088,7 @@
 
         rows.forEach(row => {
             let rowData = [];
-            let cells = row.querySelectorAll('td');
-            cells.forEach(cell => {
-                let text = cell.innerText.replace(/"/g, '""').replace(/\n/g, ' - ');
-                rowData.push(`"${text.trim()}"`);
-            });
+            row.querySelectorAll('td').forEach(cell => rowData.push(`"${cell.innerText.replace(/"/g, '""').trim()}"`));
             csv.push(rowData.join(','));
         });
 
@@ -1108,14 +1105,11 @@
     
     function downloadRekapCSV() { downloadCSV('Laporan_Presensi_RQ.csv'); }
 
-    // ================= MODAL PENGATURAN URL =================
     function bukaModalUrl() {
         document.getElementById('inputUrlSheet').value = SCRIPT_URL;
         document.getElementById('settingModal').classList.remove('hidden');
     }
-    function tutupModalUrl() {
-        document.getElementById('settingModal').classList.add('hidden');
-    }
+    function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
     function simpanUrl() {
         const v = document.getElementById('inputUrlSheet').value.trim();
         if(v.includes('script.google.com')) {
@@ -1124,30 +1118,25 @@
             tutupModalUrl();
             Toast.fire({ icon: 'success', title: 'URL Tersimpan' });
             fetchHistoryFromSheets();
-        } else {
-            Toast.fire({ icon: 'error', title: 'URL tidak valid' });
-        }
+        } else { Toast.fire({ icon: 'error', title: 'URL tidak valid' }); }
     }
 
-    // ================= INISIALISASI AWAL (ON LOAD) =================
     window.onload = function() {
-        document.getElementById('inputUrlSheet').value = SCRIPT_URL;
-        
-        // Isi dropdown 87 Santri
         const selSantri = document.getElementById('santriSelect');
-        masterDataSantri.sort((a,b) => a.nama.localeCompare(b.nama)).forEach(s => {
-            selSantri.innerHTML += `<option value="${s.id}">${s.id} - ${s.nama} (${s.kelas})</option>`;
+        // Urutkan berdasarkan Nama Kelas dahulu, lalu Nama Santri
+        masterDataSantri.sort((a,b) => {
+            let classCmp = a.kelas.localeCompare(b.kelas);
+            if (classCmp !== 0) return classCmp;
+            return a.nama.localeCompare(b.nama);
+        }).forEach(s => {
+            selSantri.innerHTML += `<option value="${s.id}">${s.kelas} - ${s.nama}</option>`;
         });
 
-        // Isi dropdown filter Rekap Kelas
         const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
         const rekapKelas = document.getElementById('rekapFilterKelas');
         uniqueClasses.forEach(c => rekapKelas.innerHTML += `<option value="${c}">${c}</option>`);
         
-        // Panggil data pertama kali
         fetchHistoryFromSheets();
-        
-        // Mulai sinkronisasi berkala (Auto-Sync) setiap 4 detik
         syncInterval = setInterval(fetchHistoryFromSheets, 4000);
     }
   </script>
