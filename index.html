@@ -1,1 +1,1801 @@
-fdhebfhjeb
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Presensi Santri RQ Al-Khansa</title>
+
+  <!-- 1. TAILWIND CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 2. KONFIGURASI TEMA WARNA -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#059669',      /* Hijau Muda (Emerald 600) untuk Header & Tombol Utama */
+              border: '#064e3b',     /* Hijau Tua (Emerald 900) */
+              light: '#f8fafc',      /* Latar Belakang Abu-abu terang / putih */
+              accent: '#d97706',     /* Kuning/Emas Logo (Amber 600) */
+              dark: '#022c22',       /* Hijau Sangat Gelap */
+              gold: '#fbbf24',       /* Kuning Terang (Amber 400) */
+              button: '#047857'      /* Hijau Sedang (Emerald 700) */
+            }
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          boxShadow: {
+            'soft-xl': '0 20px 40px -15px rgba(0,0,0,0.05)',
+            'float': '0 10px 25px -5px rgba(6, 95, 70, 0.15)',
+            'gold': '0 4px 14px 0 rgba(217, 119, 6, 0.39)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- 3. LIBRARY EKSTERNAL -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    body { 
+      background-color: #f8fafc; 
+      color: #334155; 
+      font-family: 'Inter', sans-serif; 
+    }
+    
+    /* --- Ornamen Islami / Geometric Pattern pada Header --- */
+    .bg-islamic-pattern {
+      background-color: #064e3b;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4H-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      border-bottom: 4px solid #047857;
+    }
+
+    /* --- Animasi Fade-out Hijau Masuk untuk Baris Baru Scan --- */
+    @keyframes greenScanHighlight {
+      0% {
+        background-color: #059669;
+        color: #ffffff;
+      }
+      20% {
+        background-color: #34d399;
+      }
+      55% {
+        background-color: #a7f3d0;
+      }
+      85% {
+        background-color: #ecfdf5;
+      }
+      100% {
+        background-color: transparent;
+      }
+    }
+
+    .row-just-scanned {
+      animation: greenScanHighlight 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    /* --- Navigasi Dropdown & Tab Pill Modern --- */
+    .nav-btn { 
+      transition: all 0.2s ease; 
+      color: #475569; 
+      font-weight: 600;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      text-align: left;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-btn:hover { 
+      background-color: #f1f5f9; 
+      color: #047857;
+    }
+    .nav-btn.active { 
+      background-color: #047857;
+      color: #ffffff; 
+    }
+
+    /* --- Desain Card (Kartu) Elegan --- */
+    .feature-card {
+      background: #ffffff;
+      border-radius: 1.25rem;
+      padding: 1.25rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -15px rgba(4, 120, 87, 0.1);
+    }
+
+    /* --- Kustomisasi Scrollbar --- */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* --- Form Input --- */
+    .modern-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      color: #334155;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .modern-input:focus {
+      background-color: #ffffff;
+      border-color: #059669;
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+    
+    .table-container {
+        max-height: 480px;
+        overflow-y: auto;
+    }
+    .table-container th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #ecfdf5;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8" onclick="closeMenuOnClickOutside(event)">
+
+  <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-md">
+    <div class="flex items-center gap-3 w-full sm:w-auto mb-1.5 sm:mb-0">
+      <!-- Container Logo -->
+      <div id="logoContainer" class="flex-shrink-0">
+        <img id="appLogo" src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo RQ Al-Khansa" class="w-8 h-8 md:w-9 md:h-9 object-contain rounded-full bg-white p-0.5 border border-brand-gold/50 shadow-sm" onerror="handleLogoError(this)">
+        <div id="defaultLogoIcon" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-brand-gold/20 text-brand-gold border border-brand-gold/40 flex items-center justify-center text-xs md:text-sm font-black shadow-sm hidden">
+          <i class="fas fa-mosque"></i>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+           <h1 class="text-xs md:text-sm font-bold tracking-tight drop-shadow-sm">
+             Presensi Santri <span class="text-brand-gold">RQ Al-Khansa</span>
+           </h1>
+           <!-- Indikator Sinkronisasi Lampu Hijau di Header -->
+           <span id="scriptUrlDisplay" class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-950/80 text-emerald-300 rounded-full text-[9px] font-bold tracking-wider uppercase border border-emerald-500/40 backdrop-blur-sm shadow-sm">
+             <span class="relative flex h-2 w-2">
+               <span id="syncStatusPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+               <span id="syncStatusDot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+             </span>
+             <span id="syncStatusText">CONNECTED</span>
+           </span>
+        </div>
+        <p class="text-[10px] md:text-[11px] text-brand-light/80 font-medium tracking-wide mt-0">Sistem Informasi Akademik & Kehadiran Santri</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2 self-end sm:self-auto">
+      <!-- Quick Audio Mode Toggle Button -->
+      <button onclick="cycleAudioMode()" id="btnHeaderAudio" class="flex items-center gap-1.5 px-2.5 py-1.5 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[11px] font-medium" title="Ubah Mode Suara">
+        <i id="audioIcon" class="fas fa-robot text-brand-gold text-[12px]"></i>
+        <span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span>
+      </button>
+
+      <button onclick="bukaModalUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-lg text-[11px] font-bold text-white shadow-gold transition-all">
+        <i class="fas fa-cog text-white text-[9px]"></i> Pengaturan
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
+    
+    <div class="relative w-max z-30">
+      <button id="menuDropdownBtn" onclick="toggleNavMenu(event)" class="bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95">
+        <i id="currentMenuIcon" class="fas fa-camera text-brand-green"></i> 
+        <span id="currentMenuLabel">Pemindai Kamera</span> 
+        <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+      </button>
+
+      <!-- Dropdown Popup Content -->
+      <div id="navMenuDropdown" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-40 animate-fade-in space-y-1">
+        <button onclick="switchTab('live')" id="tab-live" class="nav-btn active">
+          <i class="fas fa-camera w-4 text-center"></i> Pemindai Kamera
+        </button>
+        <button onclick="switchTab('manual')" id="tab-manual" class="nav-btn">
+          <i class="fas fa-keyboard w-4 text-center"></i> Input Manual (Kartu Hilang)
+        </button>
+        <button onclick="switchTab('rekap')" id="tab-rekap" class="nav-btn">
+          <i class="fas fa-chart-pie w-4 text-center"></i> Laporan Bulanan
+        </button>
+        <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-btn">
+          <i class="fas fa-calendar-alt w-4 text-center"></i> Kalender Kelas
+        </button>
+        <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-btn">
+          <i class="fas fa-users w-4 text-center"></i> Absen Per Kelas & WA
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert / Notifikasi Error Internet -->
+    <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-xl shadow-sm items-start gap-3">
+        <i class="fas fa-wifi-slash mt-1 text-xs"></i>
+        <div>
+           <h4 class="font-bold text-xs">Koneksi Terputus</h4>
+           <p class="text-[11px] mt-0.5">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p>
+        </div>
+    </div>
+
+    <!-- ================= TAB 1: PEMINDAI KAMERA & RIWAYAT SCAN ================= -->
+    <div id="view-live" class="space-y-5 animate-fade-in block">
+        <!-- Section Scanner Kamera Berukuran Besar -->
+        <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4] w-full p-3 sm:p-6">
+            <div class="text-center flex flex-col items-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 text-brand-green rounded-2xl mb-2 shadow-sm border border-emerald-100">
+                    <i class="fas fa-qrcode text-xl"></i>
+                </div>
+                <h2 class="font-extrabold text-gray-800 text-base mb-0.5">Pemindai Kartu Santri</h2>
+                <p class="text-xs text-gray-500 mb-3">Arahkan QR Code kartu santri ke dalam area kamera</p>
+
+                <!-- Area Kamera scanner diperbesar penuh untuk kemudahan HP -->
+                <div id="reader-container" class="hidden relative rounded-2xl overflow-hidden border-4 border-emerald-500 shadow-2xl bg-black mb-4 w-full aspect-square max-w-full sm:max-w-xl mx-auto">
+                     <div id="reader" class="w-full h-full object-cover"></div>
+                     <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+                         <div class="w-[85%] h-[85%] border-2 border-white/70 rounded-2xl relative shadow-[0_0_25px_rgba(0,0,0,0.7)]">
+                            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-brand-gold -mt-1 -ml-1 rounded-tl"></div>
+                            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-brand-gold -mt-1 -mr-1 rounded-tr"></div>
+                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-brand-gold -mb-1 -ml-1 rounded-bl"></div>
+                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-brand-gold -mb-1 -mr-1 rounded-br"></div>
+                         </div>
+                         <div class="absolute top-1/2 left-0 w-full h-1 bg-brand-green shadow-[0_0_15px_4px_rgba(5,150,105,0.9)] animate-[scan_2s_ease-in-out_infinite]"></div>
+                     </div>
+                </div>
+
+                <!-- Kontrol Tombol Kamera (Tombol Utama + Tombol Kotak Ganti Kamera) -->
+                <div class="flex items-center gap-2 w-full max-w-xl mx-auto">
+                    <button id="btnToggleCam" onclick="toggleCamera()" class="flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm">
+                        <i class="fas fa-video text-sm"></i> Nyalakan Kamera
+                    </button>
+                    <!-- Tombol Kotak Ringkas Ganti Kamera Depan/Belakang -->
+                    <button onclick="switchCameraDirection()" class="w-14 h-14 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center flex-shrink-0 active:scale-95 border border-slate-200" title="Ganti Kamera Depan/Belakang">
+                        <i class="fas fa-sync-alt text-base text-brand-green"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Riwayat Pemindaian Hari Ini (Tepat di Bawah Kamera) -->
+        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden flex flex-col">
+            <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border-b border-gray-100">
+                <div>
+                   <h2 class="font-extrabold text-gray-800 text-sm flex items-center gap-2">
+                     <i class="fas fa-clipboard-list text-brand-green"></i> Riwayat Scan Hari Ini
+                   </h2>
+                   <p class="text-[11px] text-gray-500 mt-0.5">Daftar santri yang sudah berhasil melakukan scan presensi.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button onclick="downloadCSV('Riwayat_Hari_Ini.csv')" class="flex-grow sm:flex-grow-0 bg-brand-green text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all hover:bg-[#047857] shadow-float active:scale-95 flex justify-center items-center gap-1.5 border border-brand-green">
+                       <i class="fas fa-file-excel"></i> Ekspor CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container p-0">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-emerald-50 text-[10px] text-brand-green uppercase tracking-wider font-extrabold border-b border-emerald-100">
+                            <th class="p-3 pl-4 sm:pl-5 text-center w-10">Batal</th>
+                            <th class="p-3">Waktu Pemindaian</th>
+                            <th class="p-3">Nama Lengkap</th>
+                            <th class="p-3">Kelas (Halaqah)</th>
+                            <th class="p-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="text-xs divide-y divide-gray-50">
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyHistory" class="p-8 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 flex-grow">
+                 <i class="fas fa-box-open text-2xl mb-2 text-gray-300"></i>
+                 <p class="text-xs font-medium">Belum ada data presensi yang masuk hari ini.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 2: MENU BARU INPUT MANUAL (KARTU HILANG) ================= -->
+    <div id="view-manual" class="hidden animate-fade-in max-w-xl mx-auto w-full">
+        <div class="feature-card">
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+               <div class="w-10 h-10 rounded-2xl bg-amber-50 text-brand-accent flex items-center justify-center text-base border border-amber-100 shadow-sm">
+                 <i class="fas fa-keyboard"></i>
+               </div>
+               <div>
+                 <h3 class="font-extrabold text-gray-800 text-sm">Input Presensi Manual</h3>
+                 <p class="text-[11px] text-gray-500">Gunakan fitur ini jika kartu santri hilang, rusak, atau izin/sakit.</p>
+               </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1.5" id="totalSantriLabel">Pilih dari Santri Terdaftar</label>
+                    <select id="santriSelect" class="modern-input text-xs font-semibold py-3">
+                        <option value="">-- Pilih Nama Santri --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wide mb-1.5">Pilih Status Kehadiran</label>
+                    <select id="statusManual" class="modern-input border-amber-200 bg-amber-50 focus:border-brand-accent text-brand-accent font-bold py-3">
+                        <option value="Hadir">🟢 Hadir</option>
+                        <option value="Sakit">🔵 Sakit</option>
+                        <option value="Izin">🟡 Izin</option>
+                        <option value="Tidak Hadir (Alfa)">🔴 Tidak Hadir (Alfa)</option>
+                    </select>
+                </div>
+                <button onclick="processAbsenManual()" class="w-full bg-brand-accent text-white font-bold py-3.5 rounded-xl transition-all shadow-gold hover:bg-amber-500 active:scale-95 flex items-center justify-center gap-2 text-xs md:text-sm mt-2">
+                  <i class="fas fa-check-circle text-base"></i> Catat Presensi Santri
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 3: LAPORAN BULANAN ================= -->
+    <div id="view-rekap" class="hidden animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100">
+              <div class="flex items-center gap-2.5 mb-4">
+                 <div class="w-8 h-8 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center text-xs"><i class="fas fa-filter"></i></div>
+                 <div>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Filter Laporan Presensi</h2>
+                    <p class="text-[11px] text-gray-500">Buat laporan kehadiran berdasarkan rentang tanggal.</p>
+                 </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
+                    <select id="rekapFilterKelas" class="modern-input">
+                        <option value="Semua Kelas">-- Semua Kelas --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Dari Tanggal</label>
+                    <input type="date" id="rekapFilterTanggalMulai" class="modern-input">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">s.d. Sampai Tanggal</label>
+                    <input type="date" id="rekapFilterTanggalSelesai" class="modern-input">
+                </div>
+                <div class="flex items-end">
+                  <button onclick="renderRekapTable()" class="w-full bg-brand-green text-white py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-[#047857] shadow-float transition-all active:scale-95"><i class="fas fa-search"></i> Tampilkan</button>
+                </div>
+              </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 sm:p-5 border-b border-gray-100">
+             <div class="bg-white p-3 border border-emerald-100 rounded-xl shadow-sm text-center">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total Hadir</span>
+                <p id="statTotalHadir" class="text-xl font-black text-brand-green mt-0.5">0</p>
+             </div>
+             <div class="bg-white p-3 border border-amber-100 rounded-xl shadow-sm text-center">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sakit / Izin / Alfa</span>
+                <p id="statTotalAbsen" class="text-xl font-black text-brand-accent mt-0.5">0</p>
+             </div>
+             <div class="bg-white p-3 border border-gray-200 rounded-xl shadow-sm text-center">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Kelas Terpilih</span>
+                <p id="statKelasTampil" class="text-xs font-bold text-gray-700 mt-1.5 truncate">Semua Kelas</p>
+             </div>
+             <div class="hidden md:flex flex-col justify-center items-end text-right">
+                 <button onclick="downloadRekapCSV()" class="bg-brand-accent text-white hover:bg-amber-500 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-gold active:scale-95 flex items-center gap-1.5"><i class="fas fa-download"></i> Ekspor CSV</button>
+             </div>
+          </div>
+          
+          <div class="overflow-x-auto w-full hide-scrollbar">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                      <tr class="bg-gray-50 text-[10px] text-gray-500 uppercase tracking-wider font-extrabold border-b border-gray-200">
+                          <th class="p-3 pl-4 sm:pl-5 w-10 text-center">#</th>
+                          <th class="p-3">Tanggal Database</th>
+                          <th class="p-3">Nama Santri</th>
+                          <th class="p-3">Kelas</th>
+                          <th class="p-3">Penanggung Jawab</th>
+                          <th class="p-3">Status</th>
+                      </tr>
+                  </thead>
+                  <tbody id="rekapTableBody" class="text-xs divide-y divide-gray-100">
+                  </tbody>
+              </table>
+          </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 4: KALENDER KELAS ================= -->
+    <div id="view-kalender" class="hidden animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div class="flex items-center gap-2.5">
+                 <div class="w-8 h-8 rounded-full bg-amber-50 text-brand-accent border border-amber-100 flex items-center justify-center text-xs"><i class="fas fa-calendar-alt"></i></div>
+                 <div>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Kalender Presensi Kelas</h2>
+                    <p class="text-[11px] text-gray-500">Pantau kehadiran harian seluruh santri di kelas dalam 1 bulan penuh.</p>
+                 </div>
+              </div>
+              <div>
+                 <button onclick="downloadKalenderCSV()" class="bg-brand-green hover:bg-[#047857] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-1.5 active:scale-95">
+                    <i class="fas fa-download"></i> Download Kalender CSV
+                 </button>
+              </div>
+          </div>
+
+          <div class="p-3 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
+                    <select id="kalenderKelasSelect" onchange="renderClassCalendar()" class="modern-input bg-white font-bold text-brand-green"></select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Bulan</label>
+                    <select id="kalenderBulanSelect" onchange="renderClassCalendar()" class="modern-input bg-white">
+                        <option value="0">Januari</option>
+                        <option value="1">Februari</option>
+                        <option value="2">Maret</option>
+                        <option value="3">April</option>
+                        <option value="4">Mei</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">Agustus</option>
+                        <option value="8">September</option>
+                        <option value="9">Oktober</option>
+                        <option value="10">November</option>
+                        <option value="11">Desember</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Tahun</label>
+                    <select id="kalenderTahunSelect" onchange="renderClassCalendar()" class="modern-input bg-white"></select>
+                 </div>
+          </div>
+
+          <div class="p-2.5 border-b border-gray-100 bg-slate-50/50 flex flex-wrap gap-4 justify-center text-[11px] font-bold text-gray-600">
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Hadir (✅)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Sakit (💊)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div> Izin (ℹ️)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div> Alfa (🅰️)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-gray-100 border border-gray-200"></div> Kosong</span>
+          </div>
+
+          <div class="p-0 overflow-x-auto relative w-full border-b border-gray-100" style="max-height: 55vh;">
+               <table id="kalenderTableElement" class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-max">
+                   <thead class="bg-emerald-50 text-brand-green sticky top-0 z-20">
+                       <tr>
+                           <th class="p-2.5 border-r border-emerald-100 sticky left-0 bg-emerald-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-48 max-w-[200px]">Nama Santri</th>
+                           <script>
+                               for(let d=1; d<=31; d++) {
+                                   document.write(`<th class="p-2 min-w-[28px] text-center border-r border-emerald-100 font-bold">${d}</th>`);
+                               }
+                           </script>
+                       </tr>
+                   </thead>
+                   <tbody id="kalenderBody" class="divide-y divide-gray-100 text-gray-700 text-xs">
+                        <tr><td colspan="32" class="p-8 text-center text-gray-400">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>
+                   </tbody>
+               </table>
+          </div>
+        </div>
+    </div>
+
+    <!-- ================= TAB 5: ABSEN PER KELAS & WA ================= -->
+    <div id="view-persiswa" class="hidden animate-fade-in space-y-4">
+        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div class="flex items-center gap-2.5">
+                 <div class="w-8 h-8 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center text-xs"><i class="fas fa-users"></i></div>
+                 <div>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Absen Kalender Per Kelas & Kirim WA</h2>
+                    <p class="text-[11px] text-gray-500">Pilih kelas & bulan untuk memantau absensi sekaligus mengirim rekap ke Wali Santri.</p>
+                 </div>
+              </div>
+              <div>
+                 <button onclick="kirimRekapKelasWA()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-1.5 active:scale-95">
+                    <i class="fab fa-whatsapp text-sm"></i> Kirim Rekap 1 Kelas ke WA
+                 </button>
+              </div>
+          </div>
+
+          <div class="p-3 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
+                    <select id="persiswaKelasSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white font-bold text-brand-green"></select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Bulan</label>
+                    <select id="persiswaBulanSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white">
+                        <option value="0">Januari</option>
+                        <option value="1">Februari</option>
+                        <option value="2">Maret</option>
+                        <option value="3">April</option>
+                        <option value="4">Mei</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">Agustus</option>
+                        <option value="8">September</option>
+                        <option value="9">Oktober</option>
+                        <option value="10">November</option>
+                        <option value="11">Desember</option>
+                    </select>
+                 </div>
+                 <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Tahun</label>
+                    <select id="persiswaTahunSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white"></select>
+                 </div>
+          </div>
+
+          <!-- Legenda Warna -->
+          <div class="p-2.5 border-b border-gray-100 bg-white flex flex-wrap gap-4 justify-center text-[11px] font-bold text-gray-700">
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-emerald-500 shadow-sm"></div> Hadir (✅)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-blue-500 shadow-sm"></div> Sakit (💊)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-amber-500 shadow-sm"></div> Izin (ℹ️)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-red-500 shadow-sm"></div> Alfa (🅰️)</span>
+          </div>
+
+          <div class="p-3 overflow-x-auto relative w-full" style="max-height: 60vh;">
+               <div id="persiswaContainer" class="space-y-3 min-w-[900px]">
+               </div>
+          </div>
+        </div>
+    </div>
+  </main>
+
+  <!-- Tombol Navigasi Mobile (Bawah) -->
+  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
+    <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
+    <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
+    <button onclick="switchTab('rekap')" id="mob-rekap" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-pie text-sm mb-0.5"></i> Laporan</button>
+    <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
+    <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-users text-sm mb-0.5"></i> Per Kelas</button>
+  </nav>
+
+  <!-- Modal Pengaturan -->
+  <div id="settingModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="tutupModalUrl()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in border border-gray-100 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2.5">
+            <h3 class="text-sm font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem & Suara</h3>
+            <button onclick="tutupModalUrl()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="space-y-4 mb-5">
+            <!-- Mode Suara Presensi -->
+            <div class="bg-emerald-50/70 border border-emerald-100 p-3.5 rounded-2xl">
+               <label class="block text-xs font-bold text-emerald-900 mb-2 flex items-center gap-1.5">
+                 <i class="fas fa-volume-up text-brand-green"></i> Mode Suara Presensi Masuk
+               </label>
+               <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-xs bg-white">
+                 <option value="ai">🤖 Suara Gemini AI Studio (Ramah & Motivasi)</option>
+                 <option value="sfx">🔔 Efek Suara (Blup / Ting-Dong / Laser)</option>
+                 <option value="off">🔇 Mute / Tanpa Suara</option>
+               </select>
+               
+               <!-- Pilihan Efek Suara khusus mode SFX -->
+               <div id="sfxOptionsContainer" class="mt-2.5 pt-2.5 border-t border-emerald-100/60 flex items-center justify-between text-xs">
+                 <span class="text-[11px] font-bold text-gray-600">Jenis Efek Suara:</span>
+                 <select id="modalSfxType" onchange="updateSfxType(this.value)" class="p-1.5 rounded-lg border border-gray-200 text-xs font-semibold bg-white outline-none">
+                    <option value="blup">🫧 Blup (Gelembung Air)</option>
+                    <option value="tingdong">🔔 Ting-Dong (Melodis)</option>
+                    <option value="laser">⚡ Laser (Tembakan Sci-Fi)</option>
+                 </select>
+               </div>
+            </div>
+
+            <!-- Gemini API Key Input -->
+            <div class="bg-amber-50/60 border border-amber-200/60 p-3 rounded-2xl">
+               <label class="block text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                 <i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)
+               </label>
+               <input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-[10px] bg-white" placeholder="AQ.Ab8... atau AIzaSy...">
+               <p class="text-[9px] text-gray-500 mt-1">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Alhamdulillah terkoneksi"* (Suara Ikhwan Ramah).</p>
+            </div>
+
+            <div>
+               <label class="block text-xs font-bold text-gray-700 mb-1">URL Google Apps Script</label>
+               <input type="text" id="inputUrlSheet" class="modern-input font-mono text-[10px]" placeholder="https://script.google.com/macros/s/...">
+            </div>
+            <div>
+               <label class="block text-xs font-bold text-gray-700 mb-1">URL Gambar Logo Sekolah / RQ (Opsional)</label>
+               <input type="text" id="inputUrlLogo" class="modern-input text-[10px]" placeholder="https://lh3.googleusercontent.com/d/... atau https://...">
+            </div>
+        </div>
+
+        <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95 text-xs">Simpan Pengaturan</button>
+    </div>
+  </div>
+
+  <script>
+    let masterDataSantri = [
+      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ052", nama: "Alifiandra Ahmad Hudaya", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ054", nama: "Dilara Adrena Ramadhani", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ065", nama: "Arkhan Salman Al-Farisi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" }
+    ];
+
+    const classSchedules = {
+      "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu",
+      "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu",
+      "Ali": "Senin, Rabu, Jumat",
+      "Zubair": "Senin, Rabu, Jumat",
+      "Utsman": "Selasa, Rabu, Kamis",
+      "Abu Bakar": "Senin, Rabu, Jumat",
+      "Bilal": "Senin, Rabu, Jumat",
+      "Hamzah": "Selasa, Kamis, Sabtu",
+      "Fatimah": "Selasa, Kamis, Sabtu",
+      "Umar": "Senin, Rabu, Kamis"
+    };
+
+    const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
+
+    if(!localStorage.getItem('scriptUrlSheet')) {
+        localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
+    }
+    let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
+    let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
+    let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
+    let audioMode = localStorage.getItem('audioMode') || 'ai';
+    let sfxType = localStorage.getItem('sfxType') || 'blup';
+    let currentFacingMode = 'environment'; // Default kamera belakang
+    
+    let presensiHistory = []; 
+    let deletedKeys = new Set();
+    let newlyAddedKeysMap = new Map();
+    let syncInterval;
+    let html5QrCode;
+    let isProcessing = false;
+    let isCameraOn = false;
+    let lastScannedId = "";
+    let lastScanTime = 0;
+    let audioCtx = null;
+
+    const Toast = Swal.mixin({
+      toast: true, 
+      position: 'top-end', 
+      showConfirmButton: false, 
+      timer: 1200, 
+      timerProgressBar: true
+    });
+
+    function getAudioContext() {
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
+    }
+
+    function playSynthSound(type) {
+        try {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+
+            if (type === 'blup') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'tingdong') {
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now);
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, now + 0.18);
+                gain2.gain.setValueAtTime(0.25, now + 0.18);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.18);
+                osc2.stop(now + 0.55);
+            } else if (type === 'laser') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(1800, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            } else {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+        } catch (e) {
+            console.warn("Audio synth error:", e);
+        }
+    }
+
+    function playAudioFeedback(type, santri) {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (audioMode === 'off') return;
+        if (audioMode === 'sfx') {
+            playSynthSound(type === 'ok' ? sfxType : 'blup');
+        } else if (audioMode === 'ai') {
+            if (type === 'ok') {
+                playGeminiTtsGreeting();
+            } else {
+                playSynthSound('blup');
+            }
+        }
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function pcmToWav(pcm16Data, sampleRate = 24000) {
+        const numChannels = 1;
+        const bytesPerSample = 2;
+        const blockAlign = numChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = pcm16Data.length * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        let offset = 44;
+        for (let i = 0; i < pcm16Data.length; i++, offset += 2) {
+            view.setInt16(offset, pcm16Data[i], true);
+        }
+
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    async function playGeminiTtsGreeting() {
+        if (!geminiApiKey || geminiApiKey.trim() === "") {
+            playSynthSound('blup');
+            return;
+        }
+
+        try {
+            const targetVoice = "Achird"; // Suara ikhwan ramah
+            const response = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey.trim()}`;
+            const res = await fetch(response, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ 
+                            text: "Say warmly with friendly and cheerful male tone in Indonesian: Alhamdulillah terkoneksi" 
+                        }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: {
+                                    voiceName: targetVoice
+                                }
+                            }
+                        }
+                    }
+                })
+            });
+
+            const data = await res.json();
+            const part = data?.candidates?.[0]?.content?.parts?.[0];
+
+            if (part && part.inlineData && part.inlineData.data) {
+                const base64Data = part.inlineData.data;
+                const mimeType = part.inlineData.mimeType || "audio/L16;rate=24000";
+                let sampleRate = 24000;
+                const rateMatch = mimeType.match(/rate=(\d+)/);
+                if (rateMatch) sampleRate = parseInt(rateMatch[1], 10);
+
+                const pcmBuffer = base64ToArrayBuffer(base64Data);
+                const pcm16 = new Int16Array(pcmBuffer);
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+
+                const audio = new Audio(audioUrl);
+                audio.onended = () => URL.revokeObjectURL(audioUrl);
+                audio.play().catch(e => console.warn("Audio play error:", e));
+            } else {
+                playSynthSound('blup');
+            }
+        } catch (err) {
+            console.error("Gemini TTS Error:", err);
+            playSynthSound('blup');
+        }
+    }
+
+    function updateAudioUI() {
+        const btnIcon = document.getElementById('audioIcon');
+        const btnLabel = document.getElementById('audioLabelHeader');
+        const modalSelect = document.getElementById('modalAudioMode');
+        const modalSfxSelect = document.getElementById('modalSfxType');
+        const modalApiKeyInput = document.getElementById('inputGeminiApiKey');
+        const sfxContainer = document.getElementById('sfxOptionsContainer');
+
+        if (modalSelect) modalSelect.value = audioMode;
+        if (modalSfxSelect) modalSfxSelect.value = sfxType;
+        if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
+
+        if (sfxContainer) {
+            if (audioMode === 'sfx') sfxContainer.classList.remove('hidden');
+            else sfxContainer.classList.add('hidden');
+        }
+
+        if (audioMode === 'ai') {
+            btnIcon.className = "fas fa-robot text-brand-gold text-[12px]";
+            btnLabel.innerText = "Gemini AI Studio";
+        } else if (audioMode === 'sfx') {
+            btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]";
+            btnLabel.innerText = "Efek Suara (" + sfxType.toUpperCase() + ")";
+        } else {
+            btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]";
+            btnLabel.innerText = "Mute / Mati";
+        }
+    }
+
+    function cycleAudioMode() {
+        getAudioContext();
+        if (audioMode === 'ai') audioMode = 'sfx';
+        else if (audioMode === 'sfx') audioMode = 'off';
+        else audioMode = 'ai';
+
+        localStorage.setItem('audioMode', audioMode);
+        updateAudioUI();
+        
+        if (audioMode === 'sfx') playSynthSound(sfxType);
+        else if (audioMode === 'ai') playGeminiTtsGreeting();
+    }
+
+    function updateAudioModeFromSelect(val) {
+        audioMode = val;
+        localStorage.setItem('audioMode', audioMode);
+        updateAudioUI();
+    }
+
+    function updateSfxType(val) {
+        sfxType = val;
+        localStorage.setItem('sfxType', sfxType);
+        playSynthSound(sfxType);
+        updateAudioUI();
+    }
+
+    function applyLogo() {
+      const img = document.getElementById('appLogo');
+      const defIcon = document.getElementById('defaultLogoIcon');
+      if (LOGO_URL && LOGO_URL.trim() !== '') {
+          img.src = LOGO_URL;
+          img.classList.remove('hidden');
+          defIcon.classList.add('hidden');
+      } else {
+          img.classList.add('hidden');
+          defIcon.classList.remove('hidden');
+      }
+    }
+
+    function handleLogoError(imgEl) {
+      imgEl.classList.add('hidden');
+      const defIcon = document.getElementById('defaultLogoIcon');
+      if (defIcon) defIcon.classList.remove('hidden');
+    }
+
+    function populateSantriSelect() {
+      const selSantri = document.getElementById('santriSelect');
+      const prevVal = selSantri.value;
+      selSantri.innerHTML = `<option value="">-- Pilih Nama Santri --</option>`;
+      masterDataSantri.forEach(s => {
+          selSantri.innerHTML += `<option value="${s.id}">${s.kelas} - ${s.nama}</option>`;
+      });
+      selSantri.value = prevVal;
+      document.getElementById('totalSantriLabel').innerText = `Pilih dari ${masterDataSantri.length} Santri Terdaftar`;
+    }
+
+    function populateClassDropdowns() {
+      const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].filter(Boolean).sort();
+      const rekapKelas = document.getElementById('rekapFilterKelas');
+      const currentRekapVal = rekapKelas.value;
+      rekapKelas.innerHTML = `<option value="Semua Kelas">-- Semua Kelas --</option>`;
+      uniqueClasses.forEach(c => rekapKelas.innerHTML += `<option value="${c}">${c}</option>`);
+      if (uniqueClasses.includes(currentRekapVal)) rekapKelas.value = currentRekapVal;
+
+      const selKalender = document.getElementById('kalenderKelasSelect');
+      if (selKalender) {
+        const prevKalenderVal = selKalender.value;
+        selKalender.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (prevKalenderVal && uniqueClasses.includes(prevKalenderVal)) selKalender.value = prevKalenderVal;
+      }
+
+      const selPerSiswa = document.getElementById('persiswaKelasSelect');
+      if (selPerSiswa) {
+        const prevPerSiswaVal = selPerSiswa.value;
+        selPerSiswa.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (prevPerSiswaVal && uniqueClasses.includes(prevPerSiswaVal)) selPerSiswa.value = prevPerSiswaVal;
+      }
+    }
+
+    function syncMasterSantriList(newSantriList) {
+      if (!Array.isArray(newSantriList) || newSantriList.length === 0) return;
+      
+      const formatted = newSantriList.map((item, idx) => ({
+        id: item.id || `IDSRQ_${idx+1}`,
+        nama: item.nama || "Tanpa Nama",
+        kelas: item.kelas || "Umum",
+        guru: item.guru || "Ustadz/ah",
+        gender: item.gender || (item.nama && item.nama.toLowerCase().includes("putri") ? "P" : "L")
+      }));
+
+      formatted.sort((a,b) => {
+          let classCmp = a.kelas.localeCompare(b.kelas);
+          if (classCmp !== 0) return classCmp;
+          return a.nama.localeCompare(b.nama);
+      });
+
+      masterDataSantri = formatted;
+      populateSantriSelect();
+      populateClassDropdowns();
+    }
+
+    function toggleNavMenu(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('navMenuDropdown');
+        dropdown.classList.toggle('hidden');
+    }
+
+    function closeMenuOnClickOutside(event) {
+        const dropdown = document.getElementById('navMenuDropdown');
+        const btn = document.getElementById('menuDropdownBtn');
+        if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    const menuInfo = {
+      'live': { label: 'Pemindai Kamera', icon: 'fas fa-camera' },
+      'manual': { label: 'Input Manual (Kartu Hilang)', icon: 'fas fa-keyboard' },
+      'rekap': { label: 'Laporan Bulanan', icon: 'fas fa-chart-pie' },
+      'kalender': { label: 'Kalender Kelas', icon: 'fas fa-calendar-alt' },
+      'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' }
+    };
+
+    function switchTab(tabId) {
+      ['live', 'manual', 'rekap', 'kalender', 'persiswa'].forEach(id => {
+         document.getElementById(`view-${id}`)?.classList.add('hidden');
+         let dBtn = document.getElementById(`tab-${id}`);
+         let mBtn = document.getElementById(`mob-${id}`);
+         if(dBtn) dBtn.classList.remove('active');
+         if(mBtn) { mBtn.classList.remove('text-brand-green', 'active'); mBtn.classList.add('text-gray-400'); }
+      });
+      
+      document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
+      document.getElementById(`tab-${tabId}`)?.classList.add('active');
+      
+      document.getElementById('currentMenuLabel').innerText = menuInfo[tabId].label;
+      document.getElementById('currentMenuIcon').className = menuInfo[tabId].icon + " text-brand-green";
+      document.getElementById('navMenuDropdown').classList.add('hidden');
+
+      let mobBtn = document.getElementById(`mob-${tabId}`);
+      if(mobBtn){ mobBtn.classList.add('active', 'text-brand-green'); mobBtn.classList.remove('text-gray-400'); }
+
+      if(tabId === 'rekap') renderRekapTable();
+      if(tabId === 'kalender') prepareKalenderOptions();
+      if(tabId === 'persiswa') preparePerSiswaOptions();
+    }
+
+    async function toggleCamera() {
+        const btn = document.getElementById('btnToggleCam');
+        const camContainer = document.getElementById('reader-container');
+        
+        getAudioContext();
+
+        if(isCameraOn) {
+            try {
+                if(html5QrCode) await html5QrCode.stop();
+                isCameraOn = false;
+                camContainer.classList.add('hidden');
+                btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
+                btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+            } catch(e) {}
+        } else {
+            camContainer.classList.remove('hidden');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i> Menghubungkan Kamera...';
+            btn.className = "flex-grow py-4 bg-gray-400 text-white rounded-xl font-extrabold flex justify-center items-center gap-2 text-xs md:text-sm";
+            
+            try {
+                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                await html5QrCode.start(
+                   { facingMode: currentFacingMode },
+                   { 
+                     fps: 25, 
+                     qrbox: (viewfinderWidth, viewfinderHeight) => {
+                       const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                       const qrboxSize = Math.floor(minEdge * 0.85);
+                       return { width: qrboxSize, height: qrboxSize };
+                     }
+                   },
+                   (decodedText) => { processScanResult(decodedText); }
+                );
+                isCameraOn = true;
+                btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera';
+                btn.className = "flex-grow py-4 bg-red-500 text-white rounded-xl font-extrabold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+            } catch (err) {
+                camContainer.classList.add('hidden');
+                isCameraOn = false;
+                btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
+                btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
+                
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Akses Kamera Terbatas',
+                    text: 'Gunakan tab Input Manual jika kamera perangkat terbatas.',
+                    confirmButtonColor: '#065f46'
+                });
+            }
+        }
+    }
+
+    async function switchCameraDirection() {
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        Toast.fire({ icon: 'info', title: `Kamera dialihkan ke ${currentFacingMode === 'environment' ? 'Belakang' : 'Depan'}` });
+
+        if (isCameraOn && html5QrCode) {
+            try {
+                await html5QrCode.stop();
+                isCameraOn = false;
+                await toggleCamera();
+            } catch (e) {
+                console.warn("Switch camera error:", e);
+            }
+        }
+    }
+
+    function processScanResult(decodedText) {
+       const now = Date.now();
+       const trimmedId = decodedText.trim();
+
+       if (trimmedId === lastScannedId && (now - lastScanTime) < 1200) return;
+       if (isProcessing) return;
+
+       lastScannedId = trimmedId;
+       lastScanTime = now;
+
+       const santri = masterDataSantri.find(s => s.id === trimmedId);
+       
+       playAudioFeedback('ok', santri);
+
+       if (santri) postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", true);
+       else postDataToGoogle(trimmedId, "Santri Tidak Dikenal", "-", "-", "Hadir", true);
+    }
+
+    function processAbsenManual() {
+       getAudioContext();
+       const select = document.getElementById('santriSelect');
+       const status = document.getElementById('statusManual').value;
+       if (select.value === "") {
+           Toast.fire({ icon: 'warning', title: 'Pilih nama santri dahulu!' });
+           return;
+       }
+       const santri = masterDataSantri.find(s => s.id === select.value);
+       if (santri) {
+           playAudioFeedback('ok', santri);
+           postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, status, false);
+           select.value = "";
+       }
+    }
+
+    function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, isFromScan = false) {
+       if (isProcessing) return;
+       isProcessing = true;
+       const unikey = "temp_" + Date.now();
+       const nowTime = Date.now();
+       
+       newlyAddedKeysMap.set(unikey, nowTime);
+
+       const tempRecord = { 
+         key: unikey, 
+         idSantri, 
+         namaSantri, 
+         kelas, 
+         guru, 
+         waktu: getLocalWaktu(), 
+         hari: getLocalHari(), 
+         status, 
+         sync: 'loading',
+         createdAt: nowTime
+       };
+
+       if(!Array.isArray(presensiHistory)) presensiHistory = [];
+       presensiHistory.unshift(tempRecord);
+       renderHistoryTable();
+
+       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
+
+       fetch(SCRIPT_URL, {
+           method: 'POST',
+           body: new URLSearchParams({ idSantri, namaSantri, kelas, guru, status, key: unikey })
+       })
+       .then(res => res.json())
+       .then(data => {
+           isProcessing = false;
+           fetchHistoryFromSheets();
+       })
+       .catch(err => {
+           isProcessing = false;
+       });
+    }
+
+    function hapusData(key, event) {
+        if(event) event.stopPropagation();
+        
+        const targetItem = presensiHistory.find(item => item.key === key) || {};
+        const nama = targetItem.namaSantri || "";
+        const waktu = targetItem.waktu || "";
+        const idSantri = targetItem.idSantri || "";
+
+        Swal.fire({
+            title: 'Batalkan Presensi?',
+            text: nama ? `Hapus data presensi ${nama}?` : "Data akan dihapus dari Google Sheet.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Batalkan!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if(key) deletedKeys.add(key);
+                if(waktu) deletedKeys.add(waktu);
+                if(nama && waktu) deletedKeys.add(nama + "_" + waktu);
+
+                presensiHistory = presensiHistory.filter(item => 
+                    item.key !== key && 
+                    !(nama && waktu && item.namaSantri === nama && item.waktu === waktu)
+                );
+                renderHistoryTable();
+                
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: new URLSearchParams({ 
+                        action: 'delete', 
+                        key: key || '', 
+                        idSantri: idSantri || key || '', 
+                        namaSantri: nama || '',
+                        waktu: waktu || ''
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                   Toast.fire({ icon: 'success', title: 'Presensi dibatalkan!' });
+                   fetchHistoryFromSheets();
+                })
+                .catch(err => {
+                   fetchHistoryFromSheets();
+                });
+            }
+        });
+    }
+
+    function fetchHistoryFromSheets() {
+        if(!SCRIPT_URL.includes("macros/s/")) return;
+        
+        const syncText = document.getElementById('syncStatusText');
+        const syncPing = document.getElementById('syncStatusPing');
+        const syncDot = document.getElementById('syncStatusDot');
+
+        if(syncText) syncText.innerText = "SYNCING...";
+        if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+        if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+        
+        fetch(SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('offlineAlert').classList.add('hidden');
+            
+            if(syncText) syncText.innerText = "CONNECTED";
+            if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+
+            if(data.status === 'online') {
+                if(Array.isArray(data.history)) {
+                    presensiHistory = data.history.filter(item => {
+                        if (deletedKeys.has(item.key)) return false;
+                        if (deletedKeys.has(item.waktu)) return false;
+                        if (deletedKeys.has(item.namaSantri + "_" + item.waktu)) return false;
+                        return true;
+                    });
+                    renderHistoryTable();
+                }
+                if(Array.isArray(data.santri) && data.santri.length > 0) {
+                    syncMasterSantriList(data.santri);
+                }
+                if(!document.getElementById('view-rekap').classList.contains('hidden')) renderRekapTable();
+                if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
+                if(!document.getElementById('view-persiswa').classList.contains('hidden')) renderPerSiswaCalendar();
+            }
+        })
+        .catch(err => {
+            document.getElementById('offlineAlert').classList.remove('hidden');
+            if(syncText) syncText.innerText = "DISCONNECTED";
+            if(syncPing) syncPing.className = "hidden";
+            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
+        });
+    }
+
+    function renderHistoryTable() {
+        const tbody = document.getElementById('historyTableBody');
+        const emptyState = document.getElementById('emptyHistory');
+        if (!presensiHistory || presensiHistory.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
+        }
+        emptyState.classList.add('hidden');
+        let html = '';
+        const now = Date.now();
+
+        presensiHistory.slice(0, 50).forEach(item => {
+            let statusBadge = '';
+            const stLow = String(item.status).toLowerCase();
+            if(stLow.includes('hadir') && !stLow.includes('tidak')) statusBadge = `<span class="bg-emerald-100 text-brand-green px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-check-circle"></i> Hadir</span>`;
+            else if(stLow.includes('sakit')) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-bed"></i> Sakit</span>`;
+            else if(stLow.includes('izin')) statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-envelope"></i> Izin</span>`;
+            else statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-times-circle"></i> Alfa</span>`;
+            
+            const addedTime = newlyAddedKeysMap.get(item.key) || item.createdAt;
+            const isJustScanned = addedTime && ((now - addedTime) < 4500);
+            const rowClass = isJustScanned ? 'row-just-scanned' : 'hover:bg-slate-50 transition-colors';
+
+            html += `
+                <tr class="${rowClass}">
+                    <td class="p-3 text-center">
+                        <button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto" title="Batalkan / Hapus">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                        </button>
+                    </td>
+                    <td class="p-3"><p class="font-bold whitespace-nowrap">${item.hari}</p><p class="text-[11px] opacity-80 font-mono">${item.waktu}</p></td>
+                    <td class="p-3"><p class="font-bold">${item.namaSantri}</p></td>
+                    <td class="p-3"><span class="text-xs font-bold text-brand-green">${item.kelas}</span></td>
+                    <td class="p-3">${statusBadge}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function parseGoogleSheetDate(dateString) {
+        if (!dateString) return null;
+        try {
+            let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) return new Date(match[3], match[2] - 1, match[1]);
+            return new Date(dateString);
+        } catch(e) { return null; }
+    }
+
+    function getLocalWaktu() {
+        const now = new Date();
+        return `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth()+1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}.${String(now.getMinutes()).padStart(2, '0')}.${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+    
+    function getLocalHari() {
+        return ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][new Date().getDay()];
+    }
+
+    function renderRekapTable() {
+        const kelasFilter = document.getElementById('rekapFilterKelas').value;
+        const startDateStr = document.getElementById('rekapFilterTanggalMulai').value;
+        const endDateStr = document.getElementById('rekapFilterTanggalSelesai').value;
+        const tbody = document.getElementById('rekapTableBody');
+        
+        if(!Array.isArray(presensiHistory)) presensiHistory = [];
+        let start = startDateStr ? new Date(startDateStr) : null;
+        let end = endDateStr ? new Date(endDateStr) : null;
+        if (start) start.setHours(0, 0, 0, 0);
+        if (end) end.setHours(23, 59, 59, 999);
+
+        let filterResult = presensiHistory.filter(item => {
+            let itemDate = parseGoogleSheetDate(item.waktu);
+            let classMatch = (kelasFilter === "Semua Kelas" || item.kelas === kelasFilter);
+            let dateMatch = true;
+            if (itemDate && start && end) dateMatch = (itemDate >= start && itemDate <= end);
+            else if (itemDate && start) dateMatch = (itemDate >= start);
+            else if (itemDate && end) dateMatch = (itemDate <= end);
+            return classMatch && dateMatch;
+        });
+
+        let totalHadir = 0, totalAbsen = 0, html = '';
+        if (filterResult.length === 0) {
+            html = `<tr><td colspan="6" class="p-8 text-center text-gray-400 font-medium">Data presensi tidak ditemukan pada filter ini.</td></tr>`;
+        } else {
+            filterResult.forEach((item, index) => {
+                const st = String(item.status).toLowerCase();
+                let isHadir = st.includes('hadir') && !st.includes('tidak');
+                if (isHadir) totalHadir++; else totalAbsen++;
+                let badge = isHadir ? `<span class="px-2 py-1 bg-emerald-100 text-brand-green text-[10px] font-extrabold rounded"><i class="fas fa-check"></i> Hadir</span>` : `<span class="px-2 py-1 bg-amber-100 text-brand-accent text-[10px] font-extrabold rounded"><i class="fas fa-times"></i> ${item.status}</span>`;
+
+                html += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-3 text-center text-xs font-bold text-gray-400">${index + 1}</td>
+                        <td class="p-3 text-xs font-mono text-gray-500">${item.waktu}</td>
+                        <td class="p-3 font-bold text-gray-800">${item.namaSantri}</td>
+                        <td class="p-3 text-xs font-bold text-brand-green">${item.kelas}</td>
+                        <td class="p-3 text-xs text-gray-600">${item.guru}</td>
+                        <td class="p-3">${badge}</td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+        document.getElementById('statTotalHadir').innerText = totalHadir;
+        document.getElementById('statTotalAbsen').innerText = totalAbsen;
+        document.getElementById('statKelasTampil').innerText = kelasFilter;
+    }
+
+    function prepareKalenderOptions() {
+        populateClassDropdowns();
+        const selTahun = document.getElementById('kalenderTahunSelect');
+        if(selTahun.options.length === 0) {
+            const currentYear = new Date().getFullYear();
+            for(let y = currentYear - 1; y <= currentYear + 2; y++) {
+                selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+            }
+        }
+        document.getElementById('kalenderBulanSelect').value = new Date().getMonth();
+        renderClassCalendar();
+    }
+
+    function renderClassCalendar() {
+        const selKelas = document.getElementById('kalenderKelasSelect').value;
+        const selBulan = parseInt(document.getElementById('kalenderBulanSelect').value);
+        const selTahun = parseInt(document.getElementById('kalenderTahunSelect').value);
+        const tbody = document.getElementById('kalenderBody');
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+        
+        if(studentsInClass.length === 0) {
+             tbody.innerHTML = `<tr><td colspan="32" class="p-8 text-center text-gray-400">Tidak ada santri di kelas ini.</td></tr>`;
+             return;
+        }
+
+        let html = '';
+        studentsInClass.forEach(santri => {
+            html += `<tr class="hover:bg-slate-50 transition-colors">`;
+            html += `<td class="p-2.5 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${santri.nama}">${santri.nama}</td>`;
+            
+            for (let d = 1; d <= 31; d++) {
+                let targetDate = new Date(selTahun, selBulan, d);
+                if (targetDate.getMonth() !== selBulan) {
+                    html += `<td class="p-2 border-r border-gray-100 bg-gray-50 text-center">-</td>`;
+                    continue;
+                }
+
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu);
+                    if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
+                });
+
+                if (record) {
+                    const st = String(record.status).toLowerCase();
+                    let colorClass = 'bg-emerald-500';
+                    if(st.includes('sakit')) colorClass = 'bg-blue-500';
+                    else if(st.includes('izin')) colorClass = 'bg-amber-500';
+                    else if(!st.includes('hadir')) colorClass = 'bg-red-500';
+                    
+                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
+                } else {
+                    html += `<td class="p-1 border-r border-gray-100 min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`;
+                }
+            }
+            html += `</tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function downloadKalenderCSV() {
+        const table = document.getElementById('kalenderTableElement');
+        if (!table) return;
+        let rows = table.querySelectorAll('tr');
+        if (rows.length <= 1) {
+            Toast.fire({ icon: 'error', title: 'Data kalender kosong' });
+            return;
+        }
+
+        let csv = [];
+        let headerCols = rows[0].querySelectorAll('th');
+        let headerArr = [];
+        headerCols.forEach(th => headerArr.push(`"${th.innerText.trim()}"`));
+        csv.push(headerArr.join(','));
+
+        for (let i = 1; i < rows.length; i++) {
+            let row = rows[i];
+            let rowData = [];
+            let nameCell = row.querySelector('td');
+            rowData.push(`"${nameCell.innerText.trim()}"`);
+
+            let dayTds = row.querySelectorAll('td');
+            for (let j = 1; j < dayTds.length; j++) {
+                let div = dayTds[j].querySelector('div');
+                let st = '-';
+                if(div) {
+                    let title = div.getAttribute('title') || '';
+                    if(title.toLowerCase().includes('hadir')) st = '✅';
+                    else if(title.toLowerCase().includes('sakit')) st = '💊';
+                    else if(title.toLowerCase().includes('izin')) st = 'ℹ️';
+                    else st = '🅰️';
+                }
+                rowData.push(`"${st}"`);
+            }
+            csv.push(rowData.join(','));
+        }
+
+        const selKelas = document.getElementById('kalenderKelasSelect').value;
+        const selBulan = document.getElementById('kalenderBulanSelect').options[document.getElementById('kalenderBulanSelect').selectedIndex].text;
+        const selTahun = document.getElementById('kalenderTahunSelect').value;
+
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Kalender_Presensi_Kelas_${selKelas}_${selBulan}_${selTahun}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        Toast.fire({ icon: 'success', title: 'Kalender diunduh!' });
+    }
+
+    function preparePerSiswaOptions() {
+        populateClassDropdowns();
+        const selTahun = document.getElementById('persiswaTahunSelect');
+        if(selTahun.options.length === 0) {
+            const currentYear = new Date().getFullYear();
+            for(let y = currentYear - 1; y <= currentYear + 2; y++) {
+                selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+            }
+        }
+        document.getElementById('persiswaBulanSelect').value = new Date().getMonth();
+        renderPerSiswaCalendar();
+    }
+
+    function renderPerSiswaCalendar() {
+        const selKelas = document.getElementById('persiswaKelasSelect').value;
+        const selBulan = parseInt(document.getElementById('persiswaBulanSelect').value);
+        const selTahun = parseInt(document.getElementById('persiswaTahunSelect').value);
+        const container = document.getElementById('persiswaContainer');
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+
+        if(studentsInClass.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-400 p-8">Tidak ada santri di kelas ini.</p>`;
+            return;
+        }
+
+        let daysInMonth = new Date(selTahun, selBulan + 1, 0).getDate();
+        let html = '';
+
+        studentsInClass.forEach((santri, index) => {
+            let daysEmojiLine = '';
+            for(let d = 1; d <= daysInMonth; d++) {
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu);
+                    if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
+                });
+
+                if(record) {
+                    const st = String(record.status).toLowerCase();
+                    if(st.includes('hadir') && !st.includes('tidak')) daysEmojiLine += '✅';
+                    else if(st.includes('sakit')) daysEmojiLine += '💊';
+                    else if(st.includes('izin')) daysEmojiLine += 'ℹ️';
+                    else daysEmojiLine += '🅰️';
+                }
+            }
+
+            html += `
+                <div class="bg-slate-50 border border-gray-200 rounded-xl p-3 shadow-sm">
+                    <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-gray-200">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-xs">${index + 1}. ${santri.nama}</h4>
+                            <p class="text-[10px] text-gray-500 font-mono">Kelas: ${santri.kelas} | Guru: ${santri.guru}</p>
+                        </div>
+                    </div>
+                    <div class="text-xs font-mono tracking-widest bg-white p-2 rounded-lg border border-gray-100 text-emerald-700 font-bold overflow-x-auto min-h-[30px] flex items-center">
+                        ${daysEmojiLine || '<span class="text-gray-400 text-xs italic font-normal">Belum ada kehadiran tercatat bulan ini</span>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function kirimRekapKelasWA() {
+        const selKelas = document.getElementById('persiswaKelasSelect').value;
+        const selBulanIndex = parseInt(document.getElementById('persiswaBulanSelect').value);
+        const monthName = document.getElementById('persiswaBulanSelect').options[selBulanIndex].text;
+        const selTahun = parseInt(document.getElementById('persiswaTahunSelect').value);
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+
+        if(studentsInClass.length === 0) {
+            Toast.fire({ icon: 'error', title: 'Tidak ada santri di kelas ini.' });
+            return;
+        }
+
+        let maxDay = 1;
+        presensiHistory.forEach(item => {
+            let itemDate = parseGoogleSheetDate(item.waktu);
+            if(itemDate && itemDate.getMonth() === selBulanIndex && itemDate.getFullYear() === selTahun) {
+                if(item.kelas === selKelas && itemDate.getDate() > maxDay) {
+                    maxDay = itemDate.getDate();
+                }
+            }
+        });
+
+        let jadwalHari = classSchedules[selKelas] || "Senin s.d Sabtu";
+        let rawTeacher = studentsInClass[0].guru || "Ustadz Pengampu";
+        let teacherName = "Kak " + rawTeacher.replace(/^Ustadz\s+/i, "").replace(/^Ustadzah\s+/i, "");
+
+        let text = `🗃 *REKAP KEHADIRAN* \n` +
+                   `*_KELAS ${selKelas.toUpperCase()}_* \n\n` +
+                   `🔊 *Pengajar : ${teacherName}* \n` +
+                   `🕰 *Hari/Waktu : ${jadwalHari}* \n` +
+                   `📅 *Pertemuan Bulan ${monthName} : 1 s.d ${maxDay} ${monthName} ${selTahun}* \n\n`;
+
+        studentsInClass.forEach((santri, index) => {
+            let daysEmojiLine = '';
+            for(let d = 1; d <= maxDay; d++) {
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu);
+                    if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulanIndex && itemDate.getFullYear() === selTahun;
+                });
+
+                if(record) {
+                    const st = String(record.status).toLowerCase();
+                    if(st.includes('hadir') && !st.includes('tidak')) daysEmojiLine += '✅';
+                    else if(st.includes('sakit')) daysEmojiLine += '💊';
+                    else if(st.includes('izin')) daysEmojiLine += 'ℹ️';
+                    else daysEmojiLine += '🅰️';
+                }
+            }
+
+            text += `${index + 1}️⃣ *${santri.nama}*\n${daysEmojiLine || '-'}\n\n`;
+        });
+
+        text += `••••••••••••••••••••\n\n` +
+                `*KETERANGAN* \n` +
+                `✅ : Hadir \n` +
+                `ℹ️ : Izin \n` +
+                `🅰️ : Tanpa keterangan \n` +
+                `💊 : Sakit`;
+
+        const encoded = encodeURIComponent(text);
+        window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    }
+
+    function downloadCSV(filename = 'Data.csv') {
+        let tbody = document.getElementById('historyTableBody');
+        if(!document.getElementById('view-rekap').classList.contains('hidden')) tbody = document.getElementById('rekapTableBody');
+        let rows = tbody.querySelectorAll('tr');
+        if (rows.length === 0 || tbody.innerText.includes('Belum ada')) {
+            Toast.fire({ icon: 'error', title: 'Tabel kosong' });
+            return;
+        }
+
+        let csv = [];
+        let cols = document.querySelectorAll('thead th');
+        let header = [];
+        cols.forEach(c => header.push(`"${c.innerText.trim()}"`));
+        csv.push(header.join(','));
+
+        rows.forEach(row => {
+            let rowData = [];
+            row.querySelectorAll('td').forEach(cell => rowData.push(`"${cell.innerText.replace(/"/g, '""').trim()}"`));
+            csv.push(rowData.join(','));
+        });
+
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', filename);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    
+    function downloadRekapCSV() { downloadCSV('Laporan_Presensi_RQ.csv'); }
+
+    function bukaModalUrl() {
+        document.getElementById('inputUrlSheet').value = SCRIPT_URL;
+        document.getElementById('inputUrlLogo').value = LOGO_URL;
+        updateAudioUI();
+        document.getElementById('settingModal').classList.remove('hidden');
+    }
+    function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
+    function simpanUrl() {
+        const v = document.getElementById('inputUrlSheet').value.trim();
+        const l = document.getElementById('inputUrlLogo').value.trim();
+        const key = document.getElementById('inputGeminiApiKey').value.trim();
+
+        if(v.includes('script.google.com')) {
+            SCRIPT_URL = v;
+            localStorage.setItem('scriptUrlSheet', SCRIPT_URL);
+            LOGO_URL = l || DEFAULT_LOGO_URL;
+            localStorage.setItem('logoUrl', LOGO_URL);
+            geminiApiKey = key;
+            localStorage.setItem('geminiApiKey', geminiApiKey);
+            
+            applyLogo();
+            tutupModalUrl();
+            Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan' });
+            fetchHistoryFromSheets();
+        } else { Toast.fire({ icon: 'error', title: 'URL Sheet tidak valid' }); }
+    }
+
+    window.onload = function() {
+        applyLogo();
+        updateAudioUI();
+        populateSantriSelect();
+        populateClassDropdowns();
+        fetchHistoryFromSheets();
+        syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
+    }
+  </script>
+</body>
+</html>
