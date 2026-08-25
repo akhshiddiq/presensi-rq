@@ -569,8 +569,8 @@
                <label class="block text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5">
                  <i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)
                </label>
-               <input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-[10px] bg-white" placeholder="AIzaSy... (Opsional untuk Gemini AI TTS)">
-               <p class="text-[9px] text-gray-500 mt-1">Jika diisi, suara ramah akan diproses langsung oleh **Gemini 2.5 Flash Speech Generation** Google AI Studio.</p>
+               <input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-[10px] bg-white" placeholder="AQ.Ab8... atau AIzaSy...">
+               <p class="text-[9px] text-gray-500 mt-1">Menggunakan model resmi **Gemini 2.5 Flash TTS** dengan nada suara ekspresif, ramah, dan penuh kehangatan.</p>
             </div>
 
             <div>
@@ -691,40 +691,37 @@
       "Umar": "Senin, Rabu, Kamis"
     };
 
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
 
-    if(!localStorage.getItem('scriptUrlSheet')) localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
-    if(!localStorage.getItem('logoUrl')) localStorage.setItem('logoUrl', DEFAULT_LOGO_URL);
-    if(!localStorage.getItem('audioMode')) localStorage.setItem('audioMode', 'ai'); // 'ai', 'sfx', 'off'
-    if(!localStorage.getItem('sfxType')) localStorage.setItem('sfxType', 'blup'); // 'blup', 'tingdong', 'beep'
-    if(!localStorage.getItem('geminiApiKey')) localStorage.setItem('geminiApiKey', '');
-
+    if(!localStorage.getItem('scriptUrlSheet')) {
+        localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
+    }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
-    let audioMode = localStorage.getItem('audioMode');
-    let sfxType = localStorage.getItem('sfxType');
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
-
+    let audioMode = localStorage.getItem('audioMode') || 'ai'; // 'ai', 'sfx', 'off'
+    let sfxType = localStorage.getItem('sfxType') || 'blup'; // 'blup', 'tingdong', 'beep'
+    
     let presensiHistory = []; 
-    const deletedKeys = new Set();
+    let deletedKeys = new Set();
     let syncInterval;
     let html5QrCode;
     let isProcessing = false;
     let isCameraOn = false;
     let lastScannedId = "";
     let lastScanTime = 0;
-
     let audioCtx = null;
+
     function getAudioContext() {
-       if (!audioCtx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) audioCtx = new AudioContext();
-       }
-       if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-       }
-       return audioCtx;
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
     }
 
     function playSynthSound(type) {
@@ -738,63 +735,121 @@
                 const gain = ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.13);
+                osc.stop(now + 0.12);
             } else if (type === 'tingdong') {
                 const osc1 = ctx.createOscillator();
-                const osc2 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
-                const gain2 = ctx.createGain();
-                
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(659.25, now); 
+                osc1.frequency.setValueAtTime(880, now);
                 gain1.gain.setValueAtTime(0.25, now);
-                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 osc1.connect(gain1);
                 gain1.connect(ctx.destination);
                 osc1.start(now);
-                osc1.stop(now + 0.35);
+                osc1.stop(now + 0.3);
 
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(523.25, now + 0.15); 
-                gain2.gain.setValueAtTime(0.25, now + 0.15);
+                osc2.frequency.setValueAtTime(659.25, now + 0.18);
+                gain2.gain.setValueAtTime(0.25, now + 0.18);
                 gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
                 osc2.connect(gain2);
                 gain2.connect(ctx.destination);
-                osc2.start(now + 0.15);
+                osc2.start(now + 0.18);
                 osc2.stop(now + 0.55);
+            } else if (type === 'error') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.setValueAtTime(120, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
             } else {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now);
-                gain.gain.setValueAtTime(0.2, now);
+                osc.frequency.setValueAtTime(1046.5, now);
+                gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.16);
+                osc.stop(now + 0.15);
             }
-        } catch(e) {}
+        } catch (e) {
+            console.warn("Audio synth error:", e);
+        }
     }
 
-    function playAudioFeedback(type, santriObj) {
+    function playAudioFeedback(type, santri) {
         if (audioMode === 'off') return;
+        if (audioMode === 'sfx') {
+            playSynthSound(type === 'ok' ? sfxType : 'error');
+        } else if (audioMode === 'ai') {
+            if (type === 'ok' && santri) {
+                speakFriendlyAIGreeting(santri);
+            } else {
+                playSynthSound('beep');
+            }
+        }
+    }
 
-        if (type === 'error') {
-            playSynthSound('beep');
-            return;
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function pcmToWav(pcm16Data, sampleRate = 24000) {
+        const numChannels = 1;
+        const bytesPerSample = 2;
+        const blockAlign = numChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = pcm16Data.length * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        let offset = 44;
+        for (let i = 0; i < pcm16Data.length; i++, offset += 2) {
+            view.setInt16(offset, pcm16Data[i], true);
         }
 
-        if (audioMode === 'ai' && santriObj) {
-            speakFriendlyAIGreeting(santriObj);
-        } else {
-            playSynthSound(sfxType);
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
         }
     }
 
@@ -833,22 +888,25 @@
         const randomMotivation = quotes[Math.floor(Math.random() * quotes.length)];
         const fullText = `${opening} ${randomMotivation}`;
 
-        // 1. Jika API Key Gemini AI Studio diisi, panggil Gemini TTS API
+        // 1. Pemanggilan Resmi Gemini TTS Model (gemini-2.5-flash-preview-tts)
         if (geminiApiKey && geminiApiKey.trim() !== "") {
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey.trim()}`, {
+                const targetVoice = isAkhwat ? "Vindemiatrix" : "Achird";
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey.trim()}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{
-                            parts: [{ text: `Ucapkan kalimat berikut dengan nada hangat, penuh ramah dan kasih sayang dalam bahasa Indonesia: "${fullText}"` }]
+                            parts: [{ 
+                                text: `Ucapkan kalimat berikut dengan nada yang SANGAT ramah, hangat, ekspresif, bersemangat, dan gembira dalam Bahasa Indonesia: "${fullText}"` 
+                            }]
                         }],
                         generationConfig: {
                             responseModalities: ["AUDIO"],
                             speechConfig: {
                                 voiceConfig: {
                                     prebuiltVoiceConfig: {
-                                        voiceName: isAkhwat ? "Aoede" : "Puck"
+                                        voiceName: targetVoice
                                     }
                                 }
                             }
@@ -857,16 +915,31 @@
                 });
 
                 const data = await response.json();
-                const audioPart = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+                const part = data?.candidates?.[0]?.content?.parts?.[0];
 
-                if (audioPart && audioPart.data) {
-                    const audioSrc = `data:${audioPart.mimeType || 'audio/mp3'};base64,${audioPart.data}`;
-                    const audio = new Audio(audioSrc);
+                if (part && part.inlineData && part.inlineData.data) {
+                    const base64Data = part.inlineData.data;
+                    const mimeType = part.inlineData.mimeType || "audio/L16;rate=24000";
+                    let sampleRate = 24000;
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    if (rateMatch) {
+                        sampleRate = parseInt(rateMatch[1], 10);
+                    }
+
+                    const pcmBuffer = base64ToArrayBuffer(base64Data);
+                    const pcm16 = new Int16Array(pcmBuffer);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    const audio = new Audio(audioUrl);
                     audio.play();
                     return;
+                } else if (data.error) {
+                    console.warn("Gemini TTS Error:", data.error);
+                    Toast.fire({ icon: 'warning', title: 'Periksa API Key Gemini Anda.' });
                 }
             } catch (err) {
-                // Fallback otomatis jika API key invalid / limit
+                console.error("Gemini TTS Fetch Error:", err);
             }
         }
 
