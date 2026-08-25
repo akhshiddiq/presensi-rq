@@ -157,9 +157,12 @@
     </div>
     
     <div class="flex items-center gap-2 self-end sm:self-auto">
-      <button onclick="toggleAudio()" class="w-7 h-7 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/20" title="Suara Beep Aktif/Mati">
-        <i id="audioIcon" class="fas fa-volume-up text-[10px]"></i>
+      <!-- Quick Audio Mode Toggle Button -->
+      <button onclick="cycleAudioMode()" id="btnHeaderAudio" class="flex items-center gap-1.5 px-2.5 py-1.5 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[11px] font-medium" title="Ubah Mode Suara">
+        <i id="audioIcon" class="fas fa-robot text-brand-gold text-[12px]"></i>
+        <span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span>
       </button>
+
       <button onclick="bukaModalUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-lg text-[11px] font-bold text-white shadow-gold transition-all">
         <i class="fas fa-cog text-white text-[9px]"></i> Pengaturan
       </button>
@@ -257,7 +260,7 @@
                     </div>
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih dari 87 Santri Terdaftar</label>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1" id="totalSantriLabel">Pilih dari Santri Terdaftar</label>
                             <select id="santriSelect" class="modern-input">
                                 <option value="">-- Pilih Nama Santri --</option>
                             </select>
@@ -278,7 +281,6 @@
                 </div>
             </div>
 
-            <!-- Kolom Kanan: Tabel Riwayat Terkini -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden h-full flex flex-col">
                     <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border-b border-gray-100">
@@ -517,7 +519,6 @@
 
           <div class="p-3 overflow-x-auto relative w-full" style="max-height: 60vh;">
                <div id="persiswaContainer" class="space-y-3 min-w-[900px]">
-                   <!-- Konten per siswa akan di-generate via JS -->
                </div>
           </div>
         </div>
@@ -534,12 +535,44 @@
 
   <div id="settingModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="tutupModalUrl()"></div>
-    <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in border border-gray-100">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in border border-gray-100 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2.5">
-            <h3 class="text-sm font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem</h3>
+            <h3 class="text-sm font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem & Suara</h3>
             <button onclick="tutupModalUrl()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
         </div>
-        <div class="space-y-3.5 mb-5">
+        
+        <div class="space-y-4 mb-5">
+            <!-- Mode Suara Presensi -->
+            <div class="bg-emerald-50/70 border border-emerald-100 p-3.5 rounded-2xl">
+               <label class="block text-xs font-bold text-emerald-900 mb-2 flex items-center gap-1.5">
+                 <i class="fas fa-volume-up text-brand-green"></i> Mode Suara Presensi Masuk
+               </label>
+               <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-xs bg-white">
+                 <option value="ai">🤖 Suara AI Studio (Ramah & Motivasi)</option>
+                 <option value="sfx">🔔 Efek Suara (Blup / Ting-Dong / Beep)</option>
+                 <option value="off">🔇 Mute / Tanpa Suara</option>
+               </select>
+               
+               <!-- Pilihan Efek Suara khusus mode SFX -->
+               <div id="sfxOptionsContainer" class="mt-2.5 pt-2.5 border-t border-emerald-100/60 flex items-center justify-between text-xs">
+                 <span class="text-[11px] font-bold text-gray-600">Jenis Efek Suara:</span>
+                 <select id="modalSfxType" onchange="updateSfxType(this.value)" class="p-1.5 rounded-lg border border-gray-200 text-xs font-semibold bg-white outline-none">
+                    <option value="blup">🫧 Blup (Gelembung Air)</option>
+                    <option value="tingdong">🔔 Ting-Dong (Melodis)</option>
+                    <option value="beep">📻 Beep Mesin Standard</option>
+                 </select>
+               </div>
+            </div>
+
+            <!-- Gemini API Key Input for Gemini TTS -->
+            <div class="bg-amber-50/60 border border-amber-200/60 p-3 rounded-2xl">
+               <label class="block text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                 <i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)
+               </label>
+               <input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-[10px] bg-white" placeholder="AIzaSy... (Opsional untuk Gemini AI TTS)">
+               <p class="text-[9px] text-gray-500 mt-1">Jika diisi, suara ramah akan diproses langsung oleh **Gemini 2.5 Flash Speech Generation** Google AI Studio.</p>
+            </div>
+
             <div>
                <label class="block text-xs font-bold text-gray-700 mb-1">URL Google Apps Script</label>
                <input type="text" id="inputUrlSheet" class="modern-input font-mono text-[10px]" placeholder="https://script.google.com/macros/s/...">
@@ -547,112 +580,102 @@
             <div>
                <label class="block text-xs font-bold text-gray-700 mb-1">URL Gambar Logo Sekolah / RQ (Opsional)</label>
                <input type="text" id="inputUrlLogo" class="modern-input text-[10px]" placeholder="https://lh3.googleusercontent.com/d/... atau https://...">
-               <p class="text-[9px] text-gray-400 mt-1">Gunakan link langsung Google Drive atau web image untuk mengganti logo di header.</p>
-            </div>
-            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-3">
-               <div class="text-brand-green mt-0.5"><i class="fas fa-sync-alt"></i></div>
-               <div>
-                  <h4 class="text-xs font-bold text-brand-green">Auto-Sync Aktif</h4>
-                  <p class="text-[10px] text-gray-600 mt-0.5">Sinkronisasi otomatis aktif setiap 4 detik.</p>
-               </div>
             </div>
         </div>
+
         <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95 text-xs">Simpan Pengaturan</button>
     </div>
   </div>
 
-  <audio id="beepOk" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-  <audio id="beepError" src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3" preload="auto"></audio>
-
   <script>
-    const masterDataSantri = [
-      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik" },
-      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik" },
-      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
-      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
-      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ052", nama: "Alifiandra Ahmad Hudaya", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ054", nama: "Dilara Adrena Ramadhani", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega" },
-      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ065", nama: "Arkhan Salman Al-Farisi", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik" }
+    let masterDataSantri = [
+      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
+      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ052", nama: "Alifiandra Ahmad Hudaya", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ054", nama: "Dilara Adrena Ramadhani", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ065", nama: "Arkhan Salman Al-Farisi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
+      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
+      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
+      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" }
     ];
 
     const classSchedules = {
@@ -671,21 +694,254 @@
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
 
-    if(!localStorage.getItem('scriptUrlSheet')) {
-        localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
-    }
-    if(!localStorage.getItem('logoUrl')) {
-        localStorage.setItem('logoUrl', DEFAULT_LOGO_URL);
-    }
+    if(!localStorage.getItem('scriptUrlSheet')) localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
+    if(!localStorage.getItem('logoUrl')) localStorage.setItem('logoUrl', DEFAULT_LOGO_URL);
+    if(!localStorage.getItem('audioMode')) localStorage.setItem('audioMode', 'ai'); // 'ai', 'sfx', 'off'
+    if(!localStorage.getItem('sfxType')) localStorage.setItem('sfxType', 'blup'); // 'blup', 'tingdong', 'beep'
+    if(!localStorage.getItem('geminiApiKey')) localStorage.setItem('geminiApiKey', '');
 
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
+    let audioMode = localStorage.getItem('audioMode');
+    let sfxType = localStorage.getItem('sfxType');
+    let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
+
     let presensiHistory = []; 
+    const deletedKeys = new Set();
     let syncInterval;
     let html5QrCode;
-    let audioEnabled = true;
     let isProcessing = false;
     let isCameraOn = false;
+    let lastScannedId = "";
+    let lastScanTime = 0;
+
+    let audioCtx = null;
+    function getAudioContext() {
+       if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) audioCtx = new AudioContext();
+       }
+       if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+       }
+       return audioCtx;
+    }
+
+    function playSynthSound(type) {
+        try {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+
+            if (type === 'blup') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.13);
+            } else if (type === 'tingdong') {
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                const gain2 = ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now); 
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.35);
+
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(523.25, now + 0.15); 
+                gain2.gain.setValueAtTime(0.25, now + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.55);
+            } else {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.16);
+            }
+        } catch(e) {}
+    }
+
+    function playAudioFeedback(type, santriObj) {
+        if (audioMode === 'off') return;
+
+        if (type === 'error') {
+            playSynthSound('beep');
+            return;
+        }
+
+        if (audioMode === 'ai' && santriObj) {
+            speakFriendlyAIGreeting(santriObj);
+        } else {
+            playSynthSound(sfxType);
+        }
+    }
+
+    async function speakFriendlyAIGreeting(santri) {
+        let rawName = (santri.nama || "Santri").trim();
+        let callName = rawName.split(" ")[0];
+        if ((callName.length <= 2 || callName.endsWith(".")) && rawName.split(" ").length > 1) {
+            callName = rawName.split(" ")[1];
+        }
+
+        let isAkhwat = (santri.gender === 'P');
+        if (!isAkhwat) {
+             const nameLow = rawName.toLowerCase();
+             if (nameLow.includes("putri") || nameLow.includes("nisa") || nameLow.includes("zara") || nameLow.includes("hafiza") || nameLow.includes("az-zahra") || nameLow.includes("khadijah") || nameLow.includes("aisyah")) {
+                 isAkhwat = true;
+             }
+        }
+
+        const opening = isAkhwat ? `Jazakillahu khairan, ${callName}.` : `Jazakallahu khairan, ${callName}.`;
+
+        const ikhwanMotivations = [
+            `Semangat menuntut ilmu dan menambah hafalan Al-Qur'an hari ini ya! Semoga Allah memberkahi usahamu.`,
+            `Semoga Allah mudahkan hafalanmu dan menjadikanmu anak yang sholeh serta membanggakan orang tua.`,
+            `Tetap semangat dan istiqamah dalam kebaikan! Semoga Allah selalu melimpahkan kemudahan untukmu.`,
+            `Semangat muraja'ah hari ini! Semoga hafalanmu makin melekat dan membawa keberkahan.`
+        ];
+
+        const akhwatMotivations = [
+            `Semangat menuntut ilmu dan menambah hafalan Al-Qur'an hari ini ya! Semoga Allah memberkahi usahamu.`,
+            `Semoga Allah mudahkan hafalanmu dan menjadikanmu anak yang sholehah serta membanggakan orang tua.`,
+            `Tetap semangat dan istiqamah dalam kebaikan! Semoga Allah selalu melimpahkan kemudahan untukmu.`,
+            `Semangat muraja'ah hari ini! Semoga hafalanmu makin melekat dan membawa keberkahan.`
+        ];
+
+        const quotes = isAkhwat ? akhwatMotivations : ikhwanMotivations;
+        const randomMotivation = quotes[Math.floor(Math.random() * quotes.length)];
+        const fullText = `${opening} ${randomMotivation}`;
+
+        // 1. Jika API Key Gemini AI Studio diisi, panggil Gemini TTS API
+        if (geminiApiKey && geminiApiKey.trim() !== "") {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey.trim()}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `Ucapkan kalimat berikut dengan nada hangat, penuh ramah dan kasih sayang dalam bahasa Indonesia: "${fullText}"` }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: isAkhwat ? "Aoede" : "Puck"
+                                    }
+                                }
+                            }
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                const audioPart = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+
+                if (audioPart && audioPart.data) {
+                    const audioSrc = `data:${audioPart.mimeType || 'audio/mp3'};base64,${audioPart.data}`;
+                    const audio = new Audio(audioSrc);
+                    audio.play();
+                    return;
+                }
+            } catch (err) {
+                // Fallback otomatis jika API key invalid / limit
+            }
+        }
+
+        // 2. Fallback Web Speech Synthesis
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(fullText);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.95; 
+            utterance.pitch = 1.05;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.startsWith('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            playSynthSound(sfxType);
+        }
+    }
+
+    function updateAudioUI() {
+        const btnIcon = document.getElementById('audioIcon');
+        const btnLabel = document.getElementById('audioLabelHeader');
+        const modalSelect = document.getElementById('modalAudioMode');
+        const modalSfxSelect = document.getElementById('modalSfxType');
+        const modalApiKeyInput = document.getElementById('inputGeminiApiKey');
+        const sfxContainer = document.getElementById('sfxOptionsContainer');
+
+        if (modalSelect) modalSelect.value = audioMode;
+        if (modalSfxSelect) modalSfxSelect.value = sfxType;
+        if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
+
+        if (sfxContainer) {
+            if (audioMode === 'sfx') sfxContainer.classList.remove('hidden');
+            else sfxContainer.classList.add('hidden');
+        }
+
+        if (audioMode === 'ai') {
+            btnIcon.className = "fas fa-robot text-brand-gold text-[12px]";
+            btnLabel.innerText = "Gemini AI Studio";
+        } else if (audioMode === 'sfx') {
+            btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]";
+            btnLabel.innerText = "Efek Suara (" + sfxType.toUpperCase() + ")";
+        } else {
+            btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]";
+            btnLabel.innerText = "Mute / Mati";
+        }
+    }
+
+    function cycleAudioMode() {
+        getAudioContext();
+        if (audioMode === 'ai') audioMode = 'sfx';
+        else if (audioMode === 'sfx') audioMode = 'off';
+        else audioMode = 'ai';
+
+        localStorage.setItem('audioMode', audioMode);
+        updateAudioUI();
+        
+        if (audioMode === 'sfx') playSynthSound(sfxType);
+        else if (audioMode === 'ai') speakFriendlyAIGreeting({ nama: "Santri", gender: "L" });
+    }
+
+    function updateAudioModeFromSelect(val) {
+        audioMode = val;
+        localStorage.setItem('audioMode', audioMode);
+        updateAudioUI();
+    }
+
+    function updateSfxType(val) {
+        sfxType = val;
+        localStorage.setItem('sfxType', sfxType);
+        playSynthSound(sfxType);
+        updateAudioUI();
+    }
 
     function applyLogo() {
       const img = document.getElementById('appLogo');
@@ -706,6 +962,62 @@
       if (defIcon) defIcon.classList.remove('hidden');
     }
 
+    function populateSantriSelect() {
+      const selSantri = document.getElementById('santriSelect');
+      const prevVal = selSantri.value;
+      selSantri.innerHTML = `<option value="">-- Pilih Nama Santri --</option>`;
+      masterDataSantri.forEach(s => {
+          selSantri.innerHTML += `<option value="${s.id}">${s.kelas} - ${s.nama}</option>`;
+      });
+      selSantri.value = prevVal;
+      document.getElementById('totalSantriLabel').innerText = `Pilih dari ${masterDataSantri.length} Santri Terdaftar`;
+    }
+
+    function populateClassDropdowns() {
+      const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].filter(Boolean).sort();
+      const rekapKelas = document.getElementById('rekapFilterKelas');
+      const currentRekapVal = rekapKelas.value;
+      rekapKelas.innerHTML = `<option value="Semua Kelas">-- Semua Kelas --</option>`;
+      uniqueClasses.forEach(c => rekapKelas.innerHTML += `<option value="${c}">${c}</option>`);
+      if (uniqueClasses.includes(currentRekapVal)) rekapKelas.value = currentRekapVal;
+
+      const selKalender = document.getElementById('kalenderKelasSelect');
+      if (selKalender) {
+        const prevKalenderVal = selKalender.value;
+        selKalender.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (prevKalenderVal && uniqueClasses.includes(prevKalenderVal)) selKalender.value = prevKalenderVal;
+      }
+
+      const selPerSiswa = document.getElementById('persiswaKelasSelect');
+      if (selPerSiswa) {
+        const prevPerSiswaVal = selPerSiswa.value;
+        selPerSiswa.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (prevPerSiswaVal && uniqueClasses.includes(prevPerSiswaVal)) selPerSiswa.value = prevPerSiswaVal;
+      }
+    }
+
+    function syncMasterSantriList(newSantriList) {
+      if (!Array.isArray(newSantriList) || newSantriList.length === 0) return;
+      
+      const formatted = newSantriList.map((item, idx) => ({
+        id: item.id || `IDSRQ_${idx+1}`,
+        nama: item.nama || "Tanpa Nama",
+        kelas: item.kelas || "Umum",
+        guru: item.guru || "Ustadz/ah",
+        gender: item.gender || (item.nama && item.nama.toLowerCase().includes("putri") ? "P" : "L")
+      }));
+
+      formatted.sort((a,b) => {
+          let classCmp = a.kelas.localeCompare(b.kelas);
+          if (classCmp !== 0) return classCmp;
+          return a.nama.localeCompare(b.nama);
+      });
+
+      masterDataSantri = formatted;
+      populateSantriSelect();
+      populateClassDropdowns();
+    }
+
     function toggleNavMenu(event) {
         event.stopPropagation();
         const dropdown = document.getElementById('navMenuDropdown');
@@ -718,19 +1030,6 @@
         if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
             dropdown.classList.add('hidden');
         }
-    }
-
-    function playBeep(type) {
-      if (!audioEnabled) return;
-      try {
-        if(type === 'ok') document.getElementById('beepOk').play();
-        else if(type === 'error') document.getElementById('beepError').play();
-      } catch(e) {}
-    }
-
-    function toggleAudio() {
-      audioEnabled = !audioEnabled;
-      document.getElementById('audioIcon').className = audioEnabled ? "fas fa-volume-up text-[10px]" : "fas fa-volume-mute text-[10px] text-red-300";
     }
 
     const Toast = Swal.mixin({
@@ -772,13 +1071,15 @@
         const btn = document.getElementById('btnToggleCam');
         const camContainer = document.getElementById('reader-container');
         
+        getAudioContext();
+
         if(isCameraOn) {
             try {
                 if(html5QrCode) await html5QrCode.stop();
                 isCameraOn = false;
                 camContainer.classList.add('hidden');
                 btn.innerHTML = '<i class="fas fa-video"></i> Nyalakan Kamera';
-                btn.className = "w-full py-2.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 text-xs";
+                btn.className = "w-full py-2.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 text-xs";
             } catch(e) {}
         } else {
             camContainer.classList.remove('hidden');
@@ -812,14 +1113,25 @@
     }
 
     function processScanResult(decodedText) {
+       const now = Date.now();
+       const trimmedId = decodedText.trim();
+
+       if (trimmedId === lastScannedId && (now - lastScanTime) < 2500) return;
        if (isProcessing) return;
-       playBeep('ok');
-       const santri = masterDataSantri.find(s => s.id === decodedText.trim());
-       if (santri) postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir");
-       else postDataToGoogle(decodedText, "Santri Tidak Dikenal", "-", "-", "Hadir");
+
+       lastScannedId = trimmedId;
+       lastScanTime = now;
+
+       const santri = masterDataSantri.find(s => s.id === trimmedId);
+       
+       playAudioFeedback('ok', santri);
+
+       if (santri) postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", true);
+       else postDataToGoogle(trimmedId, "Santri Tidak Dikenal", "-", "-", "Hadir", true);
     }
 
     function processAbsenManual() {
+       getAudioContext();
        const select = document.getElementById('santriSelect');
        const status = document.getElementById('statusManual').value;
        if (select.value === "") {
@@ -828,12 +1140,13 @@
        }
        const santri = masterDataSantri.find(s => s.id === select.value);
        if (santri) {
-           postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, status);
+           playAudioFeedback('ok', santri);
+           postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, status, false);
            select.value = "";
        }
     }
 
-    function postDataToGoogle(idSantri, namaSantri, kelas, guru, status) {
+    function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, isFromScan = false) {
        if (isProcessing) return;
        isProcessing = true;
        const unikey = "temp_" + Date.now();
@@ -850,10 +1163,12 @@
        .then(data => {
            isProcessing = false;
            if(data.status === 'success') {
-               Toast.fire({ icon: 'success', title: `${namaSantri} (${status}) Berhasil!` });
+               if (!isFromScan) {
+                   Toast.fire({ icon: 'success', title: `${namaSantri} (${status}) Berhasil!` });
+               }
                fetchHistoryFromSheets();
            } else {
-               playBeep('error');
+               playAudioFeedback('error');
                Toast.fire({ icon: 'error', title: 'Gagal mencatat di server.' });
            }
        })
@@ -865,9 +1180,15 @@
 
     function hapusData(key, event) {
         if(event) event.stopPropagation();
+        
+        const targetItem = presensiHistory.find(item => item.key === key) || {};
+        const nama = targetItem.namaSantri || "";
+        const waktu = targetItem.waktu || "";
+        const idSantri = targetItem.idSantri || "";
+
         Swal.fire({
             title: 'Batalkan Presensi?',
-            text: "Data akan dihapus dari sistem.",
+            text: nama ? `Hapus data presensi ${nama}?` : "Data akan dihapus dari Google Sheet.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -875,12 +1196,34 @@
             confirmButtonText: 'Ya, Batalkan!'
         }).then((result) => {
             if (result.isConfirmed) {
-                presensiHistory = presensiHistory.filter(item => item.key !== key);
+                if(key) deletedKeys.add(key);
+                if(waktu) deletedKeys.add(waktu);
+                if(nama && waktu) deletedKeys.add(nama + "_" + waktu);
+
+                presensiHistory = presensiHistory.filter(item => 
+                    item.key !== key && 
+                    !(nama && waktu && item.namaSantri === nama && item.waktu === waktu)
+                );
                 renderHistoryTable();
+                
                 fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: new URLSearchParams({ action: 'delete', idSantri: key })
-                }).then(()=> fetchHistoryFromSheets());
+                    body: new URLSearchParams({ 
+                        action: 'delete', 
+                        key: key || '', 
+                        idSantri: idSantri || key || '', 
+                        namaSantri: nama || '',
+                        waktu: waktu || ''
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                   Toast.fire({ icon: 'success', title: 'Presensi berhasil dibatalkan dari Google Sheet!' });
+                   fetchHistoryFromSheets();
+                })
+                .catch(err => {
+                   fetchHistoryFromSheets();
+                });
             }
         });
     }
@@ -894,9 +1237,19 @@
         .then(data => {
             document.getElementById('offlineAlert').classList.add('hidden');
             document.getElementById('scriptUrlDisplay').innerHTML = '<i class="fas fa-check-circle text-brand-green mr-1"></i> Connected';
-            if(data.status === 'online' && Array.isArray(data.history)) {
-                presensiHistory = data.history;
-                renderHistoryTable();
+            if(data.status === 'online') {
+                if(Array.isArray(data.history)) {
+                    presensiHistory = data.history.filter(item => {
+                        if (deletedKeys.has(item.key)) return false;
+                        if (deletedKeys.has(item.waktu)) return false;
+                        if (deletedKeys.has(item.namaSantri + "_" + item.waktu)) return false;
+                        return true;
+                    });
+                    renderHistoryTable();
+                }
+                if(Array.isArray(data.santri) && data.santri.length > 0) {
+                    syncMasterSantriList(data.santri);
+                }
                 if(!document.getElementById('view-rekap').classList.contains('hidden')) renderRekapTable();
                 if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
                 if(!document.getElementById('view-persiswa').classList.contains('hidden')) renderPerSiswaCalendar();
@@ -929,7 +1282,7 @@
             html += `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-3 text-center">
-                        <button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto">
+                        <button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto" title="Batalkan / Hapus">
                             <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
                     </td>
@@ -1012,12 +1365,8 @@
     }
 
     function prepareKalenderOptions() {
-        const selKelas = document.getElementById('kalenderKelasSelect');
+        populateClassDropdowns();
         const selTahun = document.getElementById('kalenderTahunSelect');
-        const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
-        if(selKelas.options.length <= 1) {
-            selKelas.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        }
         if(selTahun.options.length === 0) {
             const currentYear = new Date().getFullYear();
             for(let y = currentYear - 1; y <= currentYear + 2; y++) {
@@ -1036,7 +1385,7 @@
         const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
         
         if(studentsInClass.length === 0) {
-             tbody.innerHTML = `<tr><td colspan="32" class="p-8 text-center">Tidak ada santri di kelas ini.</td></tr>`;
+             tbody.innerHTML = `<tr><td colspan="32" class="p-8 text-center text-gray-400">Tidak ada santri di kelas ini.</td></tr>`;
              return;
         }
 
@@ -1131,12 +1480,8 @@
     }
 
     function preparePerSiswaOptions() {
-        const selKelas = document.getElementById('persiswaKelasSelect');
+        populateClassDropdowns();
         const selTahun = document.getElementById('persiswaTahunSelect');
-        const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
-        if(selKelas.options.length <= 1) {
-            selKelas.innerHTML = uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-        }
         if(selTahun.options.length === 0) {
             const currentYear = new Date().getFullYear();
             for(let y = currentYear - 1; y <= currentYear + 2; y++) {
@@ -1303,17 +1648,23 @@
     function bukaModalUrl() {
         document.getElementById('inputUrlSheet').value = SCRIPT_URL;
         document.getElementById('inputUrlLogo').value = LOGO_URL;
+        updateAudioUI();
         document.getElementById('settingModal').classList.remove('hidden');
     }
     function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
     function simpanUrl() {
         const v = document.getElementById('inputUrlSheet').value.trim();
         const l = document.getElementById('inputUrlLogo').value.trim();
+        const key = document.getElementById('inputGeminiApiKey').value.trim();
+
         if(v.includes('script.google.com')) {
             SCRIPT_URL = v;
             localStorage.setItem('scriptUrlSheet', SCRIPT_URL);
             LOGO_URL = l || DEFAULT_LOGO_URL;
             localStorage.setItem('logoUrl', LOGO_URL);
+            geminiApiKey = key;
+            localStorage.setItem('geminiApiKey', geminiApiKey);
+            
             applyLogo();
             tutupModalUrl();
             Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan' });
@@ -1323,22 +1674,15 @@
 
     window.onload = function() {
         applyLogo();
-
-        const selSantri = document.getElementById('santriSelect');
-        masterDataSantri.sort((a,b) => {
-            let classCmp = a.kelas.localeCompare(b.kelas);
-            if (classCmp !== 0) return classCmp;
-            return a.nama.localeCompare(b.nama);
-        }).forEach(s => {
-            selSantri.innerHTML += `<option value="${s.id}">${s.kelas} - ${s.nama}</option>`;
-        });
-
-        const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].sort();
-        const rekapKelas = document.getElementById('rekapFilterKelas');
-        uniqueClasses.forEach(c => rekapKelas.innerHTML += `<option value="${c}">${c}</option>`);
-        
+        updateAudioUI();
+        populateSantriSelect();
+        populateClassDropdowns();
         fetchHistoryFromSheets();
         syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
     }
   </script>
 </body>
