@@ -854,7 +854,6 @@
     }
 
     async function speakFriendlyAIGreeting(santri) {
-        // PERBAIKAN: Hentikan Web Speech Synthesis secara total di awal agar tidak ada bentrokan suara robot!
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
         }
@@ -876,24 +875,27 @@
         const opening = isAkhwat ? `Jazakillahu khairan, ${callName}.` : `Jazakallahu khairan, ${callName}.`;
 
         const ikhwanMotivations = [
-            `Semangat menuntut ilmu dan menambah hafalan Al-Qur'an hari ini ya! Semoga Allah memberkahi usahamu.`,
-            `Semoga Allah mudahkan hafalanmu dan menjadikanmu anak yang sholeh serta membanggakan orang tua.`,
-            `Tetap semangat dan istiqamah dalam kebaikan! Semoga Allah selalu melimpahkan kemudahan untukmu.`,
-            `Semangat muraja'ah hari ini! Semoga hafalanmu makin melekat dan membawa keberkahan.`
+            `Semangat menuntut ilmu dan hafalan Al-Qur'an ya!`,
+            `Semoga Allah mudahkan hafalanmu hari ini.`,
+            `Tetap semangat dan istiqamah dalam kebaikan!`,
+            `Semangat muraja'ah hari ini ya!`
         ];
 
         const akhwatMotivations = [
-            `Semangat menuntut ilmu dan menambah hafalan Al-Qur'an hari ini ya! Semoga Allah memberkahi usahamu.`,
-            `Semoga Allah mudahkan hafalanmu dan menjadikanmu anak yang sholehah serta membanggakan orang tua.`,
-            `Tetap semangat dan istiqamah dalam kebaikan! Semoga Allah selalu melimpahkan kemudahan untukmu.`,
-            `Semangat muraja'ah hari ini! Semoga hafalanmu makin melekat dan membawa keberkahan.`
+            `Semangat menuntut ilmu dan hafalan Al-Qur'an ya!`,
+            `Semoga Allah mudahkan hafalanmu hari ini.`,
+            `Tetap semangat dan istiqamah dalam kebaikan!`,
+            `Semangat muraja'ah hari ini ya!`
         ];
 
         const quotes = isAkhwat ? akhwatMotivations : ikhwanMotivations;
         const randomMotivation = quotes[Math.floor(Math.random() * quotes.length)];
         const fullText = `${opening} ${randomMotivation}`;
 
-        // 1. Pemanggilan Resmi Gemini TTS Model (gemini-2.5-flash-preview-tts)
+        // Bunyi konfirmasi instan (0ms delay) agar pengguna langsung tahu scan berhasil
+        playSynthSound('blup');
+
+        // 1. Pemanggilan Resmi Gemini TTS Model (gemini-2.5-flash-preview-tts) dengan Teks Ringkas Fast-Response
         if (geminiApiKey && geminiApiKey.trim() !== "") {
             try {
                 const targetVoice = isAkhwat ? "Vindemiatrix" : "Achird";
@@ -903,7 +905,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{ 
-                                text: `Ucapkan kalimat berikut dengan nada yang SANGAT ramah, hangat, ekspresif, bersemangat, dan gembira dalam Bahasa Indonesia: "${fullText}"` 
+                                text: `Say warmly, cheerfully, and enthusiastically in Indonesian: ${fullText}` 
                             }]
                         }],
                         generationConfig: {
@@ -936,16 +938,16 @@
                     const wavBlob = pcmToWav(pcm16, sampleRate);
                     const audioUrl = URL.createObjectURL(wavBlob);
                     
-                    // Pastikan sekali lagi suara sintetis browser dimatikan sebelum memutar Gemini audio
                     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
                     const audio = new Audio(audioUrl);
+                    audio.onended = () => URL.revokeObjectURL(audioUrl);
                     audio.play();
-                    return; // Berhasil menggunakan suara ramah Gemini TTS! Hentikan fungsi di sini tanpa fallback robot.
+                    return; 
                 } else if (data.error) {
                     console.warn("Gemini TTS Error:", data.error);
                     Toast.fire({ icon: 'warning', title: 'Periksa API Key Gemini Anda.' });
-                    return; // Jangan jalankan suara robot browser jika API Key salah!
+                    return; 
                 }
             } catch (err) {
                 console.error("Gemini TTS Fetch Error:", err);
@@ -958,7 +960,7 @@
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(fullText);
             utterance.lang = 'id-ID';
-            utterance.rate = 0.95; 
+            utterance.rate = 1.05; 
             utterance.pitch = 1.05;
 
             const voices = window.speechSynthesis.getVoices();
@@ -966,8 +968,6 @@
             if (idVoice) utterance.voice = idVoice;
 
             window.speechSynthesis.speak(utterance);
-        } else {
-            playSynthSound(sfxType);
         }
     }
 
