@@ -215,7 +215,7 @@
     <!-- ================= TAB 1: PEMINDAI KAMERA & RIWAYAT SCAN ================= -->
     <div id="view-live" class="space-y-5 animate-fade-in block">
         <!-- Section Scanner Kamera Berukuran Besar -->
-        <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4] max-w-3xl mx-auto w-full p-2.5 sm:p-5">
+        <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4] max-w-4xl mx-auto w-full p-2 sm:p-5">
             <div class="text-center flex flex-col items-center">
                 <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 text-brand-green rounded-2xl mb-2 shadow-sm border border-emerald-100">
                     <i class="fas fa-qrcode text-xl"></i>
@@ -224,20 +224,20 @@
                 <p class="text-xs text-gray-500 mb-3">Arahkan QR Code kartu santri ke dalam area kamera</p>
 
                 <!-- Area Kamera scanner diperbesar penuh untuk kemudahan HP -->
-                <div id="reader-container" class="hidden relative rounded-2xl overflow-hidden border-4 border-emerald-500 shadow-2xl bg-black mb-4 aspect-square w-full max-w-lg sm:max-w-xl mx-auto">
+                <div id="reader-container" class="hidden relative rounded-2xl overflow-hidden border-4 border-emerald-500 shadow-2xl bg-black mb-4 aspect-square w-full max-w-2xl mx-auto">
                      <div id="reader" class="w-full h-full object-cover"></div>
                      <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-                         <div class="w-[80%] h-[80%] border-2 border-white/60 rounded-xl relative shadow-[0_0_20px_rgba(0,0,0,0.6)]">
-                            <div class="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-brand-gold -mt-1 -ml-1 rounded-tl"></div>
-                            <div class="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-brand-gold -mt-1 -mr-1 rounded-tr"></div>
-                            <div class="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-brand-gold -mb-1 -ml-1 rounded-bl"></div>
-                            <div class="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-brand-gold -mb-1 -mr-1 rounded-br"></div>
+                         <div class="w-[85%] h-[85%] border-2 border-white/70 rounded-2xl relative shadow-[0_0_25px_rgba(0,0,0,0.7)]">
+                            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-brand-gold -mt-1 -ml-1 rounded-tl"></div>
+                            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-brand-gold -mt-1 -mr-1 rounded-tr"></div>
+                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-brand-gold -mb-1 -ml-1 rounded-bl"></div>
+                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-brand-gold -mb-1 -mr-1 rounded-br"></div>
                          </div>
-                         <div class="absolute top-1/2 left-0 w-full h-1 bg-brand-green shadow-[0_0_12px_3px_rgba(5,150,105,0.9)] animate-[scan_2s_ease-in-out_infinite]"></div>
+                         <div class="absolute top-1/2 left-0 w-full h-1 bg-brand-green shadow-[0_0_15px_4px_rgba(5,150,105,0.9)] animate-[scan_2s_ease-in-out_infinite]"></div>
                      </div>
                 </div>
 
-                <button id="btnToggleCam" onclick="toggleCamera()" class="w-full max-w-lg py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm">
+                <button id="btnToggleCam" onclick="toggleCamera()" class="w-full max-w-2xl py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm">
                     <i class="fas fa-video text-sm"></i> Nyalakan Kamera
                 </button>
             </div>
@@ -1141,10 +1141,10 @@
                 await html5QrCode.start(
                    { facingMode: "environment" },
                    { 
-                     fps: 15, 
+                     fps: 20, 
                      qrbox: (viewfinderWidth, viewfinderHeight) => {
                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                       const qrboxSize = Math.floor(minEdge * 0.8);
+                       const qrboxSize = Math.floor(minEdge * 0.85);
                        return { width: qrboxSize, height: qrboxSize };
                      }
                    },
@@ -1152,12 +1152,12 @@
                 );
                 isCameraOn = true;
                 btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera';
-                btn.className = "w-full max-w-md py-3.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+                btn.className = "w-full max-w-2xl py-3.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
             } catch (err) {
                 camContainer.classList.add('hidden');
                 isCameraOn = false;
                 btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
-                btn.className = "w-full max-w-md py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
+                btn.className = "w-full max-w-2xl py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
                 
                 Swal.fire({
                     icon: 'warning',
