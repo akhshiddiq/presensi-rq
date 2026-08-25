@@ -548,7 +548,7 @@
                  <i class="fas fa-volume-up text-brand-green"></i> Mode Suara Presensi Masuk
                </label>
                <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-xs bg-white">
-                 <option value="ai">🤖 Suara AI Studio (Ramah & Motivasi)</option>
+                 <option value="ai">🤖 Suara Gemini AI Studio (Ramah & Motivasi)</option>
                  <option value="sfx">🔔 Efek Suara (Blup / Ting-Dong / Beep)</option>
                  <option value="off">🔇 Mute / Tanpa Suara</option>
                </select>
@@ -854,6 +854,11 @@
     }
 
     async function speakFriendlyAIGreeting(santri) {
+        // PERBAIKAN: Hentikan Web Speech Synthesis secara total di awal agar tidak ada bentrokan suara robot!
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+
         let rawName = (santri.nama || "Santri").trim();
         let callName = rawName.split(" ")[0];
         if ((callName.length <= 2 || callName.endsWith(".")) && rawName.split(" ").length > 1) {
@@ -931,19 +936,24 @@
                     const wavBlob = pcmToWav(pcm16, sampleRate);
                     const audioUrl = URL.createObjectURL(wavBlob);
                     
+                    // Pastikan sekali lagi suara sintetis browser dimatikan sebelum memutar Gemini audio
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
                     const audio = new Audio(audioUrl);
                     audio.play();
-                    return;
+                    return; // Berhasil menggunakan suara ramah Gemini TTS! Hentikan fungsi di sini tanpa fallback robot.
                 } else if (data.error) {
                     console.warn("Gemini TTS Error:", data.error);
                     Toast.fire({ icon: 'warning', title: 'Periksa API Key Gemini Anda.' });
+                    return; // Jangan jalankan suara robot browser jika API Key salah!
                 }
             } catch (err) {
                 console.error("Gemini TTS Fetch Error:", err);
+                return;
             }
         }
 
-        // 2. Fallback Web Speech Synthesis
+        // 2. Hanya jalankan Web Speech Synthesis jika API Key Gemini BELUM diisi sama sekali
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(fullText);
