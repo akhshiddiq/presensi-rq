@@ -56,6 +56,30 @@
       border-bottom: 4px solid #047857;
     }
 
+    /* --- Animasi Fade-out Hijau Masuk untuk Baris Baru Scan --- */
+    @keyframes greenScanHighlight {
+      0% {
+        background-color: #059669; /* Hijau Pelepasan Scan */
+        color: #ffffff;
+      }
+      20% {
+        background-color: #34d399; /* Hijau Terang */
+      }
+      55% {
+        background-color: #a7f3d0; /* Hijau Muda */
+      }
+      85% {
+        background-color: #ecfdf5; /* Hijau Sangat Transparan */
+      }
+      100% {
+        background-color: transparent;
+      }
+    }
+
+    .row-just-scanned {
+      animation: greenScanHighlight 4.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
     /* --- Navigasi Dropdown & Tab Pill Modern --- */
     .nav-btn { 
       transition: all 0.2s ease; 
@@ -215,7 +239,7 @@
     <!-- ================= TAB 1: PEMINDAI KAMERA & RIWAYAT SCAN ================= -->
     <div id="view-live" class="space-y-5 animate-fade-in block">
         <!-- Section Scanner Kamera Berukuran Besar -->
-        <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4] max-w-4xl mx-auto w-full p-2 sm:p-5">
+        <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4] w-full p-3 sm:p-6">
             <div class="text-center flex flex-col items-center">
                 <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 text-brand-green rounded-2xl mb-2 shadow-sm border border-emerald-100">
                     <i class="fas fa-qrcode text-xl"></i>
@@ -224,7 +248,7 @@
                 <p class="text-xs text-gray-500 mb-3">Arahkan QR Code kartu santri ke dalam area kamera</p>
 
                 <!-- Area Kamera scanner diperbesar penuh untuk kemudahan HP -->
-                <div id="reader-container" class="hidden relative rounded-2xl overflow-hidden border-4 border-emerald-500 shadow-2xl bg-black mb-4 aspect-square w-full max-w-2xl mx-auto">
+                <div id="reader-container" class="hidden relative rounded-2xl overflow-hidden border-4 border-emerald-500 shadow-2xl bg-black mb-4 w-full aspect-square max-w-full sm:max-w-xl mx-auto">
                      <div id="reader" class="w-full h-full object-cover"></div>
                      <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
                          <div class="w-[85%] h-[85%] border-2 border-white/70 rounded-2xl relative shadow-[0_0_25px_rgba(0,0,0,0.7)]">
@@ -237,7 +261,7 @@
                      </div>
                 </div>
 
-                <button id="btnToggleCam" onclick="toggleCamera()" class="w-full max-w-2xl py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm">
+                <button id="btnToggleCam" onclick="toggleCamera()" class="w-full max-w-xl py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm">
                     <i class="fas fa-video text-sm"></i> Nyalakan Kamera
                 </button>
             </div>
@@ -558,7 +582,19 @@
                  <select id="modalSfxType" onchange="updateSfxType(this.value)" class="p-1.5 rounded-lg border border-gray-200 text-xs font-semibold bg-white outline-none">
                     <option value="blup">🫧 Blup (Gelembung Air)</option>
                     <option value="tingdong">🔔 Ting-Dong (Melodis)</option>
+                    <option value="marimba">🪵 Marimba (Arpeggio Ceria)</option>
+                    <option value="arcade">🎮 Arcade (Kemenangan Retro)</option>
+                    <option value="sparkle">✨ Sparkle (Kristal Magic)</option>
                     <option value="beep">📻 Beep Mesin Standard</option>
+                    <option value="mesin">⚙️ Mesin Scanner (Mekanik Klik POS)</option>
+                    <option value="robot">🤖 Robot (Chiptune Komputer)</option>
+                    <option value="perang">⚔️ Terompet Perang (Epic War Bugle)</option>
+                    <option value="laser">⚡ Laser (Tembakan Sci-Fi)</option>
+                    <option value="fanfare">🎺 Fanfare (Kemenangan Ceria)</option>
+                    <option value="scifi">🛸 Sci-Fi (Warp Teleport Sweep)</option>
+                    <option value="chime">🎐 Wind Chime (Lonceng Angin)</option>
+                    <option value="drumroll">🥁 Drum Hit (Semangat Marching)</option>
+                    <option value="rocket">🚀 Rocket (Jet Launch Thruster)</option>
                  </select>
                </div>
             </div>
@@ -569,7 +605,7 @@
                  <i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)
                </label>
                <input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-[10px] bg-white" placeholder="AQ.Ab8... atau AIzaSy...">
-               <p class="text-[9px] text-gray-500 mt-1">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Alhamdulillah, telah berhasil"* dan pesan ramah.</p>
+               <p class="text-[9px] text-gray-500 mt-1">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Alhamdulillah terkoneksi"* (Suara Ikhwan Ramah).</p>
             </div>
 
             <div>
@@ -704,6 +740,7 @@
     
     let presensiHistory = []; 
     let deletedKeys = new Set();
+    let newlyAddedKeysMap = new Map(); // Untuk melacak animasi hijau fade-out baris baru scan
     let syncInterval;
     let html5QrCode;
     let isProcessing = false;
@@ -712,7 +749,7 @@
     let lastScanTime = 0;
     let audioCtx = null;
 
-    // Toast Konfigurasi Singkat (1.2 detik saja) agar tidak mengganggu kecepatan
+    // Toast Konfigurasi Singkat (1.2 detik saja)
     const Toast = Swal.mixin({
       toast: true, 
       position: 'top-end', 
@@ -772,6 +809,183 @@
                 gain2.connect(ctx.destination);
                 osc2.start(now + 0.18);
                 osc2.stop(now + 0.55);
+            } else if (type === 'marimba') {
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.25);
+                });
+            } else if (type === 'arcade') {
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.12);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.12);
+                });
+            } else if (type === 'sparkle') {
+                const freqs = [1046.5, 1318.5, 1567.98, 2093.0];
+                freqs.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.05);
+                    osc.stop(now + idx * 0.05 + 0.2);
+                });
+            } else if (type === 'mesin') {
+                // ⚙️ Suara Mesin Scanner POS / Mekanik Klik Dual
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'square';
+                osc1.frequency.setValueAtTime(2400, now);
+                gain1.gain.setValueAtTime(0.2, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.05);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(3200, now + 0.07);
+                gain2.gain.setValueAtTime(0.25, now + 0.07);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.07);
+                osc2.stop(now + 0.14);
+            } else if (type === 'robot') {
+                // 🤖 Suara Robot Komputer Chiptune
+                const freqs = [350, 850, 420, 1100, 600];
+                freqs.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.04);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.04);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.04);
+                    osc.stop(now + idx * 0.04 + 0.04);
+                });
+            } else if (type === 'perang') {
+                // ⚔️ Suara Terompet Perang (Epic War Bugle Call)
+                const bugleNotes = [392.00, 523.25, 659.25, 783.99]; // G4, C5, E5, G5
+                bugleNotes.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + (idx === 3 ? 0.35 : 0.12));
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + (idx === 3 ? 0.35 : 0.12));
+                });
+            } else if (type === 'laser') {
+                // ⚡ Suara Tembakan Laser Sci-Fi
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(1800, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            } else if (type === 'fanfare') {
+                // 🎺 Suara Fanfare Kemenangan Ceria
+                const chord = [523.25, 659.25, 783.99, 1046.50];
+                chord.forEach((f) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                });
+            } else if (type === 'scifi') {
+                // 🛸 Suara Sci-Fi Warp Teleport
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(2400, now + 0.25);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'chime') {
+                // 🎐 Suara Lonceng Angin / Wind Chime
+                const chimeFreqs = [1567.98, 1760.00, 2093.00, 2349.32];
+                chimeFreqs.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.04);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.04);
+                    osc.stop(now + idx * 0.04 + 0.4);
+                });
+            } else if (type === 'drumroll') {
+                // 🥁 Suara Snare Drum Impact
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'rocket') {
+                // 🚀 Suara Jet Thruster Rocket Launch
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(90, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
             } else if (type === 'error') {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -784,7 +998,7 @@
                 gain.connect(ctx.destination);
                 osc.start(now);
                 osc.stop(now + 0.35);
-            } else {
+            } else { // 'beep' or default
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -866,13 +1080,9 @@
             window.speechSynthesis.cancel();
         }
 
-        // Teks persis sesuai permintaan: hanya "Alhamdulillah terkoneksi"
         const fullText = "Alhamdulillah terkoneksi";
-
-        // Bunyi konfirmasi instan (0ms delay)
         playSynthSound('blup');
 
-        // 1. Pemanggilan Resmi Gemini TTS Model (Suara Ikhwan / Pria Ramah: Achird)
         if (geminiApiKey && geminiApiKey.trim() !== "") {
             try {
                 const targetVoice = "Achird"; // Voice pria (Ikhwan) ramah
@@ -925,13 +1135,12 @@
             }
         }
 
-        // 2. Fallback Web Speech Synthesis (Suara Pria)
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(fullText);
             utterance.lang = 'id-ID';
             utterance.rate = 1.0; 
-            utterance.pitch = 0.95; // Nada sedikit lebih rendah untuk karakter pria/Ikhwan
+            utterance.pitch = 0.95;
 
             const voices = window.speechSynthesis.getVoices();
             const idVoice = voices.find(v => v.lang.startsWith('id') || v.lang.includes('ID'));
@@ -1129,19 +1338,19 @@
                 isCameraOn = false;
                 camContainer.classList.add('hidden');
                 btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
-                btn.className = "w-full max-w-md py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+                btn.className = "w-full max-w-xl py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
             } catch(e) {}
         } else {
             camContainer.classList.remove('hidden');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i> Menghubungkan Kamera...';
-            btn.className = "w-full max-w-md py-3.5 bg-gray-400 text-white rounded-xl font-bold flex justify-center items-center gap-2 text-xs md:text-sm";
+            btn.className = "w-full max-w-xl py-4 bg-gray-400 text-white rounded-xl font-extrabold flex justify-center items-center gap-2 text-xs md:text-sm";
             
             try {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 await html5QrCode.start(
                    { facingMode: "environment" },
                    { 
-                     fps: 20, 
+                     fps: 25, 
                      qrbox: (viewfinderWidth, viewfinderHeight) => {
                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
                        const qrboxSize = Math.floor(minEdge * 0.85);
@@ -1152,12 +1361,12 @@
                 );
                 isCameraOn = true;
                 btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera';
-                btn.className = "w-full max-w-2xl py-3.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+                btn.className = "w-full max-w-xl py-4 bg-red-500 text-white rounded-xl font-extrabold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
             } catch (err) {
                 camContainer.classList.add('hidden');
                 isCameraOn = false;
                 btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
-                btn.className = "w-full max-w-2xl py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
+                btn.className = "w-full max-w-xl py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
                 
                 Swal.fire({
                     icon: 'warning',
@@ -1173,7 +1382,6 @@
        const now = Date.now();
        const trimmedId = decodedText.trim();
 
-       // Jeda scan minimal (1.2s) untuk meningkatkan kecepatan presensi antar santri
        if (trimmedId === lastScannedId && (now - lastScanTime) < 1200) return;
        if (isProcessing) return;
 
@@ -1208,12 +1416,28 @@
        if (isProcessing) return;
        isProcessing = true;
        const unikey = "temp_" + Date.now();
-       const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: getLocalWaktu(), hari: getLocalHari(), status, sync: 'loading' };
+       const nowTime = Date.now();
+       
+       // Catat timestamp key baru untuk animasi hijau fade out
+       newlyAddedKeysMap.set(unikey, nowTime);
+
+       const tempRecord = { 
+         key: unikey, 
+         idSantri, 
+         namaSantri, 
+         kelas, 
+         guru, 
+         waktu: getLocalWaktu(), 
+         hari: getLocalHari(), 
+         status, 
+         sync: 'loading',
+         createdAt: nowTime
+       };
+
        if(!Array.isArray(presensiHistory)) presensiHistory = [];
        presensiHistory.unshift(tempRecord);
        renderHistoryTable();
 
-       // Notifikasi Pop-up singkat (1.2s)
        Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
 
        fetch(SCRIPT_URL, {
@@ -1283,7 +1507,6 @@
     function fetchHistoryFromSheets() {
         if(!SCRIPT_URL.includes("macros/s/")) return;
         
-        // Update Indikator Sinkronisasi di Header
         const syncText = document.getElementById('syncStatusText');
         const syncPing = document.getElementById('syncStatusPing');
         const syncDot = document.getElementById('syncStatusDot');
@@ -1337,6 +1560,8 @@
         }
         emptyState.classList.add('hidden');
         let html = '';
+        const now = Date.now();
+
         presensiHistory.slice(0, 50).forEach(item => {
             let statusBadge = '';
             const stLow = String(item.status).toLowerCase();
@@ -1345,15 +1570,20 @@
             else if(stLow.includes('izin')) statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-envelope"></i> Izin</span>`;
             else statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-times-circle"></i> Alfa</span>`;
             
+            // Cek apakah item ini baru ditambahkan (dalam 4.5 detik terakhir)
+            const addedTime = newlyAddedKeysMap.get(item.key) || item.createdAt;
+            const isJustScanned = addedTime && ((now - addedTime) < 4500);
+            const rowClass = isJustScanned ? 'row-just-scanned' : 'hover:bg-slate-50 transition-colors';
+
             html += `
-                <tr class="hover:bg-slate-50 transition-colors">
+                <tr class="${rowClass}">
                     <td class="p-3 text-center">
                         <button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto" title="Batalkan / Hapus">
                             <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
                     </td>
-                    <td class="p-3"><p class="font-bold text-gray-700 whitespace-nowrap">${item.hari}</p><p class="text-[11px] text-gray-400 font-mono">${item.waktu}</p></td>
-                    <td class="p-3"><p class="font-bold text-gray-800">${item.namaSantri}</p></td>
+                    <td class="p-3"><p class="font-bold whitespace-nowrap">${item.hari}</p><p class="text-[11px] opacity-80 font-mono">${item.waktu}</p></td>
+                    <td class="p-3"><p class="font-bold">${item.namaSantri}</p></td>
                     <td class="p-3"><span class="text-xs font-bold text-brand-green">${item.kelas}</span></td>
                     <td class="p-3">${statusBadge}</td>
                 </tr>
