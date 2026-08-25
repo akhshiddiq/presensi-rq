@@ -51,37 +51,39 @@
     
     /* --- Ornamen Islami / Geometric Pattern pada Header --- */
     .bg-islamic-pattern {
-      background-color: #059669; /* Hijau Muda */
+      background-color: #064e3b; /* Hijau Tua Elegan */
       background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4H-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      border-bottom: 6px solid #064e3b; /* Pinggir Hijau Tua */
+      border-bottom: 4px solid #047857;
     }
 
-    /* --- Navigasi Tab Pill Modern --- */
+    /* --- Navigasi Dropdown & Tab Pill Modern --- */
     .nav-btn { 
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-      color: #64748b; 
+      transition: all 0.2s ease; 
+      color: #475569; 
       font-weight: 600;
-      padding: 0.75rem 1.25rem;
-      border-radius: 9999px;
-      white-space: nowrap;
-      border: 1px solid transparent;
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      text-align: left;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
-    .nav-btn:hover:not(.active) { 
+    .nav-btn:hover { 
       background-color: #f1f5f9; 
       color: #047857;
-      border-color: #e2e8f0;
     }
     .nav-btn.active { 
-      background-color: #047857; /* Hijau Sedang */
+      background-color: #047857;
       color: #ffffff; 
-      box-shadow: 0 4px 14px 0 rgba(4, 120, 87, 0.39);
     }
 
     /* --- Desain Card (Kartu) Elegan --- */
     .feature-card {
       background: #ffffff;
-      border-radius: 1.5rem;
-      padding: 1.5rem;
+      border-radius: 1.25rem;
+      padding: 1.25rem;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
       border: 1px solid rgba(226, 232, 240, 0.8);
       position: relative;
@@ -92,14 +94,6 @@
       transform: translateY(-2px);
       box-shadow: 0 20px 40px -15px rgba(4, 120, 87, 0.1);
     }
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 4px;
-      background: linear-gradient(90deg, #059669, #fbbf24);
-      opacity: 0; transition: opacity 0.3s ease;
-    }
-    .feature-card:hover::before { opacity: 1; }
 
     /* --- Kustomisasi Scrollbar --- */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -110,11 +104,11 @@
     /* --- Form Input --- */
     .modern-input {
       width: 100%;
-      padding: 0.875rem 1.25rem;
+      padding: 0.75rem 1rem;
       background-color: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 0.75rem;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       color: #334155;
       transition: all 0.2s ease;
       outline: none;
@@ -137,102 +131,119 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8" onclick="closeMenuOnClickOutside(event)">
 
-  <header class="bg-islamic-pattern text-white px-4 py-4 md:px-8 md:py-6 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-lg">
-    <div class="flex items-center gap-4 w-full sm:w-auto mb-4 sm:mb-0">
+  <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-md">
+    <div class="flex items-center gap-3 w-full sm:w-auto mb-1 sm:mb-0">
+      <!-- Container Logo -->
+      <div id="logoContainer" class="flex-shrink-0">
+        <img id="appLogo" src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo RQ Al-Khansa" class="w-8 h-8 md:w-9 md:h-9 object-contain rounded-full bg-white p-0.5 border border-brand-gold/50 shadow-sm" onerror="handleLogoError(this)">
+        <div id="defaultLogoIcon" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-brand-gold/20 text-brand-gold border border-brand-gold/40 flex items-center justify-center text-xs md:text-sm font-black shadow-sm hidden">
+          <i class="fas fa-mosque"></i>
+        </div>
+      </div>
+
       <div>
-        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-           <h1 class="text-xl md:text-2xl font-extrabold tracking-tight drop-shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+           <h1 class="text-xs md:text-sm font-bold tracking-tight drop-shadow-sm">
              Presensi Santri <span class="text-brand-gold">RQ Al-Khansa</span>
            </h1>
-           <span class="inline-flex px-2 py-0.5 bg-brand-dark/60 text-brand-gold rounded-md text-[10px] font-bold tracking-wider uppercase border border-brand-gold/30 w-max backdrop-blur-sm shadow-sm">
-             <i class="fas fa-bolt mr-1"></i> Cloud Sync
+           <span class="inline-flex px-1.5 py-0.2 bg-emerald-950/80 text-brand-gold rounded text-[8px] font-bold tracking-wider uppercase border border-brand-gold/30 w-max backdrop-blur-sm shadow-sm">
+             <i class="fas fa-bolt mr-0.5"></i> Cloud Sync
            </span>
         </div>
-        <p class="text-xs md:text-sm text-brand-light/90 font-medium tracking-wide mt-1">Sistem Informasi Akademik & Kehadiran Santri</p>
+        <p class="text-[10px] md:text-[11px] text-brand-light/80 font-medium tracking-wide mt-0">Sistem Informasi Akademik & Kehadiran Santri</p>
       </div>
     </div>
     
-    <div class="flex items-center gap-3 self-end sm:self-auto">
-      <button onclick="toggleAudio()" class="w-10 h-10 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/20" title="Suara Beep Aktif/Mati">
-        <i id="audioIcon" class="fas fa-volume-up text-sm"></i>
+    <div class="flex items-center gap-2 self-end sm:self-auto">
+      <button onclick="toggleAudio()" class="w-7 h-7 flex items-center justify-center text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/20" title="Suara Beep Aktif/Mati">
+        <i id="audioIcon" class="fas fa-volume-up text-[10px]"></i>
       </button>
-      <button onclick="bukaModalUrl()" class="flex items-center gap-2 px-4 py-2 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-xl text-xs font-bold text-white shadow-gold transition-all">
-        <i class="fas fa-cog text-white"></i> Pengaturan
+      <button onclick="bukaModalUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-lg text-[11px] font-bold text-white shadow-gold transition-all">
+        <i class="fas fa-cog text-white text-[9px]"></i> Pengaturan
       </button>
     </div>
   </header>
 
-  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex flex-col gap-6">
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
     
-    <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-100/50 flex overflow-x-auto gap-2 hide-scrollbar sticky top-4 z-30 backdrop-blur-xl bg-white/80">
-      <button onclick="switchTab('live')" id="tab-live" class="nav-btn active flex items-center gap-2">
-        <i class="fas fa-camera-retro"></i> Pemindai & Manual
+    <div class="relative w-max z-30">
+      <button id="menuDropdownBtn" onclick="toggleNavMenu(event)" class="bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95">
+        <i id="currentMenuIcon" class="fas fa-camera-retro text-brand-green"></i> 
+        <span id="currentMenuLabel">Pemindai & Manual</span> 
+        <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
       </button>
-      <button onclick="switchTab('rekap')" id="tab-rekap" class="nav-btn flex items-center gap-2">
-        <i class="fas fa-chart-pie"></i> Laporan Bulanan
-      </button>
-      <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-btn flex items-center gap-2">
-        <i class="fas fa-calendar-alt"></i> Kalender Kelas
-      </button>
-      <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-btn flex items-center gap-2">
-        <i class="fas fa-users"></i> Absen Per Kelas
-      </button>
+
+      <!-- Dropdown Popup Content -->
+      <div id="navMenuDropdown" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-40 animate-fade-in space-y-1">
+        <button onclick="switchTab('live')" id="tab-live" class="nav-btn active">
+          <i class="fas fa-camera-retro w-4 text-center"></i> Pemindai & Manual
+        </button>
+        <button onclick="switchTab('rekap')" id="tab-rekap" class="nav-btn">
+          <i class="fas fa-chart-pie w-4 text-center"></i> Laporan Bulanan
+        </button>
+        <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-btn">
+          <i class="fas fa-calendar-alt w-4 text-center"></i> Kalender Kelas
+        </button>
+        <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-btn">
+          <i class="fas fa-users w-4 text-center"></i> Absen Per Kelas & WA
+        </button>
+      </div>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
-    <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl shadow-sm items-start gap-3">
-        <i class="fas fa-wifi-slash mt-1"></i>
+    <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-xl shadow-sm items-start gap-3">
+        <i class="fas fa-wifi-slash mt-1 text-xs"></i>
         <div>
-           <h4 class="font-bold text-sm">Koneksi Terputus</h4>
-           <p class="text-xs mt-1">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p>
+           <h4 class="font-bold text-xs">Koneksi Terputus</h4>
+           <p class="text-[11px] mt-0.5">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p>
         </div>
     </div>
 
     <!-- ================= TAB 1: PEMINDAI & MANUAL ================= -->
-    <div id="view-live" class="space-y-6 animate-fade-in block">
+    <div id="view-live" class="space-y-4 animate-fade-in block">
         <!-- Status Bar -->
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="relative flex h-3 w-3">
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="relative flex h-2.5 w-2.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </div>
-                <span class="text-sm font-semibold text-gray-700">Sistem Siap (0 Delay Sync)</span>
+                <span class="text-xs font-semibold text-gray-700">Sistem Siap (0 Delay Sync)</span>
             </div>
-            <div class="text-xs font-mono text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 truncate max-w-full" id="scriptUrlDisplay">
+            <div class="text-[11px] font-mono text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200 truncate max-w-full" id="scriptUrlDisplay">
                URL: Terhubung ke Google Sheet
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <!-- Kolom Kiri: Scanner & Manual -->
-            <div class="lg:col-span-1 space-y-6">
+            <div class="lg:col-span-1 space-y-4">
                 <!-- Card Scanner -->
                 <div class="feature-card bg-gradient-to-br from-white to-[#f0fdf4]">
                     <div class="text-center">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 text-brand-green rounded-full mb-4 shadow-sm border border-emerald-100">
-                            <i class="fas fa-qrcode text-xl"></i>
+                        <div class="inline-flex items-center justify-center w-10 h-10 bg-emerald-50 text-brand-green rounded-full mb-3 shadow-sm border border-emerald-100">
+                            <i class="fas fa-qrcode text-base"></i>
                         </div>
-                        <h2 class="font-extrabold text-gray-800 text-lg mb-1">Pemindai Kartu Santri</h2>
-                        <p class="text-xs text-gray-500 mb-5">Arahkan QR Code ke area kamera</p>
+                        <h2 class="font-extrabold text-gray-800 text-sm mb-0.5">Pemindai Kartu Santri</h2>
+                        <p class="text-[11px] text-gray-500 mb-4">Arahkan QR Code ke area kamera</p>
 
                         <!-- Area Kamera -->
-                        <div id="reader-container" class="hidden relative rounded-xl overflow-hidden border-2 border-emerald-500 shadow-inner bg-black mb-4 mx-auto aspect-square w-full max-w-[280px]">
+                        <div id="reader-container" class="hidden relative rounded-xl overflow-hidden border-2 border-emerald-500 shadow-inner bg-black mb-3 mx-auto aspect-square w-full max-w-[240px]">
                              <div id="reader" class="w-full h-full object-cover"></div>
                              <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
                                  <div class="w-[70%] h-[70%] border-2 border-white/50 relative">
-                                    <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-brand-gold -mt-1 -ml-1"></div>
-                                    <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-brand-gold -mt-1 -mr-1"></div>
-                                    <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-brand-gold -mb-1 -ml-1"></div>
-                                    <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-brand-gold -mb-1 -mr-1"></div>
+                                    <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-brand-gold -mt-0.5 -ml-0.5"></div>
+                                    <div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-brand-gold -mt-0.5 -mr-0.5"></div>
+                                    <div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-brand-gold -mb-0.5 -ml-0.5"></div>
+                                    <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-brand-gold -mb-0.5 -mr-0.5"></div>
                                  </div>
                                  <div class="absolute top-1/2 left-0 w-full h-0.5 bg-brand-green shadow-[0_0_10px_2px_rgba(6,95,70,0.8)] animate-[scan_2s_ease-in-out_infinite]"></div>
                              </div>
                         </div>
 
-                        <button id="btnToggleCam" onclick="toggleCamera()" class="w-full py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2">
+                        <button id="btnToggleCam" onclick="toggleCamera()" class="w-full py-2.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 text-xs">
                             <i class="fas fa-video"></i> Nyalakan Kamera
                         </button>
                     </div>
@@ -240,19 +251,19 @@
 
                 <!-- Card Input Manual -->
                 <div class="feature-card">
-                    <div class="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
-                       <div class="w-8 h-8 rounded-full bg-amber-50 text-brand-accent flex items-center justify-center text-sm border border-amber-100"><i class="fas fa-keyboard"></i></div>
-                       <h3 class="font-bold text-gray-800 text-sm">Cari Manual (Kartu Hilang)</h3>
+                    <div class="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-gray-100">
+                       <div class="w-6 h-6 rounded-full bg-amber-50 text-brand-accent flex items-center justify-center text-xs border border-amber-100"><i class="fas fa-keyboard"></i></div>
+                       <h3 class="font-bold text-gray-800 text-xs">Cari Manual (Kartu Hilang)</h3>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih dari 87 Santri Terdaftar</label>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih dari 87 Santri Terdaftar</label>
                             <select id="santriSelect" class="modern-input">
-                                <option value="">-- Pilih Kelas - Nama Santri --</option>
+                                <option value="">-- Pilih Nama Santri --</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Ketidakhadiran</label>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Ketidakhadiran</label>
                             <select id="statusManual" class="modern-input border-amber-200 bg-amber-50 focus:border-brand-accent text-brand-accent font-semibold">
                                 <option value="Hadir">🟢 Hadir</option>
                                 <option value="Sakit">🔵 Sakit</option>
@@ -260,7 +271,7 @@
                                 <option value="Tidak Hadir (Alfa)">🔴 Tidak Hadir (Alfa)</option>
                             </select>
                         </div>
-                        <button onclick="processAbsenManual()" class="w-full bg-brand-accent text-white font-bold py-3 rounded-xl transition-all shadow-gold hover:bg-amber-500 hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 text-sm mt-2">
+                        <button onclick="processAbsenManual()" class="w-full bg-brand-accent text-white font-bold py-2.5 rounded-xl transition-all shadow-gold hover:bg-amber-500 hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-1.5 text-xs mt-1">
                           <i class="fas fa-check"></i> Catat Kehadiran
                         </button>
                     </div>
@@ -270,13 +281,13 @@
             <!-- Kolom Kanan: Tabel Riwayat Terkini -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden h-full flex flex-col">
-                    <div class="p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border-b border-gray-100">
+                    <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border-b border-gray-100">
                         <div>
-                           <h2 class="font-extrabold text-gray-800 text-lg flex items-center gap-2"><i class="fas fa-clipboard-list text-brand-green"></i> Riwayat Hari Ini</h2>
-                           <p class="text-xs text-gray-500 mt-1">Data tersinkron otomatis antar perangkat & Google Sheet.</p>
+                           <h2 class="font-extrabold text-gray-800 text-sm flex items-center gap-1.5"><i class="fas fa-clipboard-list text-brand-green"></i> Riwayat Hari Ini</h2>
+                           <p class="text-[11px] text-gray-500 mt-0.5">Data tersinkron otomatis antar perangkat & Google Sheet.</p>
                         </div>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <button onclick="downloadCSV('Riwayat_Hari_Ini.csv')" class="flex-grow sm:flex-grow-0 bg-brand-green text-white px-4 py-2 rounded-lg text-xs font-bold transition-all hover:bg-[#047857] shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 border border-brand-green">
+                            <button onclick="downloadCSV('Riwayat_Hari_Ini.csv')" class="flex-grow sm:flex-grow-0 bg-brand-green text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:bg-[#047857] shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-1.5 border border-brand-green">
                                <i class="fas fa-file-excel"></i> CSV
                             </button>
                         </div>
@@ -286,20 +297,20 @@
                         <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr class="bg-emerald-50 text-[10px] text-brand-green uppercase tracking-wider font-extrabold border-b border-emerald-100">
-                                    <th class="p-3 pl-5 sm:pl-6 text-center w-12">Batal</th>
+                                    <th class="p-3 pl-4 sm:pl-5 text-center w-10">Batal</th>
                                     <th class="p-3">Waktu Pemindaian</th>
                                     <th class="p-3">Nama Lengkap</th>
                                     <th class="p-3">Kelas (Halaqah)</th>
                                     <th class="p-3">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="historyTableBody" class="text-sm divide-y divide-gray-50">
+                            <tbody id="historyTableBody" class="text-xs divide-y divide-gray-50">
                             </tbody>
                         </table>
                     </div>
-                    <div id="emptyHistory" class="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 flex-grow">
-                         <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
-                         <p class="text-sm font-medium">Belum ada data presensi yang masuk hari ini.</p>
+                    <div id="emptyHistory" class="p-8 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 flex-grow">
+                         <i class="fas fa-box-open text-2xl mb-2 text-gray-300"></i>
+                         <p class="text-xs font-medium">Belum ada data presensi yang masuk hari ini.</p>
                     </div>
                 </div>
             </div>
@@ -309,51 +320,51 @@
     <!-- ================= TAB 2: LAPORAN BULANAN ================= -->
     <div id="view-rekap" class="hidden animate-fade-in">
         <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
-          <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
-              <div class="flex items-center gap-3 mb-5">
-                 <div class="w-10 h-10 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center"><i class="fas fa-filter"></i></div>
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100">
+              <div class="flex items-center gap-2.5 mb-4">
+                 <div class="w-8 h-8 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center text-xs"><i class="fas fa-filter"></i></div>
                  <div>
-                    <h2 class="font-extrabold text-gray-800 text-lg">Filter Laporan Presensi</h2>
-                    <p class="text-xs text-gray-500">Buat laporan kehadiran berdasarkan rentang tanggal.</p>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Filter Laporan Presensi</h2>
+                    <p class="text-[11px] text-gray-500">Buat laporan kehadiran berdasarkan rentang tanggal.</p>
                  </div>
               </div>
               
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
                     <select id="rekapFilterKelas" class="modern-input">
                         <option value="Semua Kelas">-- Semua Kelas --</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Dari Tanggal</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Dari Tanggal</label>
                     <input type="date" id="rekapFilterTanggalMulai" class="modern-input">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">s.d. Sampai Tanggal</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">s.d. Sampai Tanggal</label>
                     <input type="date" id="rekapFilterTanggalSelesai" class="modern-input">
                 </div>
                 <div class="flex items-end">
-                  <button onclick="renderRekapTable()" class="w-full bg-brand-green text-white py-3.5 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#047857] shadow-float transition-all active:scale-95"><i class="fas fa-search"></i> Tampilkan</button>
+                  <button onclick="renderRekapTable()" class="w-full bg-brand-green text-white py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-[#047857] shadow-float transition-all active:scale-95"><i class="fas fa-search"></i> Tampilkan</button>
                 </div>
               </div>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 sm:p-6 border-b border-gray-100">
-             <div class="bg-white p-4 border border-emerald-100 rounded-xl shadow-sm text-center">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 sm:p-5 border-b border-gray-100">
+             <div class="bg-white p-3 border border-emerald-100 rounded-xl shadow-sm text-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total Hadir</span>
-                <p id="statTotalHadir" class="text-2xl font-black text-brand-green mt-1">0</p>
+                <p id="statTotalHadir" class="text-xl font-black text-brand-green mt-0.5">0</p>
              </div>
-             <div class="bg-white p-4 border border-amber-100 rounded-xl shadow-sm text-center">
+             <div class="bg-white p-3 border border-amber-100 rounded-xl shadow-sm text-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sakit / Izin / Alfa</span>
-                <p id="statTotalAbsen" class="text-2xl font-black text-brand-accent mt-1">0</p>
+                <p id="statTotalAbsen" class="text-xl font-black text-brand-accent mt-0.5">0</p>
              </div>
-             <div class="bg-white p-4 border border-gray-200 rounded-xl shadow-sm text-center">
+             <div class="bg-white p-3 border border-gray-200 rounded-xl shadow-sm text-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Kelas Terpilih</span>
-                <p id="statKelasTampil" class="text-sm font-bold text-gray-700 mt-2 truncate">Semua Kelas</p>
+                <p id="statKelasTampil" class="text-xs font-bold text-gray-700 mt-1.5 truncate">Semua Kelas</p>
              </div>
              <div class="hidden md:flex flex-col justify-center items-end text-right">
-                 <button onclick="downloadRekapCSV()" class="bg-brand-accent text-white hover:bg-amber-500 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-gold active:scale-95 flex items-center gap-2"><i class="fas fa-download"></i> Ekspor CSV</button>
+                 <button onclick="downloadRekapCSV()" class="bg-brand-accent text-white hover:bg-amber-500 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-gold active:scale-95 flex items-center gap-1.5"><i class="fas fa-download"></i> Ekspor CSV</button>
              </div>
           </div>
           
@@ -361,15 +372,15 @@
               <table class="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                       <tr class="bg-gray-50 text-[10px] text-gray-500 uppercase tracking-wider font-extrabold border-b border-gray-200">
-                          <th class="p-4 pl-5 sm:pl-6 w-12 text-center">#</th>
-                          <th class="p-4">Tanggal Database</th>
-                          <th class="p-4">Nama Santri</th>
-                          <th class="p-4">Kelas</th>
-                          <th class="p-4">Penanggung Jawab</th>
-                          <th class="p-4">Status</th>
+                          <th class="p-3 pl-4 sm:pl-5 w-10 text-center">#</th>
+                          <th class="p-3">Tanggal Database</th>
+                          <th class="p-3">Nama Santri</th>
+                          <th class="p-3">Kelas</th>
+                          <th class="p-3">Penanggung Jawab</th>
+                          <th class="p-3">Status</th>
                       </tr>
                   </thead>
-                  <tbody id="rekapTableBody" class="text-sm divide-y divide-gray-100">
+                  <tbody id="rekapTableBody" class="text-xs divide-y divide-gray-100">
                   </tbody>
               </table>
           </div>
@@ -379,22 +390,28 @@
     <!-- ================= TAB 3: KALENDER KELAS ================= -->
     <div id="view-kalender" class="hidden animate-fade-in">
         <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
-          <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
-              <div class="flex items-center gap-3 mb-5">
-                 <div class="w-10 h-10 rounded-full bg-amber-50 text-brand-accent border border-amber-100 flex items-center justify-center"><i class="fas fa-calendar-alt"></i></div>
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div class="flex items-center gap-2.5">
+                 <div class="w-8 h-8 rounded-full bg-amber-50 text-brand-accent border border-amber-100 flex items-center justify-center text-xs"><i class="fas fa-calendar-alt"></i></div>
                  <div>
-                    <h2 class="font-extrabold text-gray-800 text-lg">Kalender Presensi Kelas</h2>
-                    <p class="text-xs text-gray-500">Pantau kehadiran harian seluruh santri di kelas dalam 1 bulan penuh.</p>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Kalender Presensi Kelas</h2>
+                    <p class="text-[11px] text-gray-500">Pantau kehadiran harian seluruh santri di kelas dalam 1 bulan penuh.</p>
                  </div>
               </div>
-              
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                 <button onclick="downloadKalenderCSV()" class="bg-brand-green hover:bg-[#047857] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-1.5 active:scale-95">
+                    <i class="fas fa-download"></i> Download Kalender CSV
+                 </button>
+              </div>
+          </div>
+
+          <div class="p-3 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
                     <select id="kalenderKelasSelect" onchange="renderClassCalendar()" class="modern-input bg-white font-bold text-brand-green"></select>
                  </div>
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Bulan</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Bulan</label>
                     <select id="kalenderBulanSelect" onchange="renderClassCalendar()" class="modern-input bg-white">
                         <option value="0">Januari</option>
                         <option value="1">Februari</option>
@@ -411,33 +428,32 @@
                     </select>
                  </div>
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tahun</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Tahun</label>
                     <select id="kalenderTahunSelect" onchange="renderClassCalendar()" class="modern-input bg-white"></select>
                  </div>
-              </div>
           </div>
 
-          <div class="p-4 border-b border-gray-100 bg-white flex flex-wrap gap-4 justify-center text-xs font-bold text-gray-600">
-             <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-emerald-500"></div> Hadir</span>
-             <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-blue-500"></div> Sakit</span>
-             <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-amber-500"></div> Izin</span>
-             <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-red-500"></div> Alfa</span>
-             <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-gray-100 border border-gray-200"></div> Kosong</span>
+          <div class="p-2.5 border-b border-gray-100 bg-slate-50/50 flex flex-wrap gap-4 justify-center text-[11px] font-bold text-gray-600">
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Hadir (✅)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Sakit (💊)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div> Izin (ℹ️)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div> Alfa (🅰️)</span>
+             <span class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-gray-100 border border-gray-200"></div> Kosong</span>
           </div>
 
-          <div class="p-0 overflow-x-auto relative w-full border-b border-gray-100" style="max-height: 60vh;">
-               <table class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-max">
+          <div class="p-0 overflow-x-auto relative w-full border-b border-gray-100" style="max-height: 55vh;">
+               <table id="kalenderTableElement" class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-max">
                    <thead class="bg-emerald-50 text-brand-green sticky top-0 z-20">
                        <tr>
-                           <th class="p-3 border-r border-emerald-100 sticky left-0 bg-emerald-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-48 max-w-[200px]">Nama Santri</th>
+                           <th class="p-2.5 border-r border-emerald-100 sticky left-0 bg-emerald-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-48 max-w-[200px]">Nama Santri</th>
                            <script>
                                for(let d=1; d<=31; d++) {
-                                   document.write(`<th class="p-2 min-w-[30px] text-center border-r border-emerald-100 font-bold">${d}</th>`);
+                                   document.write(`<th class="p-2 min-w-[28px] text-center border-r border-emerald-100 font-bold">${d}</th>`);
                                }
                            </script>
                        </tr>
                    </thead>
-                   <tbody id="kalenderBody" class="divide-y divide-gray-100 text-gray-700">
+                   <tbody id="kalenderBody" class="divide-y divide-gray-100 text-gray-700 text-xs">
                         <tr><td colspan="32" class="p-8 text-center text-gray-400">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>
                    </tbody>
                </table>
@@ -445,25 +461,31 @@
         </div>
     </div>
 
-    <!-- ================= TAB 4: ABSEN PER KELAS (HORIZONTAL) ================= -->
-    <div id="view-persiswa" class="hidden animate-fade-in space-y-6">
+    <!-- ================= TAB 4: ABSEN PER KELAS & WA ================= -->
+    <div id="view-persiswa" class="hidden animate-fade-in space-y-4">
         <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
-          <div class="p-5 sm:p-6 bg-slate-50 border-b border-gray-100">
-              <div class="flex items-center gap-3 mb-5">
-                 <div class="w-10 h-10 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center"><i class="fas fa-users"></i></div>
+          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div class="flex items-center gap-2.5">
+                 <div class="w-8 h-8 rounded-full bg-emerald-50 text-brand-green border border-emerald-100 flex items-center justify-center text-xs"><i class="fas fa-users"></i></div>
                  <div>
-                    <h2 class="font-extrabold text-gray-800 text-lg">Absen Kalender Per Kelas</h2>
-                    <p class="text-xs text-gray-500">Pilih kelas & bulan untuk melihat rekapitulasi kalender seluruh siswa sekaligus.</p>
+                    <h2 class="font-extrabold text-gray-800 text-sm">Absen Kalender Per Kelas & Kirim WA</h2>
+                    <p class="text-[11px] text-gray-500">Pilih kelas & bulan untuk memantau absensi sekaligus mengirim rekap ke Wali Santri.</p>
                  </div>
               </div>
-              
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                 <button onclick="kirimRekapKelasWA()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-1.5 active:scale-95">
+                    <i class="fab fa-whatsapp text-sm"></i> Kirim Rekap 1 Kelas ke WA
+                 </button>
+              </div>
+          </div>
+
+          <div class="p-3 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-3">
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Kelas</label>
                     <select id="persiswaKelasSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white font-bold text-brand-green"></select>
                  </div>
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Bulan</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Bulan</label>
                     <select id="persiswaBulanSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white">
                         <option value="0">Januari</option>
                         <option value="1">Februari</option>
@@ -480,23 +502,21 @@
                     </select>
                  </div>
                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Tahun</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Pilih Tahun</label>
                     <select id="persiswaTahunSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white"></select>
                  </div>
-              </div>
           </div>
 
           <!-- Legenda Warna -->
-          <div class="p-4 border-b border-gray-100 bg-white flex flex-wrap gap-6 justify-center text-xs font-bold text-gray-700">
-             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-emerald-500 shadow-sm"></div> Hadir</span>
-             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-blue-500 shadow-sm"></div> Sakit</span>
-             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-amber-500 shadow-sm"></div> Izin</span>
-             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-red-500 shadow-sm"></div> Tidak Hadir (Alfa)</span>
-             <span class="flex items-center gap-2"><div class="w-4 h-4 rounded-md bg-gray-100 border border-gray-200"></div> Belum Ada Data</span>
+          <div class="p-2.5 border-b border-gray-100 bg-white flex flex-wrap gap-4 justify-center text-[11px] font-bold text-gray-700">
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-emerald-500 shadow-sm"></div> Hadir (✅)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-blue-500 shadow-sm"></div> Sakit (💊)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-amber-500 shadow-sm"></div> Izin (ℹ️)</span>
+             <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-md bg-red-500 shadow-sm"></div> Alfa (🅰️)</span>
           </div>
 
-          <div class="p-4 overflow-x-auto relative w-full" style="max-height: 65vh;">
-               <div id="persiswaContainer" class="space-y-4 min-w-[900px]">
+          <div class="p-3 overflow-x-auto relative w-full" style="max-height: 60vh;">
+               <div id="persiswaContainer" class="space-y-3 min-w-[900px]">
                    <!-- Konten per siswa akan di-generate via JS -->
                </div>
           </div>
@@ -505,25 +525,29 @@
   </main>
 
   <!-- Tombol Navigasi Mobile (Bawah) -->
-  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-4">
-    <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-camera text-base mb-0.5"></i> Pemindai</button>
-    <button onclick="switchTab('rekap')" id="mob-rekap" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-chart-pie text-base mb-0.5"></i> Laporan</button>
-    <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-calendar-alt text-base mb-0.5"></i> Kalender</button>
-    <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-3 text-xs flex flex-col items-center gap-1 rounded-none"><i class="fas fa-users text-base mb-0.5"></i> Per Kelas</button>
+  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
+    <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
+    <button onclick="switchTab('rekap')" id="mob-rekap" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-pie text-sm mb-0.5"></i> Laporan</button>
+    <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
+    <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-users text-sm mb-0.5"></i> Per Kelas</button>
   </nav>
 
-  <!-- Modal Pengaturan -->
   <div id="settingModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="tutupModalUrl()"></div>
-    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full relative z-10 animate-fade-in border border-gray-100">
-        <div class="flex justify-between items-center mb-5 border-b border-gray-100 pb-3">
-            <h3 class="text-lg font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem</h3>
-            <button onclick="tutupModalUrl()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+    <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in border border-gray-100">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2.5">
+            <h3 class="text-sm font-extrabold text-gray-800"><i class="fas fa-cog text-brand-accent mr-2"></i> Pengaturan Sistem</h3>
+            <button onclick="tutupModalUrl()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
         </div>
-        <div class="space-y-4 mb-6">
+        <div class="space-y-3.5 mb-5">
             <div>
                <label class="block text-xs font-bold text-gray-700 mb-1">URL Google Apps Script</label>
                <input type="text" id="inputUrlSheet" class="modern-input font-mono text-[10px]" placeholder="https://script.google.com/macros/s/...">
+            </div>
+            <div>
+               <label class="block text-xs font-bold text-gray-700 mb-1">URL Gambar Logo Sekolah / RQ (Opsional)</label>
+               <input type="text" id="inputUrlLogo" class="modern-input text-[10px]" placeholder="https://lh3.googleusercontent.com/d/... atau https://...">
+               <p class="text-[9px] text-gray-400 mt-1">Gunakan link langsung Google Drive atau web image untuk mengganti logo di header.</p>
             </div>
             <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-3">
                <div class="text-brand-green mt-0.5"><i class="fas fa-sync-alt"></i></div>
@@ -533,7 +557,7 @@
                </div>
             </div>
         </div>
-        <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3.5 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95">Simpan Pengaturan</button>
+        <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95 text-xs">Simpan Pengaturan</button>
     </div>
   </div>
 
@@ -543,105 +567,158 @@
   <script>
     const masterDataSantri = [
       { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ002", nama: "M Zaidan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santoso", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ007", nama: "Qiana Alesha Nazzifa", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ010", nama: "Umar Hamizan", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik" },
       { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ012", nama: "Radithya Irsyad Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ013", nama: "Radhafi Irsyad Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ016", nama: "Shaquile Al Husain", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ017", nama: "Arrasya Naufal Efendi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ018", nama: "Aishwa Humaira Efendi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ021", nama: "Izza Aqila Kurniadi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ023", nama: "Nayyara Yumna Humaira", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ024", nama: "Shanaya Naureen Almashyra", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
+      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
       { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ028", nama: "Afifah Mahira Zaujah", kelas: "Abu Ubaidah", guru: "Ustadz Sidik" },
-      { id: "IDSRQ029", nama: "Zubair Al Hawari", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ030", nama: "Muhammad Rafaeyza Adiyatma", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ031", nama: "Ahza Danish Ibrahim", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ032", nama: "M. Zayid Zafier", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik" },
       { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ034", nama: "Raja Ibrahim", kelas: "Zubair", guru: "Ustadz Sidik" },
-      { id: "IDSRQ035", nama: "Al Ghiffari", kelas: "Ali", guru: "Ustadz Sidik" },
+      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik" },
+      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik" },
       { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik" },
       { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
       { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik" },
       { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
       { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ041", nama: "Assyifa Khairunisa", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
       { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ043", nama: "M Zavier Arrayan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ044", nama: "Nur Azizan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ045", nama: "Rasyifa Nazwa Ramadhina", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
       { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ047", nama: "Muhammad Alfatih", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
-      { id: "IDSRQ048", nama: "Nabila Lailatunnisa", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ049", nama: "Khayra Salsabila", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ050", nama: "Ghaida Tsabitah", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ051", nama: "Nara Almahyra", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ052", nama: "Shafira Amalia", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ053", nama: "Shaqila", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ054", nama: "Kirana", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ055", nama: "Hafsah Yumna Hanifah", kelas: "Aisyah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ056", nama: "Lianni", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ057", nama: "Sania Salsabila", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ058", nama: "Raisya Imana Dhiya Ulhaq", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ059", nama: "Riska Rahmawati", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ060", nama: "Nindya", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ061", nama: "Wafika", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ062", nama: "Safwa", kelas: "Khadijah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ063", nama: "Hilyah Aulia Nurhasna", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ064", nama: "Kinasih", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ065", nama: "Khayla", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ066", nama: "Syifa Zhafira Az-Zahra", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ067", nama: "Aina Marda", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ068", nama: "Hanin", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ069", nama: "Dara", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ070", nama: "Zalfa", kelas: "Fatimah", guru: "Ustadzah Mega" },
-      { id: "IDSRQ071", nama: "Naila Kansa", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ072", nama: "Fania", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ073", nama: "Adzkia", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ074", nama: "Dzakira", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ075", nama: "Khanza", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ076", nama: "Shanum", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ077", nama: "Hafsya", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ078", nama: "Aqila", kelas: "Zainab", guru: "Ustadzah Mega" },
-      { id: "IDSRQ079", nama: "Arfan", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ080", nama: "Ahnaf", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ081", nama: "Alif Fathurahman", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ082", nama: "Arsyil Radeya Mahadri", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ083", nama: "Anas Rizqullah", kelas: "Utsman", guru: "Ustadz Sidik" },
+      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ052", nama: "Alifiandra Ahmad Hudaya", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ054", nama: "Dilara Adrena Ramadhani", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega" },
+      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ065", nama: "Arkhan Salman Al-Farisi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega" },
+      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega" },
+      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega" },
       { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik" },
       { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik" },
       { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik" },
-      { id: "IDSRQ087", nama: "Abyan", kelas: "Utsman", guru: "Ustadz Sidik" }
+      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik" }
     ];
 
+    const classSchedules = {
+      "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu",
+      "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu",
+      "Ali": "Senin, Rabu, Jumat",
+      "Zubair": "Senin, Rabu, Jumat",
+      "Utsman": "Selasa, Rabu, Kamis",
+      "Abu Bakar": "Senin, Rabu, Jumat",
+      "Bilal": "Senin, Rabu, Jumat",
+      "Hamzah": "Selasa, Kamis, Sabtu",
+      "Fatimah": "Selasa, Kamis, Sabtu",
+      "Umar": "Senin, Rabu, Kamis"
+    };
+
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
+    const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
+
     if(!localStorage.getItem('scriptUrlSheet')) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
     }
+    if(!localStorage.getItem('logoUrl')) {
+        localStorage.setItem('logoUrl', DEFAULT_LOGO_URL);
+    }
+
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
+    let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let presensiHistory = []; 
     let syncInterval;
     let html5QrCode;
     let audioEnabled = true;
     let isProcessing = false;
     let isCameraOn = false;
+
+    function applyLogo() {
+      const img = document.getElementById('appLogo');
+      const defIcon = document.getElementById('defaultLogoIcon');
+      if (LOGO_URL && LOGO_URL.trim() !== '') {
+          img.src = LOGO_URL;
+          img.classList.remove('hidden');
+          defIcon.classList.add('hidden');
+      } else {
+          img.classList.add('hidden');
+          defIcon.classList.remove('hidden');
+      }
+    }
+
+    function handleLogoError(imgEl) {
+      imgEl.classList.add('hidden');
+      const defIcon = document.getElementById('defaultLogoIcon');
+      if (defIcon) defIcon.classList.remove('hidden');
+    }
+
+    function toggleNavMenu(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('navMenuDropdown');
+        dropdown.classList.toggle('hidden');
+    }
+
+    function closeMenuOnClickOutside(event) {
+        const dropdown = document.getElementById('navMenuDropdown');
+        const btn = document.getElementById('menuDropdownBtn');
+        if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    }
 
     function playBeep(type) {
       if (!audioEnabled) return;
@@ -653,25 +730,36 @@
 
     function toggleAudio() {
       audioEnabled = !audioEnabled;
-      document.getElementById('audioIcon').className = audioEnabled ? "fas fa-volume-up text-sm" : "fas fa-volume-mute text-sm text-red-300";
+      document.getElementById('audioIcon').className = audioEnabled ? "fas fa-volume-up text-[10px]" : "fas fa-volume-mute text-[10px] text-red-300";
     }
 
     const Toast = Swal.mixin({
       toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
     });
 
+    const menuInfo = {
+      'live': { label: 'Pemindai & Manual', icon: 'fas fa-camera-retro' },
+      'rekap': { label: 'Laporan Bulanan', icon: 'fas fa-chart-pie' },
+      'kalender': { label: 'Kalender Kelas', icon: 'fas fa-calendar-alt' },
+      'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' }
+    };
+
     function switchTab(tabId) {
       ['live', 'rekap', 'kalender', 'persiswa'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`);
          let mBtn = document.getElementById(`mob-${id}`);
-         if(dBtn) { dBtn.classList.remove('active'); dBtn.classList.add('text-gray-500'); }
+         if(dBtn) dBtn.classList.remove('active');
          if(mBtn) { mBtn.classList.remove('text-brand-green', 'active'); mBtn.classList.add('text-gray-400'); }
       });
       
       document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
       document.getElementById(`tab-${tabId}`)?.classList.add('active');
-      document.getElementById(`tab-${tabId}`)?.classList.remove('text-gray-500');
+      
+      document.getElementById('currentMenuLabel').innerText = menuInfo[tabId].label;
+      document.getElementById('currentMenuIcon').className = menuInfo[tabId].icon + " text-brand-green";
+      document.getElementById('navMenuDropdown').classList.add('hidden');
+
       let mobBtn = document.getElementById(`mob-${tabId}`);
       if(mobBtn){ mobBtn.classList.add('active', 'text-brand-green'); mobBtn.classList.remove('text-gray-400'); }
 
@@ -690,33 +778,33 @@
                 isCameraOn = false;
                 camContainer.classList.add('hidden');
                 btn.innerHTML = '<i class="fas fa-video"></i> Nyalakan Kamera';
-                btn.className = "w-full py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2";
+                btn.className = "w-full py-2.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 text-xs";
             } catch(e) {}
         } else {
             camContainer.classList.remove('hidden');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghubungkan Kamera...';
-            btn.className = "w-full py-3.5 bg-gray-400 text-white rounded-xl font-bold flex justify-center items-center gap-2";
+            btn.className = "w-full py-2.5 bg-gray-400 text-white rounded-xl font-bold flex justify-center items-center gap-2 text-xs";
             
             try {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 await html5QrCode.start(
                    { facingMode: "environment" },
-                   { fps: 10, qrbox: { width: 250, height: 250 } },
+                   { fps: 10, qrbox: { width: 220, height: 220 } },
                    (decodedText) => { processScanResult(decodedText); }
                 );
                 isCameraOn = true;
                 btn.innerHTML = '<i class="fas fa-video-slash"></i> Matikan Kamera';
-                btn.className = "w-full py-3.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2";
+                btn.className = "w-full py-2.5 bg-red-500 text-white rounded-xl font-bold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2 text-xs";
             } catch (err) {
                 camContainer.classList.add('hidden');
                 isCameraOn = false;
                 btn.innerHTML = '<i class="fas fa-video"></i> Nyalakan Kamera';
-                btn.className = "w-full py-3.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float flex justify-center items-center gap-2";
+                btn.className = "w-full py-2.5 bg-brand-green text-white rounded-xl font-bold transition-all shadow-float flex justify-center items-center gap-2 text-xs";
                 
                 Swal.fire({
                     icon: 'warning',
                     title: 'Akses Kamera Terbatas',
-                    text: 'Browser/perangkat Anda menolak atau tidak memiliki akses kamera (iframe preview). Silakan gunakan mode Input Manual.',
+                    text: 'Browser/perangkat Anda menolak atau tidak memiliki akses kamera. Silakan gunakan mode Input Manual.',
                     confirmButtonColor: '#065f46'
                 });
             }
@@ -841,11 +929,11 @@
             html += `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-3 text-center">
-                        <button onclick="hapusData('${item.key}', event)" class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto">
-                            <i class="fas fa-trash-alt text-xs"></i>
+                        <button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
                     </td>
-                    <td class="p-3"><p class="font-bold text-gray-700 whitespace-nowrap">${item.hari}</p><p class="text-xs text-gray-400 font-mono">${item.waktu}</p></td>
+                    <td class="p-3"><p class="font-bold text-gray-700 whitespace-nowrap">${item.hari}</p><p class="text-[11px] text-gray-400 font-mono">${item.waktu}</p></td>
                     <td class="p-3"><p class="font-bold text-gray-800">${item.namaSantri}</p></td>
                     <td class="p-3"><span class="text-xs font-bold text-brand-green">${item.kelas}</span></td>
                     <td class="p-3">${statusBadge}</td>
@@ -907,12 +995,12 @@
 
                 html += `
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="p-4 text-center text-xs font-bold text-gray-400">${index + 1}</td>
-                        <td class="p-4 text-xs font-mono text-gray-500">${item.waktu}</td>
-                        <td class="p-4 font-bold text-gray-800">${item.namaSantri}</td>
-                        <td class="p-4 text-xs font-bold text-brand-green">${item.kelas}</td>
-                        <td class="p-4 text-xs text-gray-600">${item.guru}</td>
-                        <td class="p-4">${badge}</td>
+                        <td class="p-3 text-center text-xs font-bold text-gray-400">${index + 1}</td>
+                        <td class="p-3 text-xs font-mono text-gray-500">${item.waktu}</td>
+                        <td class="p-3 font-bold text-gray-800">${item.namaSantri}</td>
+                        <td class="p-3 text-xs font-bold text-brand-green">${item.kelas}</td>
+                        <td class="p-3 text-xs text-gray-600">${item.guru}</td>
+                        <td class="p-3">${badge}</td>
                     </tr>
                 `;
             });
@@ -955,7 +1043,7 @@
         let html = '';
         studentsInClass.forEach(santri => {
             html += `<tr class="hover:bg-slate-50 transition-colors">`;
-            html += `<td class="p-3 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${santri.nama}">${santri.nama}</td>`;
+            html += `<td class="p-2.5 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${santri.nama}">${santri.nama}</td>`;
             
             for (let d = 1; d <= 31; d++) {
                 let targetDate = new Date(selTahun, selBulan, d);
@@ -979,14 +1067,67 @@
                     else if(st.includes('izin')) colorClass = 'bg-amber-500';
                     else if(!st.includes('hadir')) colorClass = 'bg-red-500';
                     
-                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[30px]"><div class="w-5 h-5 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
+                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
                 } else {
-                    html += `<td class="p-1 border-r border-gray-100 min-w-[30px]"><div class="w-5 h-5 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`;
+                    html += `<td class="p-1 border-r border-gray-100 min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`;
                 }
             }
             html += `</tr>`;
         });
         tbody.innerHTML = html;
+    }
+
+    function downloadKalenderCSV() {
+        const table = document.getElementById('kalenderTableElement');
+        if (!table) return;
+        let rows = table.querySelectorAll('tr');
+        if (rows.length <= 1) {
+            Toast.fire({ icon: 'error', title: 'Data kalender kosong' });
+            return;
+        }
+
+        let csv = [];
+        let headerCols = rows[0].querySelectorAll('th');
+        let headerArr = [];
+        headerCols.forEach(th => headerArr.push(`"${th.innerText.trim()}"`));
+        csv.push(headerArr.join(','));
+
+        for (let i = 1; i < rows.length; i++) {
+            let row = rows[i];
+            let rowData = [];
+            let nameCell = row.querySelector('td');
+            rowData.push(`"${nameCell.innerText.trim()}"`);
+
+            let dayTds = row.querySelectorAll('td');
+            for (let j = 1; j < dayTds.length; j++) {
+                let div = dayTds[j].querySelector('div');
+                let st = '-';
+                if(div) {
+                    let title = div.getAttribute('title') || '';
+                    if(title.toLowerCase().includes('hadir')) st = '✅';
+                    else if(title.toLowerCase().includes('sakit')) st = '💊';
+                    else if(title.toLowerCase().includes('izin')) st = 'ℹ️';
+                    else st = '🅰️';
+                }
+                rowData.push(`"${st}"`);
+            }
+            csv.push(rowData.join(','));
+        }
+
+        const selKelas = document.getElementById('kalenderKelasSelect').value;
+        const selBulan = document.getElementById('kalenderBulanSelect').options[document.getElementById('kalenderBulanSelect').selectedIndex].text;
+        const selTahun = document.getElementById('kalenderTahunSelect').value;
+
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Kalender_Presensi_Kelas_${selKelas}_${selBulan}_${selTahun}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        Toast.fire({ icon: 'success', title: 'Kalender berhasil diunduh!' });
     }
 
     function preparePerSiswaOptions() {
@@ -1021,19 +1162,8 @@
         let daysInMonth = new Date(selTahun, selBulan + 1, 0).getDate();
         let html = '';
 
-        studentsInClass.forEach(santri => {
-            html += `
-                <div class="bg-slate-50 border border-gray-200 rounded-2xl p-4 shadow-sm">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 pb-2 border-b border-gray-200 gap-2">
-                        <div>
-                            <h4 class="font-bold text-gray-800 text-sm md:text-base">${santri.nama}</h4>
-                            <p class="text-[11px] text-gray-500 font-mono">Kelas: ${santri.kelas} | Guru: ${santri.guru}</p>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto hide-scrollbar">
-                        <div class="inline-flex gap-1.5 pb-2">
-            `;
-
+        studentsInClass.forEach((santri, index) => {
+            let daysEmojiLine = '';
             for(let d = 1; d <= daysInMonth; d++) {
                 let record = presensiHistory.find(item => {
                     let itemDate = parseGoogleSheetDate(item.waktu);
@@ -1043,32 +1173,97 @@
                     return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
                 });
 
-                let bgClass = "bg-white border border-gray-200 text-gray-400";
-                let statusText = "Belum Ada Data";
                 if(record) {
                     const st = String(record.status).toLowerCase();
-                    if(st.includes('hadir') && !st.includes('tidak')) { bgClass = "bg-emerald-500 text-white font-bold shadow-sm"; statusText = "Hadir"; }
-                    else if(st.includes('sakit')) { bgClass = "bg-blue-500 text-white font-bold shadow-sm"; statusText = "Sakit"; }
-                    else if(st.includes('izin')) { bgClass = "bg-amber-500 text-white font-bold shadow-sm"; statusText = "Izin"; }
-                    else { bgClass = "bg-red-500 text-white font-bold shadow-sm"; statusText = "Tidak Hadir (Alfa)"; }
+                    if(st.includes('hadir') && !st.includes('tidak')) daysEmojiLine += '✅';
+                    else if(st.includes('sakit')) daysEmojiLine += '💊';
+                    else if(st.includes('izin')) daysEmojiLine += 'ℹ️';
+                    else daysEmojiLine += '🅰️';
                 }
-
-                html += `
-                    <div class="flex flex-col items-center">
-                        <span class="text-[10px] text-gray-500 font-bold mb-1">${d}</span>
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs ${bgClass}" title="Tgl ${d}: ${statusText}">${d}</div>
-                    </div>
-                `;
             }
 
             html += `
+                <div class="bg-slate-50 border border-gray-200 rounded-xl p-3 shadow-sm">
+                    <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-gray-200">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-xs">${index + 1}. ${santri.nama}</h4>
+                            <p class="text-[10px] text-gray-500 font-mono">Kelas: ${santri.kelas} | Guru: ${santri.guru}</p>
                         </div>
+                    </div>
+                    <div class="text-xs font-mono tracking-widest bg-white p-2 rounded-lg border border-gray-100 text-emerald-700 font-bold overflow-x-auto min-h-[30px] flex items-center">
+                        ${daysEmojiLine || '<span class="text-gray-400 text-xs italic font-normal">Belum ada kehadiran tercatat bulan ini</span>'}
                     </div>
                 </div>
             `;
         });
 
         container.innerHTML = html;
+    }
+
+    function kirimRekapKelasWA() {
+        const selKelas = document.getElementById('persiswaKelasSelect').value;
+        const selBulanIndex = parseInt(document.getElementById('persiswaBulanSelect').value);
+        const monthName = document.getElementById('persiswaBulanSelect').options[selBulanIndex].text;
+        const selTahun = parseInt(document.getElementById('persiswaTahunSelect').value);
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+
+        if(studentsInClass.length === 0) {
+            Toast.fire({ icon: 'error', title: 'Tidak ada santri di kelas ini.' });
+            return;
+        }
+
+        let maxDay = 1;
+        presensiHistory.forEach(item => {
+            let itemDate = parseGoogleSheetDate(item.waktu);
+            if(itemDate && itemDate.getMonth() === selBulanIndex && itemDate.getFullYear() === selTahun) {
+                if(item.kelas === selKelas && itemDate.getDate() > maxDay) {
+                    maxDay = itemDate.getDate();
+                }
+            }
+        });
+
+        let jadwalHari = classSchedules[selKelas] || "Senin s.d Sabtu";
+        let rawTeacher = studentsInClass[0].guru || "Ustadz Pengampu";
+        let teacherName = "Kak " + rawTeacher.replace(/^Ustadz\s+/i, "").replace(/^Ustadzah\s+/i, "");
+
+        let text = `🗃 *REKAP KEHADIRAN* \n` +
+                   `*_KELAS ${selKelas.toUpperCase()}_* \n\n` +
+                   `🔊 *Pengajar : ${teacherName}* \n` +
+                   `🕰 *Hari/Waktu : ${jadwalHari}* \n` +
+                   `📅 *Pertemuan Bulan ${monthName} : 1 s.d ${maxDay} ${monthName} ${selTahun}* \n\n`;
+
+        studentsInClass.forEach((santri, index) => {
+            let daysEmojiLine = '';
+            for(let d = 1; d <= maxDay; d++) {
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu);
+                    if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || 
+                                    (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulanIndex && itemDate.getFullYear() === selTahun;
+                });
+
+                if(record) {
+                    const st = String(record.status).toLowerCase();
+                    if(st.includes('hadir') && !st.includes('tidak')) daysEmojiLine += '✅';
+                    else if(st.includes('sakit')) daysEmojiLine += '💊';
+                    else if(st.includes('izin')) daysEmojiLine += 'ℹ️';
+                    else daysEmojiLine += '🅰️';
+                }
+            }
+
+            text += `${index + 1}️⃣ *${santri.nama}*\n${daysEmojiLine || '-'}\n\n`;
+        });
+
+        text += `••••••••••••••••••••\n\n` +
+                `*KETERANGAN* \n` +
+                `✅ : Hadir \n` +
+                `ℹ️ : Izin \n` +
+                `🅰️ : Tanpa keterangan \n` +
+                `💊 : Sakit`;
+
+        const encoded = encodeURIComponent(text);
+        window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
     }
 
     function downloadCSV(filename = 'Data.csv') {
@@ -1107,23 +1302,29 @@
 
     function bukaModalUrl() {
         document.getElementById('inputUrlSheet').value = SCRIPT_URL;
+        document.getElementById('inputUrlLogo').value = LOGO_URL;
         document.getElementById('settingModal').classList.remove('hidden');
     }
     function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
     function simpanUrl() {
         const v = document.getElementById('inputUrlSheet').value.trim();
+        const l = document.getElementById('inputUrlLogo').value.trim();
         if(v.includes('script.google.com')) {
             SCRIPT_URL = v;
             localStorage.setItem('scriptUrlSheet', SCRIPT_URL);
+            LOGO_URL = l || DEFAULT_LOGO_URL;
+            localStorage.setItem('logoUrl', LOGO_URL);
+            applyLogo();
             tutupModalUrl();
-            Toast.fire({ icon: 'success', title: 'URL Tersimpan' });
+            Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan' });
             fetchHistoryFromSheets();
-        } else { Toast.fire({ icon: 'error', title: 'URL tidak valid' }); }
+        } else { Toast.fire({ icon: 'error', title: 'URL Sheet tidak valid' }); }
     }
 
     window.onload = function() {
+        applyLogo();
+
         const selSantri = document.getElementById('santriSelect');
-        // Urutkan berdasarkan Nama Kelas dahulu, lalu Nama Santri
         masterDataSantri.sort((a,b) => {
             let classCmp = a.kelas.localeCompare(b.kelas);
             if (classCmp !== 0) return classCmp;
