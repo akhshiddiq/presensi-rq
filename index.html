@@ -825,23 +825,23 @@
                     const filter = ctx.createBiquadFilter();
 
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(2600, now);
-                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+                    osc.frequency.setValueAtTime(3200, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
 
-                    filter.type = 'bandpass';
-                    filter.frequency.setValueAtTime(3200, now);
-                    filter.frequency.exponentialRampToValueAtTime(250, now + 0.1);
-                    filter.Q.setValueAtTime(4.5, now);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(5000, now);
+                    filter.frequency.exponentialRampToValueAtTime(400, now + 0.12);
 
-                    gain.gain.setValueAtTime(0.35, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    // Memperbesar volume suara laser secara maksimal
+                    gain.gain.setValueAtTime(1.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
 
                     osc.connect(filter);
                     filter.connect(gain);
                     gain.connect(ctx.destination);
 
                     osc.start(now);
-                    osc.stop(now + 0.1);
+                    osc.stop(now + 0.12);
                 } else {
                     const now = ctx.currentTime + (i * 0.1);
                     const osc = ctx.createOscillator();
