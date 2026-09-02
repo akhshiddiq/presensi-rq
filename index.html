@@ -178,6 +178,11 @@
     body.light-mode .nav-btn.active { background-color: #059669 !important; color: #ffffff !important; }
     body.light-mode .nav-btn:hover:not(.active) { background-color: #f1f5f9 !important; color: #059669 !important; }
 
+    /* Absen Manual Light Mode */
+    body.light-mode .student-item { background-color: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    body.light-mode .student-item:hover { background-color: #f8fafc !important; border-color: #cbd5e1 !important; }
+    body.light-mode .student-item .student-name { color: #1e293b !important; }
+
     /* Misc */
     body.light-mode ::-webkit-calendar-picker-indicator { filter: none !important; }
     body.light-mode ::-webkit-scrollbar-track { background: #f8fafc; }
@@ -1065,8 +1070,14 @@
     }
 
     function toggleSelectAll(source) {
-        const checkboxes = document.querySelectorAll('.student-item[style!="display: none;"] .student-checkbox');
-        checkboxes.forEach(cb => cb.checked = source.checked);
+        const items = document.querySelectorAll('.student-item');
+        items.forEach(item => {
+            // Hanya centang kotak jika elemen santri tersebut sedang tidak disembunyikan (hasil filter pencarian)
+            if (item.style.display !== 'none') {
+                const cb = item.querySelector('.student-checkbox');
+                if (cb) cb.checked = source.checked;
+            }
+        });
     }
 
     function syncMasterSantriList(newSantriList) {
