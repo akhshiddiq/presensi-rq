@@ -151,17 +151,16 @@
     body.light-mode .text-zinc-300 { color: #334155 !important; }
     body.light-mode .text-zinc-400 { color: #64748b !important; }
     body.light-mode .text-zinc-500 { color: #94a3b8 !important; }
-    body.light-mode h1.text-white, body.light-mode h2.text-white, body.light-mode h3.text-white { color: #0f172a !important; text-shadow: none !important; }
+    body.light-mode h1.text-white, body.light-mode h2.text-white, body.light-mode h3.text-white, body.light-mode h4.text-white { color: #0f172a !important; text-shadow: none !important; }
 
     /* Fix Warna Badges Status di Light Mode */
-    body.light-mode .bg-emerald-900\/50 { background-color: #d1fae5 !important; border-color: #a7f3d0 !important; color: #059669 !important; }
+    body.light-mode .bg-emerald-900\/50, body.light-mode .bg-emerald-900\/40 { background-color: #d1fae5 !important; border-color: #a7f3d0 !important; color: #059669 !important; }
     body.light-mode .text-emerald-400 { color: #059669 !important; }
-    body.light-mode .bg-blue-900\/50 { background-color: #dbeafe !important; border-color: #bfdbfe !important; color: #2563eb !important; }
+    body.light-mode .bg-blue-900\/50, body.light-mode .bg-blue-900\/40 { background-color: #dbeafe !important; border-color: #bfdbfe !important; color: #2563eb !important; }
     body.light-mode .text-blue-400 { color: #2563eb !important; }
-    body.light-mode .bg-amber-900\/50 { background-color: #fef3c7 !important; border-color: #fde68a !important; color: #d97706 !important; }
+    body.light-mode .bg-amber-900\/50, body.light-mode .bg-amber-900\/40 { background-color: #fef3c7 !important; border-color: #fde68a !important; color: #d97706 !important; }
     body.light-mode .text-amber-400 { color: #d97706 !important; }
-    body.light-mode .bg-red-900\/50 { background-color: #fee2e2 !important; border-color: #fecaca !important; color: #dc2626 !important; }
-    body.light-mode .bg-red-900\/40 { background-color: #fee2e2 !important; border-color: #fca5a5 !important; color: #ef4444 !important; }
+    body.light-mode .bg-red-900\/50, body.light-mode .bg-red-900\/40 { background-color: #fee2e2 !important; border-color: #fecaca !important; color: #dc2626 !important; }
     body.light-mode .text-red-400 { color: #dc2626 !important; }
     
     /* Pastikan Text di dalam Button tetap Putih */
@@ -171,6 +170,7 @@
     body.light-mode .table-container th { background-color: #f8fafc !important; }
     body.light-mode tbody tr:hover { background-color: #f1f5f9 !important; }
     body.light-mode .divide-zinc-700\/50 > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }
+    body.light-mode .hover\:bg-zinc-700\/50:hover { background-color: #f1f5f9 !important; }
 
     /* Mobile Nav */
     body.light-mode nav.bg-zinc-900 { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
@@ -1488,12 +1488,12 @@
                     ${isTop && rankNum === 1 ? '<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full pointer-events-none"></div>' : ''}
                     ${rankBadge}
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-extrabold text-base md:text-lg text-white truncate">${stat.santri.nama} ${trophyIcon}</h4>
+                        <h4 class="font-extrabold text-base md:text-lg text-zinc-200 truncate">${stat.santri.nama} ${trophyIcon}</h4>
                         <div class="flex flex-wrap gap-3 mt-2.5 text-sm font-bold">
-                            <span class="flex items-center gap-1.5 bg-emerald-900/40 text-emerald-400 px-2.5 py-1.5 rounded-lg border border-emerald-700/50"><i class="fas fa-check"></i> ${stat.counts.hadir} Hadir</span>
-                            <span class="flex items-center gap-1.5 bg-blue-900/40 text-blue-400 px-2.5 py-1.5 rounded-lg border border-blue-700/50"><i class="fas fa-bed"></i> ${stat.counts.sakit} Sakit</span>
-                            <span class="flex items-center gap-1.5 bg-amber-900/40 text-amber-400 px-2.5 py-1.5 rounded-lg border border-amber-700/50"><i class="fas fa-envelope"></i> ${stat.counts.izin} Izin</span>
-                            <span class="flex items-center gap-1.5 bg-red-900/40 text-red-400 px-2.5 py-1.5 rounded-lg border border-red-700/50"><i class="fas fa-times"></i> ${stat.counts.alfa} Alfa</span>
+                            <span class="flex items-center gap-1.5 bg-emerald-900/50 text-emerald-400 px-2.5 py-1.5 rounded-lg border border-emerald-700/50"><i class="fas fa-check"></i> ${stat.counts.hadir} Hadir</span>
+                            <span class="flex items-center gap-1.5 bg-blue-900/50 text-blue-400 px-2.5 py-1.5 rounded-lg border border-blue-700/50"><i class="fas fa-bed"></i> ${stat.counts.sakit} Sakit</span>
+                            <span class="flex items-center gap-1.5 bg-amber-900/50 text-amber-400 px-2.5 py-1.5 rounded-lg border border-amber-700/50"><i class="fas fa-envelope"></i> ${stat.counts.izin} Izin</span>
+                            <span class="flex items-center gap-1.5 bg-red-900/50 text-red-400 px-2.5 py-1.5 rounded-lg border border-red-700/50"><i class="fas fa-times"></i> ${stat.counts.alfa} Alfa</span>
                         </div>
                     </div>
                 </div>
