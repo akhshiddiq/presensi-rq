@@ -795,9 +795,10 @@
     };
 
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
+    const OLD_DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG/exec";
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztbxL4x1nP3NbRHj2yQedhTNUbBWmlF8qgj7xJ7wSqylXdTMvLDHL2pRwbQQdFKaM/exec";
 
-    if(!localStorage.getItem('scriptUrlSheet')) {
+    if(!localStorage.getItem('scriptUrlSheet') || localStorage.getItem('scriptUrlSheet') === OLD_DEFAULT_SCRIPT_URL) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
     }
     
