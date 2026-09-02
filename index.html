@@ -1401,14 +1401,17 @@
 
                 if(record) {
                     const st = String(record.status).toLowerCase();
+                    // HANYA MENGISI EMOTE JIKA ADA DATA
                     if(st.includes('hadir') && !st.includes('tidak')) daysEmojiLine += '✅';
                     else if(st.includes('sakit')) daysEmojiLine += '💊';
                     else if(st.includes('izin')) daysEmojiLine += 'ℹ️';
                     else daysEmojiLine += '🅰️';
-                } else {
-                    daysEmojiLine += '▫️'; // Kotak putih kosong
                 }
+                // HAPUS ELSE DISINI (TIDAK ADA LAGI KOTAK PUTIH KOSONG)
             }
+            // Jika kosong melompong (belum ada absen sama sekali) berikan tanda strip
+            if (daysEmojiLine === '') daysEmojiLine = '-';
+            
             text += `*${index + 1}. ${santri.nama}*\n[ ${daysEmojiLine} ]\n\n`;
         });
 
@@ -1416,8 +1419,7 @@
                 `✅ = Hadir\n` +
                 `💊 = Sakit\n` +
                 `ℹ️ = Izin\n` +
-                `🅰️ = Alfa\n` +
-                `▫️ = Kosong / Libur\n\n` +
+                `🅰️ = Alfa\n\n` +
                 `- _Admin RQ Al-Khansa_`;
 
         document.getElementById('waPreviewText').innerText = text;
