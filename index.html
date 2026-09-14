@@ -1,227 +1,3 @@
-Teks yang ditempel (1)(5).txt
-Dokumen
-save dan pahami dan jangan di kurangi 
-
-ini juga
-// =================================================================
-// KODE GOOGLE APPS SCRIPT - PRESENSI SANTRI RQ AL-KHANSA
-// DUKUNGAN HAPUS PERMANEN (GID: 1160146646) & MASTER SANTRI (GID: 0)
-// =================================================================
-
-function getSheetByGid(ss, gid) {
-  var sheets = ss.getSheets();
-  for (var i = 0; i < sheets.length; i++) {
-    if (sheets[i].getSheetId().toString() === gid.toString()) {
-      return sheets[i];
-    }
-  }
-  return null;
-}
-
-function parsePostData(e) {
-  var dataData = {};
-  if (e) {
-    if (e.parameter) {
-      for (var p in e.parameter) {
-        dataData[p] = e.parameter[p];
-      }
-    }
-    if (e.postData && e.postData.contents) {
-      try {
-        var parsed = JSON.parse(e.postData.contents);
-        for (var k in parsed) {
-          dataData[k] = parsed[k];
-        }
-      } catch (err) {
-        // Form encoded fallback
-      }
-    }
-  }
-  return dataData;
-}
-
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  try { 
-    lock.waitLock(5000); 
-  } catch (err) { 
-    return responseJSON({ status: "error", message: "Server sibuk, coba lagi." }); 
-  }
-
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheetPresensi = getSheetByGid(ss, "1160146646") || ss.getSheetByName("Presensi") || ss.getSheets()[0];
-    var dataData = parsePostData(e);
-
-    var action = String(dataData.action || "").trim().toLowerCase();
-
-    // ================= FITUR HAPUS / BATAL PRESENSI =================
-    if (action === "delete" || action === "batal" || action === "hapus") {
-      var targetKey = String(dataData.key || "").trim().toLowerCase();
-      var targetId = String(dataData.idSantri || "").trim().toLowerCase();
-      var targetNama = String(dataData.namaSantri || "").trim().toLowerCase();
-      var targetWaktu = String(dataData.waktu || "").trim().toLowerCase();
-
-      var rows = sheetPresensi.getDataRange().getValues();
-      var deleted = false;
-
-      // Loop dari bawah ke atas agar menghapus baris presensi terbaru yang cocok
-      for (var r = rows.length - 1; r >= 1; r--) {
-        var cellCol0 = String(rows[r][0] || "").trim().toLowerCase(); // Key / ID / Waktu
-        var cellCol1 = String(rows[r][1] || "").trim().toLowerCase(); // ID
-        var cellCol2 = String(rows[r][2] || "").trim().toLowerCase(); // Nama
-        var cellCol5 = String(rows[r][5] || "").trim().toLowerCase(); // Waktu Pemindaian
-
-        var matchKey = (targetKey !== "" && (cellCol0 === targetKey || cellCol1 === targetKey));
-        var matchId = (targetId !== "" && (cellCol0 === targetId || cellCol1 === targetId));
-        var matchNamaWaktu = (targetNama !== "" && targetWaktu !== "" && cellCol2 === targetNama && cellCol5 === targetWaktu);
-        var matchWaktu = (targetWaktu !== "" && (cellCol0 === targetWaktu || cellCol5 === targetWaktu));
-
-        if (matchKey || matchId || matchNamaWaktu || matchWaktu) {
-          sheetPresensi.deleteRow(r + 1); // Hapus baris di Google Sheet
-          deleted = true;
-          break;
-        }
-      }
-
-      if (deleted) {
-        return responseJSON({ status: "success", message: "Presensi berhasil dibatalkan dari Google Sheet" });
-      } else {
-        return responseJSON({ status: "warning", message: "Data tidak ditemukan di server Google Sheet" });
-      }
-    }
-
-    // ================= FITUR TAMBAH PRESENSI BARU =================
-    var idSantri = dataData.idSantri || "MANUAL";
-    var namaSantri = dataData.namaSantri || "Santri";
-    var kelasSantri = dataData.kelas || "-";
-    var guruPilih = dataData.guru || "-";
-    var rawStatus = dataData.status || "Hadir";
-    
-    var statusDisplay = "Hadir";
-    var stLow = String(rawStatus).toLowerCase();
-    if (stLow.includes("sakit")) statusDisplay = "Sakit";
-    else if (stLow.includes("izin")) statusDisplay = "Izin";
-    else if (stLow.includes("tidak hadir") || stLow.includes("alfa")) statusDisplay = "Tidak Hadir (Alfa)";
-
-    var now = new Date();
-    var timeZone = "Asia/Jakarta";
-    
-    // PERBAIKAN: Prioritaskan Waktu & Hari dari Web, jika kosong baru pakai waktu server sekarang
-    var formattedDateTime = dataData.waktu ? dataData.waktu : Utilities.formatDate(now, timeZone, "dd/MM/yyyy HH.mm.ss");
-    var dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    var hariIndo = dataData.hari ? dataData.hari : dayNames[now.getDay()];
-    
-    var keyUnik = dataData.key || "WEB_" + Math.random().toString(36).substring(2, 10);
-
-    sheetPresensi.appendRow([keyUnik, idSantri, namaSantri, kelasSantri, guruPilih, formattedDateTime, hariIndo, statusDisplay]);
-    return responseJSON({ status: "success", message: "Tersimpan di Database", data: { key: keyUnik } });
-  } catch (error) {
-    return responseJSON({ status: "error", message: error.toString() });
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function doGet(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // 1. Ambil Data Presensi (GID 1160146646)
-    var sheetPresensi = getSheetByGid(ss, "1160146646") || ss.getSheetByName("Presensi") || ss.getSheets()[0];
-    var dataPresensi = sheetPresensi.getDataRange().getDisplayValues(); 
-    var historyList = [];
-
-    if (dataPresensi.length > 1) {
-      for (var i = 1; i < dataPresensi.length; i++) {
-        var row = dataPresensi[i];
-        if (row[0] || row[1] || row[2]) {
-          historyList.push({
-            key: String(row[0] || ""),
-            idSantri: String(row[1] || ""),
-            namaSantri: String(row[2] || ""),
-            kelas: String(row[3] || ""),
-            guru: String(row[4] || ""),
-            waktu: String(row[5] || ""),
-            hari: String(row[6] || ""),
-            status: String(row[7] || "Hadir")
-          });
-        }
-      }
-    }
-    historyList.reverse();
-
-    // 2. Ambil Master Data Santri (GID 0 / Sheet Santri)
-    var santriList = [];
-    var sheetSantri = getSheetByGid(ss, "0") || ss.getSheetByName("Santri") || ss.getSheetByName("DataSantri");
-    if (sheetSantri) {
-      var dataSantri = sheetSantri.getDataRange().getDisplayValues();
-      if (dataSantri.length > 1) {
-        for (var j = 1; j < dataSantri.length; j++) {
-          var sRow = dataSantri[j];
-          if (sRow[0] || sRow[1]) {
-            santriList.push({
-              id: String(sRow[0] || "").trim(),
-              nama: String(sRow[1] || "").trim(),
-              kelas: String(sRow[2] || "").trim(),
-              guru: String(sRow[3] || "").trim()
-            });
-          }
-        }
-      }
-    }
-
-    return responseJSON({ 
-      status: "online", 
-      history: historyList, 
-      santri: santriList 
-    });
-  } catch (err) {
-    return responseJSON({ status: "error", message: err.toString(), history: [], santri: [] });
-  }
-}
-
-function responseJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
-Memori diperbarui
-
-Siap. Kode Google Apps Script ini juga saya simpan sebagai referensi kerja dan saya pahami.
-
-Saya akan menjaga:
-
-Tidak mengurangi kode
-Tidak menghapus fungsi/fitur yang sudah ada
-Tidak mengubah struktur sembarangan
-Jika nanti ada perubahan, hanya bagian yang Anda minta yang akan saya ubah.
-Fitur hapus/batal presensi, database presensi, master santri, doGet, doPost, dan fungsi pendukung tetap dipertahankan.
-
-Jadi sekarang HTML dan GS Sistem Presensi Santri RQ Al-Khansa menjadi acuan yang saling terkait untuk pekerjaan berikutnya.
-
-buatkan mode dalam nya , dan tampilan menu tampilkan semua jgn dibuatkan drop down
-buatkan mode Malam ada tombol icon ganti mode , dan tampilan menu tampilkan semua jgn dibuatkan drop down
-
-Sudah saya buat sesuai permintaan, tanpa mengurangi fitur yang ada.
-
-Perubahan:
-
-🌙 Mode Malam / Mode Siang dengan tombol ikon di bagian header.
-Ikon otomatis berubah 🌙 ↔ ☀️.
-Pilihan mode malam tersimpan di browser, jadi tidak kembali ke mode siang saat halaman dibuka lagi.
-📋 Semua menu sekarang langsung tampil, tidak lagi menggunakan dropdown:
-Pemindai Kamera
-Input Manual Berkelompok
-Kalender Kelas
-Absen Per Kelas & WA
-Tampilan menu dibuat responsif untuk laptop dan HP.
-Fungsi lama tetap dipertahankan agar fitur lainnya tidak terganggu.
-
-File HTML yang sudah diperbarui:
-
-Download HTML – Mode Malam + Menu Lengkap
-
-Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu tetap terhubung ke fungsi switchTab().
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -470,43 +246,75 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
     /* Menu desktop/tablet: semua menu tampil, tanpa dropdown */
     .nav-menu-full {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: .5rem;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: .65rem;
       width: 100%;
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 1rem;
-      padding: .5rem;
-      box-shadow: 0 4px 14px rgba(15,23,42,.05);
+      border-radius: 1.15rem;
+      padding: .65rem;
+      box-shadow: 0 6px 18px rgba(15,23,42,.07);
     }
     .nav-menu-item {
       transition: all .2s ease;
       color: #475569;
       font-weight: 700;
-      padding: .7rem .8rem;
-      border-radius: .75rem;
-      border: 1px solid transparent;
+      padding: .95rem .8rem;
+      min-height: 58px;
+      border-radius: .9rem;
+      border: 1px solid #e2e8f0;
       width: 100%;
       text-align: center;
-      font-size: .78rem;
+      font-size: .88rem;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: .55rem;
       cursor: pointer;
     }
-    .nav-menu-item:hover { background-color: #f0fdf4; color: #047857; }
-    .nav-menu-item.active { background-color: #047857; color: #ffffff; }
-    @media (max-width: 767px) {
-      .nav-menu-full {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .nav-menu-item {
-        font-size: .72rem;
-        padding: .65rem .5rem;
-      }
+    .nav-menu-item:hover { background-color: #f0fdf4; color: #047857; border-color: #a7f3d0; transform: translateY(-1px); }
+    .nav-menu-item.active { background-color: #047857; color: #ffffff; border-color: #047857; box-shadow: 0 5px 14px rgba(4,120,87,.2); }
+    .nav-menu-item.history-menu { background-color: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+    .nav-menu-item.history-menu:hover { background-color: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    .nav-menu-item.history-menu.active { background-color: #7c3aed; color: #ffffff; border-color: #7c3aed; box-shadow: 0 5px 14px rgba(124,58,237,.25); }
+    body.dark-mode .nav-menu-item.history-menu { background-color: #2e1b55 !important; color: #c4b5fd !important; border-color: #5b21b6 !important; }
+    body.dark-mode .nav-menu-item.history-menu.active { background-color: #7c3aed !important; color: #ffffff !important; border-color: #7c3aed !important; }
+    @media (max-width: 900px) {
+      .nav-menu-full { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-  </style>
+    @media (max-width: 767px) {
+      .nav-menu-full { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; padding: .55rem; }
+      .nav-menu-item { font-size: .78rem; padding: .8rem .5rem; min-height: 54px; }
+    }
+  
+    /* Menu diperbesar dan Riwayat dibuat lebih menonjol */
+    .nav-menu-large .nav-menu-item { min-height: 64px; font-size: 15px; padding: 16px 18px; }
+    .nav-menu-large .nav-menu-item i { font-size: 20px; }
+    .nav-menu-large .history-menu { font-size: 18px; }
+    .nav-menu-large .history-menu .riwayat-menu-text { font-size: 20px; font-weight: 900; }
+    @media (max-width: 767px) {
+      .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; }
+      .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; }
+    }
+
+    /* Riwayat Presensi: tulisan hasil absen diperbesar */
+    #view-riwayat .riwayat-table-head { font-size: 16px; }
+    #view-riwayat .riwayat-table-body { font-size: 17px; }
+    #view-riwayat .riwayat-table-body td { padding: 15px 14px; }
+    #view-riwayat .riwayat-date { font-size: 17px; font-weight: 800; white-space: nowrap; }
+    #view-riwayat .riwayat-name { font-size: 18px; font-weight: 800; }
+    #view-riwayat .riwayat-class { font-size: 17px; font-weight: 800; }
+    #view-riwayat .riwayat-status { font-size: 16px; font-weight: 900; }
+    @media (max-width: 767px) {
+      #view-riwayat .riwayat-table-head { font-size: 13px; }
+      #view-riwayat .riwayat-table-body { font-size: 15px; }
+      #view-riwayat .riwayat-table-body td { padding: 13px 11px; }
+      #view-riwayat .riwayat-date { font-size: 15px; }
+      #view-riwayat .riwayat-name { font-size: 16px; }
+      #view-riwayat .riwayat-class { font-size: 15px; }
+      #view-riwayat .riwayat-status { font-size: 14px; }
+    }
+</style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
 
@@ -567,7 +375,7 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
   <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
     
     <!-- ================= MENU UTAMA: SEMUA MENU LANGSUNG TAMPIL ================= -->
-    <div id="navMenuBar" class="nav-menu-full" aria-label="Menu utama">
+    <div id="navMenuBar" class="nav-menu-full nav-menu-large" aria-label="Menu utama">
       <button onclick="switchTab('live')" id="tab-live" class="nav-menu-item active">
         <i class="fas fa-camera"></i> <span>Pemindai Kamera</span>
       </button>
@@ -579,6 +387,9 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
       </button>
       <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-menu-item">
         <i class="fas fa-users"></i> <span>Absen Per Kelas &amp; WA</span>
+      </button>
+      <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-menu-item history-menu">
+        <i class="fas fa-history"></i> <span class="riwayat-menu-text">Riwayat</span>
       </button>
     </div>
 
@@ -880,6 +691,35 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
           </div>
         </div>
     </div>
+    <!-- ================= TAB 5: RIWAYAT PRESENSI ================= -->
+    <div id="view-riwayat" class="hidden animate-fade-in space-y-5">
+      <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+        <div class="p-5 sm:p-6 bg-violet-50 border-b border-violet-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 border border-violet-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-history"></i></div>
+            <div>
+              <h2 class="font-extrabold text-violet-900 text-2xl sm:text-3xl">Riwayat Presensi</h2>
+              <p class="text-sm text-violet-700/70 mt-1">Daftar seluruh riwayat presensi.</p>
+            </div>
+          </div>
+          <button onclick="manualSync()" class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Muat Ulang Riwayat</button>
+        </div>
+        <div class="p-4 bg-violet-50/50 border-b border-violet-100 flex items-center justify-between gap-2">
+          <span class="font-extrabold text-violet-800 text-base"><i class="fas fa-list mr-2"></i> Riwayat Presensi</span>
+          <span class="text-sm font-bold text-violet-700"><span id="riwayatCount">0</span> data</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[720px]">
+            <thead class="bg-violet-50 text-violet-800 uppercase tracking-wider font-extrabold border-b border-violet-100 riwayat-table-head">
+              <tr><th class="p-4 text-center w-16">No</th><th class="p-4">Tanggal</th><th class="p-4">Nama Lengkap</th><th class="p-4">Kelas</th><th class="p-4">Status</th></tr>
+            </thead>
+            <tbody id="riwayatTableBody" class="divide-y divide-gray-50 riwayat-table-body"></tbody>
+          </table>
+        </div>
+        <div id="emptyRiwayat" class="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50"><i class="fas fa-history text-3xl mb-2 text-violet-200"></i><p class="text-sm font-medium">Belum ada riwayat presensi yang sesuai.</p></div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Tombol Navigasi Mobile (Bawah) -->
@@ -888,6 +728,7 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
     <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
     <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-users text-sm mb-0.5"></i> Per Kelas</button>
+    <button onclick="switchTab('riwayat')" id="mob-riwayat" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none text-violet-600"><i class="fas fa-history text-sm mb-0.5"></i> Riwayat</button>
   </nav>
 
   <!-- Modal Pengaturan -->
@@ -1309,11 +1150,12 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
       'live': { label: 'Pemindai Kamera', icon: 'fas fa-camera' },
       'manual': { label: 'Input Manual Berkelompok', icon: 'fas fa-keyboard' },
       'kalender': { label: 'Kalender Kelas', icon: 'fas fa-calendar-alt' },
-      'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' }
+      'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' },
+      'riwayat': { label: 'Riwayat', icon: 'fas fa-history' }
     };
 
     function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'persiswa'].forEach(id => {
+      ['live', 'manual', 'kalender', 'persiswa', 'riwayat'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
          if(dBtn) dBtn.classList.remove('active');
@@ -1324,10 +1166,11 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
       document.getElementById(`tab-${tabId}`)?.classList.add('active');
 
       let mobBtn = document.getElementById(`mob-${tabId}`);
-      if(mobBtn){ mobBtn.classList.add('active', 'text-brand-green'); mobBtn.classList.remove('text-gray-400'); }
+      if(mobBtn){ mobBtn.classList.add('active'); mobBtn.classList.remove('text-gray-400'); if(tabId === 'riwayat'){ mobBtn.classList.add('text-violet-600'); mobBtn.classList.remove('text-brand-green'); } else { mobBtn.classList.add('text-brand-green'); mobBtn.classList.remove('text-violet-600'); } }
 
       if(tabId === 'kalender') prepareKalenderOptions();
       if(tabId === 'persiswa') preparePerSiswaOptions();
+      if(tabId === 'riwayat') prepareRiwayatOptions();
     }
 
     async function toggleCamera() {
@@ -1665,6 +1508,44 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
         } catch(e) { return null; }
     }
 
+
+    function formatRiwayatTanggal(item) {
+        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const hariNama = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const waktu = String(item?.waktu || '');
+        const match = waktu.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (match) {
+            const d = parseInt(match[1], 10);
+            const m = parseInt(match[2], 10) - 1;
+            const y = parseInt(match[3], 10);
+            const date = new Date(y, m, d);
+            if (!isNaN(date.getTime())) return `${hariNama[date.getDay()]}, ${d} ${bulan[m]}`;
+        }
+        const hari = String(item?.hari || '').replace(/^Minggu$/i, 'Ahad');
+        return hari || '-';
+    }
+
+    function prepareRiwayatOptions() {
+        renderRiwayatTable();
+    }
+
+    function renderRiwayatTable() {
+        const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
+        if(!tbody) return;
+        let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
+        data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
+        if(count) count.innerText = data.length;
+        if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
+        empty?.classList.add('hidden');
+        let html = '';
+        data.forEach((item,index) => {
+            const st = String(item.status || '').toLowerCase();
+            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
+            html += `<tr class="hover:bg-violet-50/50 transition-colors"><td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td><td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td><td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td><td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td><td class="p-4">${badge}</td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
     function prepareKalenderOptions() {
         populateClassDropdowns();
         const selTahun = document.getElementById('kalenderTahunSelect');
@@ -1972,5 +1853,3 @@ Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu t
   </script>
 </body>
 </html>
-Presensi_Santri_RQ_Al-Khansa_Mode_Malam_Menu_Lengkap.html
-HTML
