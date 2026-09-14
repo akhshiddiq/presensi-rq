@@ -1,3 +1,227 @@
+Teks yang ditempel (1)(5).txt
+Dokumen
+save dan pahami dan jangan di kurangi 
+
+ini juga
+// =================================================================
+// KODE GOOGLE APPS SCRIPT - PRESENSI SANTRI RQ AL-KHANSA
+// DUKUNGAN HAPUS PERMANEN (GID: 1160146646) & MASTER SANTRI (GID: 0)
+// =================================================================
+
+function getSheetByGid(ss, gid) {
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId().toString() === gid.toString()) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+function parsePostData(e) {
+  var dataData = {};
+  if (e) {
+    if (e.parameter) {
+      for (var p in e.parameter) {
+        dataData[p] = e.parameter[p];
+      }
+    }
+    if (e.postData && e.postData.contents) {
+      try {
+        var parsed = JSON.parse(e.postData.contents);
+        for (var k in parsed) {
+          dataData[k] = parsed[k];
+        }
+      } catch (err) {
+        // Form encoded fallback
+      }
+    }
+  }
+  return dataData;
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  try { 
+    lock.waitLock(5000); 
+  } catch (err) { 
+    return responseJSON({ status: "error", message: "Server sibuk, coba lagi." }); 
+  }
+
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetPresensi = getSheetByGid(ss, "1160146646") || ss.getSheetByName("Presensi") || ss.getSheets()[0];
+    var dataData = parsePostData(e);
+
+    var action = String(dataData.action || "").trim().toLowerCase();
+
+    // ================= FITUR HAPUS / BATAL PRESENSI =================
+    if (action === "delete" || action === "batal" || action === "hapus") {
+      var targetKey = String(dataData.key || "").trim().toLowerCase();
+      var targetId = String(dataData.idSantri || "").trim().toLowerCase();
+      var targetNama = String(dataData.namaSantri || "").trim().toLowerCase();
+      var targetWaktu = String(dataData.waktu || "").trim().toLowerCase();
+
+      var rows = sheetPresensi.getDataRange().getValues();
+      var deleted = false;
+
+      // Loop dari bawah ke atas agar menghapus baris presensi terbaru yang cocok
+      for (var r = rows.length - 1; r >= 1; r--) {
+        var cellCol0 = String(rows[r][0] || "").trim().toLowerCase(); // Key / ID / Waktu
+        var cellCol1 = String(rows[r][1] || "").trim().toLowerCase(); // ID
+        var cellCol2 = String(rows[r][2] || "").trim().toLowerCase(); // Nama
+        var cellCol5 = String(rows[r][5] || "").trim().toLowerCase(); // Waktu Pemindaian
+
+        var matchKey = (targetKey !== "" && (cellCol0 === targetKey || cellCol1 === targetKey));
+        var matchId = (targetId !== "" && (cellCol0 === targetId || cellCol1 === targetId));
+        var matchNamaWaktu = (targetNama !== "" && targetWaktu !== "" && cellCol2 === targetNama && cellCol5 === targetWaktu);
+        var matchWaktu = (targetWaktu !== "" && (cellCol0 === targetWaktu || cellCol5 === targetWaktu));
+
+        if (matchKey || matchId || matchNamaWaktu || matchWaktu) {
+          sheetPresensi.deleteRow(r + 1); // Hapus baris di Google Sheet
+          deleted = true;
+          break;
+        }
+      }
+
+      if (deleted) {
+        return responseJSON({ status: "success", message: "Presensi berhasil dibatalkan dari Google Sheet" });
+      } else {
+        return responseJSON({ status: "warning", message: "Data tidak ditemukan di server Google Sheet" });
+      }
+    }
+
+    // ================= FITUR TAMBAH PRESENSI BARU =================
+    var idSantri = dataData.idSantri || "MANUAL";
+    var namaSantri = dataData.namaSantri || "Santri";
+    var kelasSantri = dataData.kelas || "-";
+    var guruPilih = dataData.guru || "-";
+    var rawStatus = dataData.status || "Hadir";
+    
+    var statusDisplay = "Hadir";
+    var stLow = String(rawStatus).toLowerCase();
+    if (stLow.includes("sakit")) statusDisplay = "Sakit";
+    else if (stLow.includes("izin")) statusDisplay = "Izin";
+    else if (stLow.includes("tidak hadir") || stLow.includes("alfa")) statusDisplay = "Tidak Hadir (Alfa)";
+
+    var now = new Date();
+    var timeZone = "Asia/Jakarta";
+    
+    // PERBAIKAN: Prioritaskan Waktu & Hari dari Web, jika kosong baru pakai waktu server sekarang
+    var formattedDateTime = dataData.waktu ? dataData.waktu : Utilities.formatDate(now, timeZone, "dd/MM/yyyy HH.mm.ss");
+    var dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    var hariIndo = dataData.hari ? dataData.hari : dayNames[now.getDay()];
+    
+    var keyUnik = dataData.key || "WEB_" + Math.random().toString(36).substring(2, 10);
+
+    sheetPresensi.appendRow([keyUnik, idSantri, namaSantri, kelasSantri, guruPilih, formattedDateTime, hariIndo, statusDisplay]);
+    return responseJSON({ status: "success", message: "Tersimpan di Database", data: { key: keyUnik } });
+  } catch (error) {
+    return responseJSON({ status: "error", message: error.toString() });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. Ambil Data Presensi (GID 1160146646)
+    var sheetPresensi = getSheetByGid(ss, "1160146646") || ss.getSheetByName("Presensi") || ss.getSheets()[0];
+    var dataPresensi = sheetPresensi.getDataRange().getDisplayValues(); 
+    var historyList = [];
+
+    if (dataPresensi.length > 1) {
+      for (var i = 1; i < dataPresensi.length; i++) {
+        var row = dataPresensi[i];
+        if (row[0] || row[1] || row[2]) {
+          historyList.push({
+            key: String(row[0] || ""),
+            idSantri: String(row[1] || ""),
+            namaSantri: String(row[2] || ""),
+            kelas: String(row[3] || ""),
+            guru: String(row[4] || ""),
+            waktu: String(row[5] || ""),
+            hari: String(row[6] || ""),
+            status: String(row[7] || "Hadir")
+          });
+        }
+      }
+    }
+    historyList.reverse();
+
+    // 2. Ambil Master Data Santri (GID 0 / Sheet Santri)
+    var santriList = [];
+    var sheetSantri = getSheetByGid(ss, "0") || ss.getSheetByName("Santri") || ss.getSheetByName("DataSantri");
+    if (sheetSantri) {
+      var dataSantri = sheetSantri.getDataRange().getDisplayValues();
+      if (dataSantri.length > 1) {
+        for (var j = 1; j < dataSantri.length; j++) {
+          var sRow = dataSantri[j];
+          if (sRow[0] || sRow[1]) {
+            santriList.push({
+              id: String(sRow[0] || "").trim(),
+              nama: String(sRow[1] || "").trim(),
+              kelas: String(sRow[2] || "").trim(),
+              guru: String(sRow[3] || "").trim()
+            });
+          }
+        }
+      }
+    }
+
+    return responseJSON({ 
+      status: "online", 
+      history: historyList, 
+      santri: santriList 
+    });
+  } catch (err) {
+    return responseJSON({ status: "error", message: err.toString(), history: [], santri: [] });
+  }
+}
+
+function responseJSON(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+Memori diperbarui
+
+Siap. Kode Google Apps Script ini juga saya simpan sebagai referensi kerja dan saya pahami.
+
+Saya akan menjaga:
+
+Tidak mengurangi kode
+Tidak menghapus fungsi/fitur yang sudah ada
+Tidak mengubah struktur sembarangan
+Jika nanti ada perubahan, hanya bagian yang Anda minta yang akan saya ubah.
+Fitur hapus/batal presensi, database presensi, master santri, doGet, doPost, dan fungsi pendukung tetap dipertahankan.
+
+Jadi sekarang HTML dan GS Sistem Presensi Santri RQ Al-Khansa menjadi acuan yang saling terkait untuk pekerjaan berikutnya.
+
+buatkan mode dalam nya , dan tampilan menu tampilkan semua jgn dibuatkan drop down
+buatkan mode Malam ada tombol icon ganti mode , dan tampilan menu tampilkan semua jgn dibuatkan drop down
+
+Sudah saya buat sesuai permintaan, tanpa mengurangi fitur yang ada.
+
+Perubahan:
+
+🌙 Mode Malam / Mode Siang dengan tombol ikon di bagian header.
+Ikon otomatis berubah 🌙 ↔ ☀️.
+Pilihan mode malam tersimpan di browser, jadi tidak kembali ke mode siang saat halaman dibuka lagi.
+📋 Semua menu sekarang langsung tampil, tidak lagi menggunakan dropdown:
+Pemindai Kamera
+Input Manual Berkelompok
+Kalender Kelas
+Absen Per Kelas & WA
+Tampilan menu dibuat responsif untuk laptop dan HP.
+Fungsi lama tetap dipertahankan agar fitur lainnya tidak terganggu.
+
+File HTML yang sudah diperbarui:
+
+Download HTML – Mode Malam + Menu Lengkap
+
+Saya juga sudah melakukan pengecekan struktur file dan memastikan keempat menu tetap terhubung ke fungsi switchTab().
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -163,9 +387,128 @@
         z-index: 10;
         background-color: #ecfdf5;
     }
+
+
+    /* ============================================================
+       MODE MALAM - TIDAK MENGUBAH FUNGSI ASLI APLIKASI
+       ============================================================ */
+    body.dark-mode {
+      background-color: #0f172a !important;
+      color: #cbd5e1 !important;
+    }
+    body.dark-mode .feature-card,
+    body.dark-mode .bg-white {
+      background-color: #1e293b !important;
+      color: #cbd5e1 !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode .bg-slate-50,
+    body.dark-mode .bg-slate-50\/50,
+    body.dark-mode .bg-gray-50,
+    body.dark-mode .bg-gray-50\/50,
+    body.dark-mode .bg-gray-100 {
+      background-color: #172033 !important;
+      color: #cbd5e1 !important;
+    }
+    body.dark-mode .text-gray-800,
+    body.dark-mode .text-gray-700,
+    body.dark-mode .text-gray-600,
+    body.dark-mode .text-gray-500,
+    body.dark-mode .text-gray-400,
+    body.dark-mode .text-slate-700,
+    body.dark-mode .text-slate-600,
+    body.dark-mode .text-slate-500,
+    body.dark-mode .text-slate-400 {
+      color: #cbd5e1 !important;
+    }
+    body.dark-mode .text-gray-800 { color: #f1f5f9 !important; }
+    body.dark-mode .border-gray-100,
+    body.dark-mode .border-gray-200,
+    body.dark-mode .border-gray-300,
+    body.dark-mode .border-slate-200 {
+      border-color: #334155 !important;
+    }
+    body.dark-mode .modern-input,
+    body.dark-mode select,
+    body.dark-mode textarea,
+    body.dark-mode input:not([type="checkbox"]):not([type="radio"]) {
+      background-color: #0f172a !important;
+      color: #e2e8f0 !important;
+      border-color: #475569 !important;
+    }
+    body.dark-mode .modern-input:focus {
+      background-color: #111827 !important;
+      border-color: #10b981 !important;
+    }
+    body.dark-mode .nav-btn { color: #cbd5e1; }
+    body.dark-mode .nav-btn:hover { background-color: #334155; color: #6ee7b7; }
+    body.dark-mode .nav-btn.active { background-color: #047857; color: #ffffff; }
+    body.dark-mode .table-container th { background-color: #064e3b !important; color: #ecfdf5 !important; }
+    body.dark-mode table { color: #cbd5e1; }
+    body.dark-mode .divide-gray-50 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+    body.dark-mode .shadow-sm,
+    body.dark-mode .shadow-md,
+    body.dark-mode .shadow-xl,
+    body.dark-mode .shadow-2xl { box-shadow: 0 10px 30px rgba(0,0,0,.28) !important; }
+    body.dark-mode ::-webkit-scrollbar-track { background: #1e293b; }
+    body.dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
+    body.dark-mode .bg-emerald-50,
+    body.dark-mode .bg-emerald-50\/70,
+    body.dark-mode .bg-emerald-50\/50 { background-color: #063b2d !important; }
+    body.dark-mode .text-emerald-900 { color: #a7f3d0 !important; }
+    body.dark-mode .text-brand-green { color: #34d399 !important; }
+    body.dark-mode .hover\:bg-emerald-50:hover { background-color: #064e3b !important; }
+    body.dark-mode #navMenuBar { background-color: #1e293b !important; border-color: #334155 !important; }
+    body.dark-mode .nav-menu-item { color: #cbd5e1 !important; border-color: #334155 !important; background-color: #1e293b !important; }
+    body.dark-mode .nav-menu-item:hover { background-color: #334155 !important; color: #6ee7b7 !important; }
+    body.dark-mode .nav-menu-item.active { background-color: #047857 !important; color: #ffffff !important; border-color: #047857 !important; }
+    body.dark-mode #settingModal > div:last-child { background-color: #1e293b !important; border-color: #334155 !important; }
+    body.dark-mode #settingModal .bg-gray-50 { background-color: #172033 !important; }
+    body.dark-mode #settingModal .bg-emerald-50\/70 { background-color: #063b2d !important; }
+    body.dark-mode .nav-mobile-wrap { background-color: #0f172a !important; border-color: #334155 !important; }
+
+    /* Menu desktop/tablet: semua menu tampil, tanpa dropdown */
+    .nav-menu-full {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: .5rem;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: .5rem;
+      box-shadow: 0 4px 14px rgba(15,23,42,.05);
+    }
+    .nav-menu-item {
+      transition: all .2s ease;
+      color: #475569;
+      font-weight: 700;
+      padding: .7rem .8rem;
+      border-radius: .75rem;
+      border: 1px solid transparent;
+      width: 100%;
+      text-align: center;
+      font-size: .78rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .55rem;
+      cursor: pointer;
+    }
+    .nav-menu-item:hover { background-color: #f0fdf4; color: #047857; }
+    .nav-menu-item.active { background-color: #047857; color: #ffffff; }
+    @media (max-width: 767px) {
+      .nav-menu-full {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .nav-menu-item {
+        font-size: .72rem;
+        padding: .65rem .5rem;
+      }
+    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8" onclick="closeMenuOnClickOutside(event)">
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
 
   <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-md">
     <div class="flex items-center gap-3 w-full sm:w-auto mb-1.5 sm:mb-0">
@@ -210,6 +553,11 @@
         <span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span>
       </button>
 
+      <!-- Tombol Mode Malam / Siang -->
+      <button onclick="toggleDarkMode()" id="btnDarkMode" class="flex items-center justify-center w-9 h-8 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[12px]" title="Ganti Mode Malam / Siang" aria-label="Ganti Mode Malam / Siang">
+        <i id="darkModeIcon" class="fas fa-moon"></i>
+      </button>
+
       <button onclick="bukaModalUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-lg text-[11px] font-bold text-white shadow-gold transition-all">
         <i class="fas fa-cog text-white text-[9px]"></i> Pengaturan
       </button>
@@ -218,28 +566,20 @@
 
   <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
     
-    <div class="relative w-max z-30">
-      <button id="menuDropdownBtn" onclick="toggleNavMenu(event)" class="bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95">
-        <i id="currentMenuIcon" class="fas fa-camera text-brand-green"></i> 
-        <span id="currentMenuLabel">Pemindai Kamera</span> 
-        <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+    <!-- ================= MENU UTAMA: SEMUA MENU LANGSUNG TAMPIL ================= -->
+    <div id="navMenuBar" class="nav-menu-full" aria-label="Menu utama">
+      <button onclick="switchTab('live')" id="tab-live" class="nav-menu-item active">
+        <i class="fas fa-camera"></i> <span>Pemindai Kamera</span>
       </button>
-
-      <!-- Dropdown Popup Content -->
-      <div id="navMenuDropdown" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-40 animate-fade-in space-y-1">
-        <button onclick="switchTab('live')" id="tab-live" class="nav-btn active">
-          <i class="fas fa-camera w-4 text-center"></i> Pemindai Kamera
-        </button>
-        <button onclick="switchTab('manual')" id="tab-manual" class="nav-btn">
-          <i class="fas fa-keyboard w-4 text-center"></i> Input Manual Berkelompok
-        </button>
-        <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-btn">
-          <i class="fas fa-calendar-alt w-4 text-center"></i> Kalender Kelas
-        </button>
-        <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-btn">
-          <i class="fas fa-users w-4 text-center"></i> Absen Per Kelas & WA
-        </button>
-      </div>
+      <button onclick="switchTab('manual')" id="tab-manual" class="nav-menu-item">
+        <i class="fas fa-keyboard"></i> <span>Input Manual Berkelompok</span>
+      </button>
+      <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-menu-item">
+        <i class="fas fa-calendar-alt"></i> <span>Kalender Kelas</span>
+      </button>
+      <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-menu-item">
+        <i class="fas fa-users"></i> <span>Absen Per Kelas &amp; WA</span>
+      </button>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
@@ -961,11 +1301,9 @@
       populateClassDropdowns();
     }
 
-    function toggleNavMenu(event) { event.stopPropagation(); document.getElementById('navMenuDropdown').classList.toggle('hidden'); }
-    function closeMenuOnClickOutside(event) {
-        const drop = document.getElementById('navMenuDropdown'), btn = document.getElementById('menuDropdownBtn');
-        if (drop && btn && !drop.contains(event.target) && !btn.contains(event.target)) drop.classList.add('hidden');
-    }
+    // Menu sekarang selalu tampil; fungsi lama dipertahankan sebagai kompatibilitas.
+    function toggleNavMenu(event) { if (event) event.stopPropagation(); }
+    function closeMenuOnClickOutside(event) {}
 
     const menuInfo = {
       'live': { label: 'Pemindai Kamera', icon: 'fas fa-camera' },
@@ -984,9 +1322,6 @@
       
       document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
       document.getElementById(`tab-${tabId}`)?.classList.add('active');
-      document.getElementById('currentMenuLabel').innerText = menuInfo[tabId].label;
-      document.getElementById('currentMenuIcon').className = menuInfo[tabId].icon + " text-brand-green";
-      document.getElementById('navMenuDropdown').classList.add('hidden');
 
       let mobBtn = document.getElementById(`mob-${tabId}`);
       if(mobBtn){ mobBtn.classList.add('active', 'text-brand-green'); mobBtn.classList.remove('text-gray-400'); }
@@ -1600,7 +1935,33 @@
         } else { Toast.fire({ icon: 'error', title: 'URL Sheet tidak valid' }); }
     }
 
+    // ============================================================
+    // MODE MALAM / SIANG
+    // Disimpan di perangkat agar pilihan pengguna tetap tersimpan.
+    // ============================================================
+    function applyDarkMode(isDark) {
+        document.body.classList.toggle('dark-mode', !!isDark);
+        const icon = document.getElementById('darkModeIcon');
+        const btn = document.getElementById('btnDarkMode');
+        if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        if (btn) {
+            btn.title = isDark ? 'Ganti ke Mode Siang' : 'Ganti ke Mode Malam';
+            btn.setAttribute('aria-label', btn.title);
+        }
+        localStorage.setItem('presensiDarkMode', isDark ? '1' : '0');
+    }
+
+    function toggleDarkMode() {
+        applyDarkMode(!document.body.classList.contains('dark-mode'));
+    }
+
+    function loadDarkMode() {
+        const saved = localStorage.getItem('presensiDarkMode');
+        applyDarkMode(saved === '1');
+    }
+
     window.onload = function() {
+        loadDarkMode();
         applyLogo();
         updateAudioUI();
         populateClassDropdowns();
@@ -1611,3 +1972,5 @@
   </script>
 </body>
 </html>
+Presensi_Santri_RQ_Al-Khansa_Mode_Malam_Menu_Lengkap.html
+HTML
