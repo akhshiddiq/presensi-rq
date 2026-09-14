@@ -916,14 +916,18 @@
 
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     
-    // FORCING NEW URL APP SCRIPT (Menimpa Otomatis yg Lama)
-    const NEW_DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztbxL4x1nP3NbRHj2yQedhTNUbBWmlF8qgj7xJ7wSqylXdTMvLDHL2pRwbQQdFKaM/exec";
+    // URL GOOGLE APPS SCRIPT TERBARU
+    const NEW_DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRyh6o85umv_YPwqHXWwnCDRQC2IKefq2Fcc12g3zTgxejs0vvtqQ04VifwxMSJfbb/exec";
+    const SCRIPT_URL_VERSION = '2026-09-14-v2';
     let storedUrl = localStorage.getItem('scriptUrlSheet');
-    if (!storedUrl || storedUrl.includes('AKfycbzc-CkxQIXd0fyfMMhL2uijZPzS7e5KwUl5i-fNlW0D97NSrONxu0H7N1Prt0vBZupG')) {
+    const storedScriptVersion = localStorage.getItem('scriptUrlVersion');
+    if (!storedUrl || storedScriptVersion !== SCRIPT_URL_VERSION || storedUrl === 'https://script.google.com/macros/s/AKfycbztbxL4x1nP3NbRHj2yQedhTNUbBWmlF8qgj7xJ7wSqylXdTMvLDHL2pRwbQQdFKaM/exec') {
         localStorage.setItem('scriptUrlSheet', NEW_DEFAULT_SCRIPT_URL);
+        localStorage.setItem('scriptUrlVersion', SCRIPT_URL_VERSION);
+        storedUrl = NEW_DEFAULT_SCRIPT_URL;
     }
     
-    let SCRIPT_URL = localStorage.getItem('scriptUrlSheet');
+    let SCRIPT_URL = storedUrl;
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let audioMode = localStorage.getItem('audioMode') || 'ai';
