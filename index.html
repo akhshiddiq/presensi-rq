@@ -255,7 +255,16 @@
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse min-w-[720px]">
-            <thead class="bg-violet-50 text-violet-800 uppercase tracking-wider font-extrabold border-b border-violet-100 riwayat-table-head"><tr><th class="p-4 text-center w-16">No</th><th class="p-4">Tanggal</th><th class="p-4">Nama Lengkap</th><th class="p-4">Kelas</th><th class="p-4">Status</th></tr></thead>
+            <thead class="bg-violet-50 text-violet-800 uppercase tracking-wider font-extrabold border-b border-violet-100 riwayat-table-head">
+              <tr>
+                <th class="p-4 text-center w-16">No</th>
+                <th class="p-4">Tanggal</th>
+                <th class="p-4">Nama Lengkap</th>
+                <th class="p-4">Kelas</th>
+                <th class="p-4">Status</th>
+                <th class="p-4 text-center">Aksi</th>
+              </tr>
+            </thead>
             <tbody id="riwayatTableBody" class="divide-y divide-gray-50 riwayat-table-body"></tbody>
           </table>
         </div>
@@ -736,103 +745,66 @@
 
     function hapusData(key, event) {
         if(event) event.stopPropagation();
+        
+        // Cari data yang ingin dihapus
         const targetItem = presensiHistory.find(item => item.key === key) || {};
-        const nama = targetItem.namaSantri || "", waktu = targetItem.waktu || "", idSantri = targetItem.idSantri || "";
-        Swal.fire({ title: 'Batalkan Presensi?', text: nama ? `Hapus data ${nama}?` : "Data dihapus permanen.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Ya, Batalkan!' })
+        const nama = targetItem.namaSantri || "";
+        
+        Swal.fire({ 
+            title: 'Hapus Riwayat Presensi?', 
+            text: nama ? `Yakin ingin menghapus presensi ${nama} secara permanen?` : "Data akan dihapus permanen dari sistem dan Google Sheet.", 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonColor: '#d33', 
+            cancelButtonColor: '#8b5cf6', 
+            confirmButtonText: 'Ya, Hapus!' 
+        })
         .then((result) => {
             if (result.isConfirmed) {
-                if(key) deletedKeys.add(key); if(waktu) deletedKeys.add(waktu); if(nama && waktu) deletedKeys.add(nama + "_" + waktu);
-                presensiHistory = presensiHistory.filter(item => item.key !== key && !(nama && waktu && item.namaSantri === nama && item.waktu === waktu));
-                renderHistoryTable();
+                // Sembunyikan dari UI terlebih dahulu
+                if(key) deletedKeys.add(key);
+                presensiHistory = presensiHistory.filter(item => item.key !== key);
+                renderHistoryTable(); // Refresh tabel riwayat
                 
-                requestGoogleJsonp({ action: 'delete', key: key || '', idSantri: idSantri || '', namaSantri: nama || '', waktu: waktu || '' })
-                .then(() => { Toast.fire({ icon: 'success', title: 'Presensi dibatalkan!' }); setTimeout(() => fetchHistoryFromSheets(), 300); })
-                .catch(err => { Toast.fire({ icon: 'error', title: 'Gagal menghapus', text: String(err.message || err) }); fetchHistoryFromSheets(); });
+                // Kirim perintah JSONP ke Google Script untuk menghapus dari Sheet "Riwayat Absen"
+                requestGoogleJsonp({ action: 'deleteHistory', key: key || '' })
+                .then(() => {
+                    Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus!' });
+                    setTimeout(() => fetchHistoryFromSheets(), 500); // Tarik ulang data bersih
+                })
+                .catch(err => {
+                    Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
+                    fetchHistoryFromSheets(); // Kembalikan data jika gagal di server
+                });
             }
         });
     }
 
-    function escapeHtmlMaster(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-    function renderDataSantriMaster() {
-        const body = document.getElementById('dataSantriMasterBody'), empty = document.getElementById('dataSantriMasterEmpty'), count = document.getElementById('dataSantriMasterCount');
-        const search = String(document.getElementById('searchDataSantriMaster')?.value || '').trim().toLowerCase(); if (!body) return;
-        const rows = (Array.isArray(masterDataSantri) ? masterDataSantri : []).filter(s => { const hay = [s.id, s.nama, s.kelas, s.guru].map(v => String(v || '').toLowerCase()).join(' '); return !search || hay.includes(search); });
-        if (count) count.textContent = `${rows.length} santri${search ? ` (dari ${masterDataSantri.length})` : ''}`;
-        if (!rows.length) { body.innerHTML = ''; empty?.classList.remove('hidden'); return; }
+    // Mengubah tampilan tabel renderHistoryTable dan renderRiwayatTable agar memunculkan tombol hapus
+    function renderRiwayatTable() {
+        const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
+        if(!tbody) return;
+        let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
+        data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
+        if(count) count.innerText = data.length;
+        if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
         empty?.classList.add('hidden');
-        body.innerHTML = rows.map((s, i) => `<tr class="hover:bg-emerald-50/50"><td class="p-3 text-center font-bold text-gray-500">${i + 1}</td><td class="p-3 font-mono text-xs font-bold text-gray-600">${escapeHtmlMaster(s.id)}</td><td class="p-3 font-extrabold text-gray-800">${escapeHtmlMaster(s.nama)}</td><td class="p-3 font-bold text-gray-700">${escapeHtmlMaster(s.kelas)}</td><td class="p-3 text-gray-700">${escapeHtmlMaster(s.guru)}</td><td class="p-3 text-center"><button onclick="hapusDataSantriMaster(${JSON.stringify(String(s.id || ''))})" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-bold text-xs"><i class="fas fa-trash"></i> Hapus</button></td></tr>`).join('');
-    }
-    async function tambahDataSantriMaster() {
-        const id = String(document.getElementById('masterNewId')?.value || '').trim(), nama = String(document.getElementById('masterNewNama')?.value || '').trim(), kelas = String(document.getElementById('masterNewKelas')?.value || '').trim(), guru = String(document.getElementById('masterNewGuru')?.value || '').trim();
-        if (!nama || !kelas) { Toast.fire({ icon: 'warning', title: 'Nama dan kelas wajib diisi.' }); return; }
-        if (id && masterDataSantri.some(s => String(s.id).trim().toLowerCase() === id.toLowerCase())) { Toast.fire({ icon: 'warning', title: 'ID santri sudah ada.' }); return; }
-        const generatedId = id || ('IDSRQ' + String(Date.now()).slice(-6));
-        try { Toast.fire({ icon: 'info', title: 'Menyimpan santri ke Google Sheet...' }); await requestGoogleJsonp({ action: 'addMasterSantri', id: generatedId, nama, kelas, guru }); ['masterNewId','masterNewNama','masterNewKelas','masterNewGuru'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; }); await new Promise(resolve => fetchHistoryFromSheets(false, resolve)); renderDataSantriMaster(); Toast.fire({ icon: 'success', title: 'Santri ditambahkan & tersinkron.' }); } catch (err) { Toast.fire({ icon: 'error', title: 'Gagal menambah santri', text: String(err?.message || err) }); }
-    }
-    async function hapusDataSantriMaster(id) {
-        const santri = masterDataSantri.find(s => String(s.id) === String(id)); if (!santri) return;
-        const result = await Swal.fire({ title: 'Hapus santri?', html: `<b>${escapeHtmlMaster(santri.nama)}</b><br><small>${escapeHtmlMaster(santri.kelas)}</small>`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, hapus' });
-        if (!result.isConfirmed) return;
-        try { Toast.fire({ icon: 'info', title: 'Menghapus dari Google Sheet...' }); await requestGoogleJsonp({ action: 'deleteMasterSantri', id: santri.id }); await new Promise(resolve => fetchHistoryFromSheets(false, resolve)); renderDataSantriMaster(); Toast.fire({ icon: 'success', title: 'Santri dihapus & semua menu disinkronkan.' }); } catch (err) { Toast.fire({ icon: 'error', title: 'Gagal menghapus santri', text: String(err?.message || err) }); }
-    }
-
-    function manualSync() {
-        const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
-        Toast.fire({ icon: 'info', title: 'Menarik data dari server...' }); fetchHistoryFromSheets(true);
-    }
-    function fetchHistoryFromSheets(isManual = false, doneCallback = null) {
-        if(!SCRIPT_URL.includes("macros/s/")) return;
-        const syncText = document.getElementById('syncStatusText'), syncPing = document.getElementById('syncStatusPing'), syncDot = document.getElementById('syncStatusDot'), btnIcon = document.getElementById('iconSyncManual');
-        if(syncText) syncText.innerText = "SYNCING..."; if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"; if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-        
-        fetchGoogleJsonp(function(data) {
-            const offlineAlert = document.getElementById('offlineAlert'); if(offlineAlert) offlineAlert.classList.add('hidden');
-            if(syncText) syncText.innerText = "CONNECTED"; if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"; if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-            if(btnIcon) btnIcon.classList.remove('fa-spin');
+        let html = '';
+        data.forEach((item,index) => {
+            const st = String(item.status || '').toLowerCase();
+            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
             
-            if(data && data.status === 'online') {
-                if(Array.isArray(data.history)) {
-                    presensiHistory = data.history.filter(item => !deletedKeys.has(item.key) && !deletedKeys.has(item.waktu) && !deletedKeys.has(item.namaSantri + "_" + item.waktu));
-                    renderHistoryTable();
-                }
-                if(Array.isArray(data.santri) && data.santri.length) {
-                    masterDataSantri = data.santri.map((item, idx) => ({ id: String(item?.id || `IDSRQ_${idx + 1}`).trim(), nama: String(item?.nama || '').trim(), kelas: String(item?.kelas || '').trim(), guru: String(item?.guru || '').trim() })).filter(item => item.nama);
-                    populateClassDropdowns();
-                }
-                if(data.acuan && typeof data.acuan === 'object') {
-                    let localAcuan = {}; try { localAcuan = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); } catch(e) {}
-                    acuanKehadiranData = Object.assign({}, localAcuan, data.acuan);
-                    localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData));
-                }
-                if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
-                if(!document.getElementById('view-progressSantri').classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
-                if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
-                
-                if(isManual) Toast.fire({ icon: 'success', title: 'Data Mutakhir' });
-                if (typeof doneCallback === 'function') doneCallback(true);
-            } else { throw new Error('Respons Google Apps Script tidak valid.'); }
-        }, function(err) {
-            const offlineAlert = document.getElementById('offlineAlert');
-            if(offlineAlert) { offlineAlert.classList.remove('hidden'); const msg = offlineAlert.querySelector('p'); if(msg) msg.textContent = 'Belum terhubung ke Google Sheet. Pastikan URL Apps Script yang digunakan benar dan berstatus Anyone.'; }
-            if(syncText) syncText.innerText = "DISCONNECTED"; if(syncPing) syncPing.className = "hidden"; if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500"; if(btnIcon) btnIcon.classList.remove('fa-spin');
-            if (typeof doneCallback === 'function') doneCallback(false);
-        });
-    }
-
-    function renderHistoryTable() {
-        const tbody = document.getElementById('historyTableBody'), emptyState = document.getElementById('emptyHistory');
-        if (!presensiHistory || presensiHistory.length === 0) { if(tbody) tbody.innerHTML = ''; if(emptyState) emptyState.classList.remove('hidden'); return; }
-        if(emptyState) emptyState.classList.add('hidden');
-        if(!tbody) return; let html = ''; const now = Date.now();
-        presensiHistory.slice(0, 50).forEach(item => {
-            let statusBadge = ''; const stLow = String(item.status).toLowerCase();
-            if(stLow.includes('hadir') && !stLow.includes('tidak')) statusBadge = `<span class="bg-emerald-100 text-brand-green px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-check-circle"></i> Hadir</span>`;
-            else if(stLow.includes('sakit')) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-bed"></i> Sakit</span>`;
-            else if(stLow.includes('izin')) statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-envelope"></i> Izin</span>`;
-            else statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 w-max"><i class="fas fa-times-circle"></i> Alfa</span>`;
+            // Tambahan Tombol Hapus (Tong Sampah) per Baris
+            const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm" title="Hapus Data"><i class="fas fa-trash-alt"></i> Hapus</button>`;
             
-            const addedTime = newlyAddedKeysMap.get(item.key) || item.createdAt; const isJustScanned = addedTime && ((now - addedTime) < 3500);
-            html += `<tr class="${isJustScanned ? 'row-just-scanned' : 'hover:bg-slate-50 transition-colors'}"><td class="p-3 text-center"><button onclick="hapusData('${item.key}', event)" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center mx-auto" title="Batalkan / Hapus"><i class="fas fa-trash-alt text-[10px]"></i></button></td><td class="p-3"><p class="font-bold whitespace-nowrap">${item.hari}</p><p class="text-[11px] opacity-80 font-mono">${item.waktu}</p></td><td class="p-3"><p class="font-bold">${item.namaSantri}</p></td><td class="p-3"><span class="text-xs font-bold text-brand-green">${item.kelas}</span></td><td class="p-3">${statusBadge}</td></tr>`;
+            html += `<tr class="hover:bg-violet-50/50 transition-colors">
+                        <td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td>
+                        <td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td>
+                        <td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td>
+                        <td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td>
+                        <td class="p-4">${badge}</td>
+                        <td class="p-4 text-center">${deleteBtn}</td>
+                     </tr>`;
         });
         tbody.innerHTML = html;
     }
