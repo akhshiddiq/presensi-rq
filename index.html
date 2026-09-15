@@ -433,8 +433,8 @@
     try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
-    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrjz05RI6tU55eS_Otqb9_O3PPYJ6hCWW-DG8A0o2FXDhyEp721qMELMVZATmJLYs/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v7-diagnostic-sync';
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMO093QexTQS39xJgWc9GXzdEd8P74zOUgVPFFB77-3a06QNKzVnHULrMsllGu0WoV/exec';
+    const SCRIPT_URL_VERSION = '2026-09-15-v8-url-baru';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -683,10 +683,7 @@
            
            simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
            .then((serverResult) => {
-               if (!serverResult || serverResult.status !== 'success' || serverResult.verified === false) {
-                   throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
-               }
-               setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey }, verified: true }); }, 300);
+               setTimeout(() => { fetchHistoryFromSheets(); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 300);
            }).catch(err => {
                isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
                fetchHistoryFromSheets(); resolve({ error: true, message: String(err) });
@@ -1262,13 +1259,6 @@
         });
     }
 
-    async function cekDatabaseGoogle() {
-        const result = await requestGoogleJsonp({ action: 'diagnose' });
-        console.log('DIAGNOSIS GOOGLE SHEET:', result);
-        Toast.fire({ icon: 'success', title: 'Database terdeteksi', text: `${result.spreadsheetName || ''} · Riwayat: ${result.riwayatTarget || ''}` });
-        return result;
-    }
-
     function manualSync() {
         const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
         Toast.fire({ icon: 'info', title: 'Menarik data terbaru...' });
@@ -1279,7 +1269,6 @@
         if (syncRequestInFlight) return;
         syncRequestInFlight = true;
         if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
-            syncRequestInFlight = false;
             const syncText = document.getElementById('syncStatusText');
             if(syncText) syncText.innerText = "URL BELUM DIATUR";
             return;
