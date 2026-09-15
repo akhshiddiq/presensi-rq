@@ -1026,15 +1026,38 @@
       acuanKehadiranData[kelas] = acuan; try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {} return acuan;
     }
     function simpanAcuanKelas(kelas) {
-      const input = document.getElementById('acuanInput_' + encodeURIComponent(kelas)); if(!input) return;
-      const acuan = setAcuanKelas(kelas, input.value); input.value = acuan;
+      const safeId = encodeURIComponent(kelas);
+      const input = document.getElementById('acuanInput_' + safeId);
+      const button = document.getElementById('acuanSaveBtn_' + safeId);
+      const status = document.getElementById('acuanStatus_' + safeId);
+      if (!input || !button) return;
+      const nilaiInput = Number(input.value);
+      if (!Number.isFinite(nilaiInput) || nilaiInput < 1) {
+        Toast.fire({ icon: 'warning', title: 'Acuan harus berupa angka minimal 1' }); input.focus(); return;
+      }
+      const acuan = Math.max(1, Math.round(nilaiInput));
+      input.value = acuan; input.disabled = true; button.disabled = true;
+      button.classList.add('opacity-75', 'cursor-wait');
+      button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
+      if (status) { status.className = 'text-[10px] font-bold text-amber-600 mt-1'; status.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim data ke Google Sheet...'; }
       requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
-        .then(() => { const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas)); if(status) status.textContent = 'Tersimpan & sinkron'; setTimeout(() => fetchHistoryFromSheets(false), 300); })
-        .catch(err => { const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas)); if(status) { status.textContent = 'Gagal tersimpan ke server'; status.className = 'text-[10px] font-bold text-red-600 mt-1'; } Toast.fire({ icon: 'error', title: 'Acuan gagal disimpan ke Google Sheet', text: String(err.message || err) }); });
-      if(typeof prepareAcuanKehadiran === 'function') prepareAcuanKehadiran();
-      const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas)); if(status) { status.textContent = 'Tersimpan & sinkron'; status.className = 'text-[10px] font-bold text-emerald-600 mt-1'; }
-      renderProgressSantri(); if(typeof renderLaporanSantri === 'function') renderLaporanSantri();
-      Toast.fire({ icon: 'success', title: `Acuan ${kelas}: ${acuan}× hadir = 100%` }); setTimeout(() => fetchHistoryFromSheets(false), 700);
+        .then((result) => {
+          if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi penyimpanan.');
+          setAcuanKelas(kelas, acuan);
+          if (status) { status.className = 'text-[10px] font-bold text-emerald-600 mt-1'; status.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Data masuk ke Google Sheet ✓'; }
+          button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
+          button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
+          Toast.fire({ icon: 'success', title: 'Data masuk ke Google Sheet', text: `${kelas}: ${acuan}× hadir = 100%` });
+          fetchHistoryFromSheets(false); renderProgressSantri(); if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
+        })
+        .catch((err) => {
+          if (status) { status.className = 'text-[10px] font-bold text-red-600 mt-1'; status.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Gagal masuk ke Google Sheet'; }
+          Toast.fire({ icon: 'error', title: 'Acuan gagal disimpan', text: String(err?.message || err) });
+        })
+        .finally(() => {
+          input.disabled = false; button.disabled = false; button.classList.remove('opacity-75', 'cursor-wait');
+          if (status && status.className.includes('text-red-600')) { button.innerHTML = '<i class="fas fa-save"></i> <span>Coba Lagi</span>'; button.classList.remove('bg-emerald-700'); }
+        });
     }
     function prepareAcuanKehadiran() {
       const container = document.getElementById('acuanKehadiranList'); if(!container) return;
@@ -1042,7 +1065,7 @@
       if(classes.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas.</div>'; return; }
       container.innerHTML = classes.map((kelas, index) => {
         const safeId = encodeURIComponent(kelas), acuan = getAcuanKelas(kelas);
-        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" onclick="simpanAcuanKelas(${JSON.stringify(kelas)})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
+        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" id="acuanSaveBtn_${safeId}" onclick="simpanAcuanKelas(${JSON.stringify(kelas)})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
       }).join('');
     }
     function onProgressKelasChange() {
