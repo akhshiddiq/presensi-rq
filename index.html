@@ -954,15 +954,15 @@
 
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     
-    // URL GOOGLE APPS SCRIPT DIISI MANUAL OLEH PENGGUNA
-    // Tidak ada URL Google Apps Script bawaan di dalam HTML.
-    const SCRIPT_URL_VERSION = '2026-09-14-manual-url-v1';
+    // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
+    const SCRIPT_URL_VERSION = '2026-09-15-connected-v1';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
-        localStorage.removeItem('scriptUrlSheet');
+        localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
         localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION);
     }
-    let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || '';
+    let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let audioMode = localStorage.getItem('audioMode') || 'ai';
