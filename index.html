@@ -433,8 +433,8 @@
     try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
-    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVwD8NnFe7sa02w3dtzpfD1PPy-IOoDZ3gtUTjhA3gHhTEEt1DDmZMN0I93ZOAC9XS/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v4-jsonp-sync';
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrjz05RI6tU55eS_Otqb9_O3PPYJ6hCWW-DG8A0o2FXDhyEp721qMELMVZATmJLYs/exec';
+    const SCRIPT_URL_VERSION = '2026-09-15-v5-gs-update-jsonp-sync';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
