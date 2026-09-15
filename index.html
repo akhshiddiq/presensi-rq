@@ -708,10 +708,16 @@
        });
     }
 
-    function hapusData(key, event) {
+    async function hapusData(key, event) {
         if(event) event.stopPropagation();
         const targetItem = presensiHistory.find(item => item.key === key) || {};
         const nama = targetItem.namaSantri || "";
+        if (!key || String(key).startsWith('temp_')) {
+            Toast.fire({ icon: 'error', title: 'Key presensi tidak valid. Silakan perbarui data terlebih dahulu.' });
+            return;
+        }
+        const wasSyncing = !!syncInterval;
+        if (wasSyncing) { clearInterval(syncInterval); syncInterval = null; }
         
         Swal.fire({ 
             title: 'Hapus Riwayat Presensi?', 
@@ -722,21 +728,27 @@
             cancelButtonColor: '#8b5cf6', 
             confirmButtonText: 'Ya, Hapus!' 
         })
-        .then((result) => {
-            if (result.isConfirmed) {
-                requestGoogleJsonp({ action: 'deleteHistory', key: key || '' })
-                .then((result) => {
-                    if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Data belum terhapus dari Google Sheet.');
-                    if(key) deletedKeys.add(key);
-                    presensiHistory = presensiHistory.filter(item => item.key !== key);
-                    renderHistoryTable();
-                    Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus!' });
-                    setTimeout(() => fetchHistoryFromSheets(true), 300);
-                })
-                .catch(err => {
-                    Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
-                    fetchHistoryFromSheets(true);
-                });
+        .then(async (result) => {
+            if (!result.isConfirmed) {
+                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+                return;
+            }
+            try {
+                const response = await requestGoogleJsonp({ action: 'deleteHistory', key: String(key) });
+                if (!response || response.status !== 'success' || response.verified !== true) {
+                    throw new Error((response && response.message) || 'Google Sheet belum mengonfirmasi penghapusan.');
+                }
+                deletedKeys.add(String(key));
+                presensiHistory = presensiHistory.filter(item => String(item.key) !== String(key));
+                renderHistoryTable();
+                Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus dari Google Sheet!' });
+                await new Promise(resolve => setTimeout(resolve, 400));
+                await fetchHistoryFromSheets(true);
+            } catch (err) {
+                Toast.fire({ icon: 'error', title: 'Gagal menghapus presensi', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
+                await fetchHistoryFromSheets(true);
+            } finally {
+                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
             }
         });
     }
@@ -1329,3 +1341,4 @@
   </script>
 </body>
 </html>
+
