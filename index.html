@@ -1057,7 +1057,7 @@
     
     // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-connected-v2-acuan-fix';
+    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v1';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
@@ -1265,22 +1265,60 @@
       createOptions('persiswaKelasSelect');
     }
 
-    // Perbaikan Penting: Menghapus renderManualStudents() dari sync agar centang tidak reset otomatis
+    // MASTER SANTRI: Google Sheet GID 0 menjadi sumber data utama.
+    // Jika ada santri ditambah DI SHEET -> muncul di web.
+    // Jika santri dihapus DI SHEET -> ikut hilang dari web.
+    // Jika data kosong -> daftar web juga dikosongkan (tidak memakai data lama).
     function syncMasterSantriList(newSantriList) {
-      if (!Array.isArray(newSantriList) || newSantriList.length === 0) return;
-      const formatted = newSantriList.map((item, idx) => ({
-        id: item.id || `IDSRQ_${idx+1}`,
-        nama: item.nama || "Tanpa Nama",
-        kelas: item.kelas || "Umum",
-        guru: item.guru || "Ustadz/ah",
-        gender: item.gender || (item.nama && item.nama.toLowerCase().includes("putri") ? "P" : "L")
-      }));
-      formatted.sort((a,b) => {
-          let classCmp = a.kelas.localeCompare(b.kelas);
-          return classCmp !== 0 ? classCmp : a.nama.localeCompare(b.nama);
+      if (!Array.isArray(newSantriList)) return;
+
+      const formatted = newSantriList
+        .map((item, idx) => ({
+          id: String(item?.id || `IDSRQ_${idx + 1}`).trim(),
+          nama: String(item?.nama || '').trim(),
+          kelas: String(item?.kelas || '').trim(),
+          guru: String(item?.guru || '').trim(),
+          gender: item?.gender ? String(item.gender).trim() : ''
+        }))
+        .filter(item => item.nama);
+
+      formatted.forEach(item => {
+        if (!item.id) item.id = 'MANUAL_' + item.nama.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        if (!item.kelas) item.kelas = 'Umum';
+        if (!item.guru) item.guru = 'Ustadz/ah';
+        if (!item.gender) item.gender = /putri|aisyah|nabila|khanza|marsha|haura|riska|zarina|alesha|yumna|almira|calista|ufaira|alya|quinsha|anggun|jovita|rayya|reyna|yasmin|afiqa|dilara|syahda/i.test(item.nama) ? 'P' : 'L';
       });
+
+      formatted.sort((a,b) => {
+        const classCmp = a.kelas.localeCompare(b.kelas, 'id');
+        return classCmp !== 0 ? classCmp : a.nama.localeCompare(b.nama, 'id');
+      });
+
+      // Selalu ganti seluruh daftar dengan isi server, termasuk saat kosong.
       masterDataSantri = formatted;
       populateClassDropdowns();
+
+      // Perbarui tampilan yang sedang terbuka agar perubahan master langsung terlihat.
+      const activeView = document.querySelector('[id^="view-"]:not(.hidden)');
+      const activeId = activeView ? activeView.id.replace('view-', '') : '';
+      if (activeId === 'manual') {
+        const kelasEl = document.getElementById('manualKelasSelect');
+        if (kelasEl?.value) renderManualStudents();
+        else {
+          const box = document.getElementById('manualStudentList');
+          if (box) box.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu untuk melihat daftar santri.</p>';
+        }
+      } else if (activeId === 'laporanSantri') {
+        prepareLaporanSantriOptions();
+      } else if (activeId === 'kalender') {
+        prepareKalenderOptions();
+      } else if (activeId === 'persiswa') {
+        preparePerSiswaOptions();
+      } else if (activeId === 'progressSantri') {
+        prepareProgressOptions();
+      } else if (activeId === 'acuanKehadiran') {
+        prepareAcuanKehadiran();
+      }
     }
 
     // Menu sekarang selalu tampil; fungsi lama dipertahankan sebagai kompatibilitas.
