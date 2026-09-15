@@ -403,6 +403,9 @@
       <button onclick="switchTab('laporanSantri')" id="tab-laporanSantri" class="nav-menu-item student-report-menu">
         <i class="fas fa-user-check"></i> <span>Laporan Absen Per Santri</span>
       </button>
+      <button onclick="switchTab('progressSantri')" id="tab-progressSantri" class="nav-menu-item student-report-menu">
+        <i class="fas fa-chart-line"></i> <span>Progress Kehadiran</span>
+      </button>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
@@ -795,6 +798,32 @@
       </div>
     </div>
 
+    <!-- ================= TAB 7: PROGRESS KEHADIRAN ================= -->
+    <div id="view-progressSantri" class="hidden animate-fade-in space-y-5">
+      <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+        <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-chart-line"></i></div>
+            <div>
+              <h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">📈 Progress Kehadiran</h2>
+              <p class="text-sm text-emerald-700/70 mt-1">Pantau progres kehadiran santri per kelas. Target 15× hadir = 100%.</p>
+            </div>
+          </div>
+          <button onclick="manualSync(); renderProgressSantri()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui</button>
+        </div>
+        <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label><select id="progressKelasSelect" onchange="renderProgressSantri()" class="modern-input bg-white font-bold text-brand-green py-2.5"><option value="">-- Pilih Kelas --</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Bulan</label><select id="progressBulanSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tahun</label><select id="progressTahunSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"></select></div>
+        </div>
+        <div id="progressEmpty" class="p-10 text-center text-gray-400 bg-gray-50/50"><i class="fas fa-chart-line text-4xl mb-3 text-emerald-200"></i><p class="font-bold text-sm">Pilih kelas untuk melihat progress seluruh santri.</p></div>
+        <div id="progressResult" class="hidden p-4 sm:p-6 space-y-4">
+          <div id="progressClassSummary" class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4"></div>
+          <div id="progressStudentList" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Tombol Navigasi Mobile (Bawah) -->
@@ -805,6 +834,7 @@
     <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-users text-sm mb-0.5"></i> Per Kelas</button>
     <button onclick="switchTab('riwayat')" id="mob-riwayat" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none text-violet-600"><i class="fas fa-history text-sm mb-0.5"></i> Riwayat</button>
     <button onclick="switchTab('laporanSantri')" id="mob-laporanSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-user-check text-sm mb-0.5"></i> Per Santri</button>
+    <button onclick="switchTab('progressSantri')" id="mob-progressSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-line text-sm mb-0.5"></i> Progress</button>
   </nav>
 
   <!-- Modal Pengaturan -->
@@ -1229,11 +1259,12 @@
       'kalender': { label: 'Kalender Kelas', icon: 'fas fa-calendar-alt' },
       'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' },
       'riwayat': { label: 'Riwayat', icon: 'fas fa-history' },
-      'laporanSantri': { label: 'Laporan Absen Per Santri', icon: 'fas fa-user-check' }
+      'laporanSantri': { label: 'Laporan Absen Per Santri', icon: 'fas fa-user-check' },
+      'progressSantri': { label: 'Progress Kehadiran', icon: 'fas fa-chart-line' }
     };
 
     function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri'].forEach(id => {
+      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
          if(dBtn) dBtn.classList.remove('active');
@@ -1250,6 +1281,7 @@
       if(tabId === 'persiswa') preparePerSiswaOptions();
       if(tabId === 'riwayat') prepareRiwayatOptions();
       if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
+      if(tabId === 'progressSantri') prepareProgressOptions();
     }
 
     async function toggleCamera() {
@@ -1533,6 +1565,7 @@
                 
                 if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
                 if(!document.getElementById('view-persiswa').classList.contains('hidden')) renderPerSiswaCalendar();
+                if(!document.getElementById('view-progressSantri').classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
                 if(isManual) Toast.fire({ icon: 'success', title: 'Data Mutakhir' });
             }
         })
@@ -2061,95 +2094,67 @@
     }
   </script>
 
-<!-- PROGRES KEHADIRAN PER SANTRI -->
-<div id="santriProgressCard" class="mt-4 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm">
-  <div class="flex items-center justify-between gap-3 mb-3">
-    <div class="flex items-center gap-2">
-      <span class="text-2xl">📈</span>
-      <div>
-        <div class="font-bold text-slate-800">Progres Kehadiran</div>
-        <div class="text-xs text-slate-500">Target 15 kali hadir dalam satu bulan</div>
-      </div>
-    </div>
-    <div id="santriProgressPercent" class="text-2xl font-extrabold text-emerald-600">0%</div>
-  </div>
-
-  <div class="h-5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner">
-    <div id="santriProgressBar"
-         class="h-full rounded-full transition-all duration-700 ease-out"
-         style="width:0%; background:linear-gradient(90deg,#10b981,#34d399);">
-    </div>
-  </div>
-
-  <div class="mt-3 flex items-center justify-between text-sm">
-    <span id="santriProgressText" class="font-semibold text-slate-700">0 / 15 kali hadir</span>
-    <span id="santriProgressStatus" class="font-bold text-slate-500">Belum ada progres</span>
-  </div>
-
-  <div id="santriRajinBadge" class="hidden mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-center">
-    <div class="text-2xl">🏆🌟</div>
-    <div class="font-extrabold text-amber-700">100% — SANTRI RAJIN</div>
-    <div class="text-sm text-amber-800 mt-1">
-      MasyaAllah, sangat rajin! Telah mencapai 15 kali hadir dalam satu bulan.
-    </div>
-  </div>
-</div>
-
-
 <script>
-/* ===== PROGRES KEHADIRAN PER SANTRI ===== */
-function updateSantriProgress(hadirCount) {
-    var hadir = Math.max(0, Number(hadirCount) || 0);
-    var target = 15;
-    var percent = Math.min(100, Math.round((hadir / target) * 100));
-
-    var bar = document.getElementById("santriProgressBar");
-    var pct = document.getElementById("santriProgressPercent");
-    var txt = document.getElementById("santriProgressText");
-    var status = document.getElementById("santriProgressStatus");
-    var badge = document.getElementById("santriRajinBadge");
-
-    if (!bar || !pct || !txt || !status) return;
-
-    bar.style.width = percent + "%";
-    pct.textContent = percent + "%";
-    txt.textContent = hadir + " / 15 kali hadir";
-
-    if (hadir >= 15) {
-        status.textContent = "SANTRI RAJIN";
-        status.className = "font-bold text-emerald-600";
-        badge && badge.classList.remove("hidden");
-    } else if (hadir > 0) {
-        status.textContent = "Sedang progres menuju 15 kali";
-        status.className = "font-bold text-amber-600";
-        badge && badge.classList.add("hidden");
-    } else {
-        status.textContent = "Belum ada progres";
-        status.className = "font-bold text-slate-500";
-        badge && badge.classList.add("hidden");
+    function prepareProgressOptions() {
+      const kelas = document.getElementById('progressKelasSelect');
+      const tahun = document.getElementById('progressTahunSelect');
+      const bulan = document.getElementById('progressBulanSelect');
+      if(!kelas || !tahun || !bulan) return;
+      const oldKelas = kelas.value;
+      kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).forEach(c => {
+        kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`;
+      });
+      if(oldKelas) kelas.value = oldKelas;
+      if(tahun.options.length === 0) {
+        const y = new Date().getFullYear();
+        for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`;
+        tahun.value = y;
+      }
+      if(!bulan.dataset.initialized) { bulan.value = new Date().getMonth(); bulan.dataset.initialized='1'; }
+      renderProgressSantri();
     }
-}
-</script>
 
-
-<script>
-(function(){
-  function scanLaporanHadir() {
-    var root = document.getElementById("santriProgressCard");
-    if (!root) return;
-    var candidates = document.querySelectorAll("[id], .font-bold, .font-extrabold");
-    var found = null;
-    for (var i = 0; i < candidates.length; i++) {
-      var t = (candidates[i].textContent || "").trim();
-      var m = t.match(/(?:Hadir|hadir)\s*[:\-]?\s*(\d+)/);
-      if (m) { found = Number(m[1]); break; }
+    function getProgressHadirCount(santriId, bulan, tahun) {
+      const dates = new Set();
+      presensiHistory.forEach(r => {
+        if(String(r.idSantri || '') !== String(santriId || '')) return;
+        const dt = parseGoogleSheetDate(r.waktu);
+        if(!dt || dt.getMonth() !== Number(bulan) || dt.getFullYear() !== Number(tahun)) return;
+        const st = String(r.status || '').toLowerCase();
+        if(st.includes('hadir') && !st.includes('tidak')) dates.add(dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate());
+      });
+      return dates.size;
     }
-    if (found !== null) updateSantriProgress(found);
-  }
-  window.updateLaporanSantriProgress = updateSantriProgress;
-  setTimeout(scanLaporanHadir, 300);
-})();
-</script>
 
+    function renderProgressSantri() {
+      const kelas = document.getElementById('progressKelasSelect');
+      const bulan = document.getElementById('progressBulanSelect');
+      const tahun = document.getElementById('progressTahunSelect');
+      const empty = document.getElementById('progressEmpty');
+      const result = document.getElementById('progressResult');
+      const list = document.getElementById('progressStudentList');
+      const summary = document.getElementById('progressClassSummary');
+      if(!kelas || !bulan || !tahun || !empty || !result || !list || !summary) return;
+      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); return; }
+      const students = masterDataSantri.filter(s => s.kelas === kelas.value);
+      const monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan.value)];
+      const data = students.map((s,i)=>({s, hadir:getProgressHadirCount(s.id, bulan.value, tahun.value), no:i+1})).sort((a,b)=>b.hadir-a.hadir || a.s.nama.localeCompare(b.s.nama));
+      const rajin = data.filter(x=>x.hadir>=15).length;
+      summary.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="text-lg font-black text-gray-800">Kelas ${escapeHtmlLaporan(kelas.value)}</div><div class="text-sm font-semibold text-emerald-700">${monthName} ${tahun.value} · ${data.length} santri</div></div><div class="text-sm font-extrabold text-amber-700">🏆 ${rajin} Santri Rajin</div></div>`;
+      list.innerHTML = data.map(x=>{
+        const pct=Math.min(100,Math.round(x.hadir/15*100));
+        const rajin=x.hadir>=15;
+        return `<div class="rounded-2xl border ${rajin?'border-amber-200 bg-amber-50':'border-gray-200 bg-white'} p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-extrabold text-gray-800 truncate">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div><div class="text-xs text-gray-500 mt-0.5">${escapeHtmlLaporan(x.s.kelas||'-')}</div></div><div class="text-right shrink-0"><div class="text-xl font-black ${rajin?'text-amber-600':'text-emerald-600'}">${pct}%</div><div class="text-[11px] font-bold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'🏆🌟 SANTRI RAJIN':x.hadir+' / 15 hadir'}</div></div></div><div class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner"><div class="h-full rounded-full transition-all duration-700 ease-out" style="width:${pct}%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div><div class="mt-2 text-xs font-semibold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'100% — target 15× sudah tercapai':'Sedang progres menuju 15 kali hadir'}</div></div>`;
+      }).join('');
+      empty.classList.add('hidden'); result.classList.remove('hidden');
+    }
+
+    // Pastikan progress kelas ikut berubah saat data Google Sheet selesai sinkron.
+    const _oldFetchProgress = fetchHistoryFromSheets;
+    fetchHistoryFromSheets = function(isManual=false) {
+      return _oldFetchProgress(isManual);
+    };
+</script>
 </body>
 </html>
