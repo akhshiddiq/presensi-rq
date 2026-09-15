@@ -1402,6 +1402,67 @@
         fetchHistoryFromSheets();
     }
 
+    // ============================================================
+    // KONEKSI GOOGLE APPS SCRIPT - MODE JSONP / NO-CORS
+    // GitHub Pages tidak dapat membaca respons fetch langsung dari
+    // Google Apps Script karena redirect/CORS. JSONP dipakai untuk
+    // membaca GET, sedangkan POST dikirim sebagai no-cors.
+    // ============================================================
+    function makeScriptUrl(extraParams = {}) {
+        const base = String(SCRIPT_URL || '').trim();
+        const separator = base.includes('?') ? '&' : '?';
+        const params = new URLSearchParams(extraParams);
+        return base + separator + params.toString();
+    }
+
+    function fetchGoogleJsonp(onSuccess, onError) {
+        if (!SCRIPT_URL || !SCRIPT_URL.includes('script.google.com/macros/s/')) {
+            if (typeof onError === 'function') onError(new Error('URL Google Apps Script tidak valid.'));
+            return;
+        }
+
+        const callbackName = '__presensiJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        const script = document.createElement('script');
+        let finished = false;
+
+        const cleanup = () => {
+            finished = true;
+            try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+            if (script.parentNode) script.parentNode.removeChild(script);
+        };
+
+        window[callbackName] = function(data) {
+            if (finished) return;
+            cleanup();
+            if (typeof onSuccess === 'function') onSuccess(data);
+        };
+
+        script.onerror = function() {
+            if (finished) return;
+            cleanup();
+            if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.'));
+        };
+
+        script.src = makeScriptUrl({ callback: callbackName, _: Date.now() });
+        script.async = true;
+        document.head.appendChild(script);
+
+        // Timeout agar status tidak menggantung selamanya.
+        setTimeout(() => {
+            if (finished) return;
+            cleanup();
+            if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.'));
+        }, 15000);
+    }
+
+    function postToGoogleNoCors(payload) {
+        return fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: new URLSearchParams(payload)
+        });
+    }
+
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
        return new Promise((resolve) => {
            const unikey = "temp_" + Math.random().toString(36).substr(2,9);
@@ -1412,12 +1473,17 @@
            presensiHistory.unshift(tempRecord);
            renderHistoryTable();
 
-           fetch(SCRIPT_URL, {
-               method: 'POST', body: new URLSearchParams({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
+           postToGoogleNoCors({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
+           .then(() => {
+               setTimeout(() => {
+                   fetchHistoryFromSheets();
+                   resolve({ status: 'sent', data: { key: unikey } });
+               }, 900);
            })
-           .then(res => res.json())
-           .then(data => resolve(data))
-           .catch(err => resolve({error: true}));
+           .catch(err => {
+               fetchHistoryFromSheets();
+               resolve({ error: true, message: String(err) });
+           });
        });
     }
 
@@ -1434,12 +1500,17 @@
        renderHistoryTable();
        Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
 
-       fetch(SCRIPT_URL, {
-           method: 'POST', body: new URLSearchParams({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
+       postToGoogleNoCors({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
+       .then(() => {
+           setTimeout(() => {
+               isProcessing = false;
+               fetchHistoryFromSheets();
+           }, 900);
        })
-       .then(res => res.json())
-       .then(data => { isProcessing = false; fetchHistoryFromSheets(); })
-       .catch(err => { isProcessing = false; fetchHistoryFromSheets(); });
+       .catch(err => {
+           isProcessing = false;
+           fetchHistoryFromSheets();
+       });
     }
 
     function hapusData(key, event) {
@@ -1454,9 +1525,14 @@
                 presensiHistory = presensiHistory.filter(item => item.key !== key && !(nama && waktu && item.namaSantri === nama && item.waktu === waktu));
                 renderHistoryTable();
                 
-                fetch(SCRIPT_URL, {
-                    method: 'POST', body: new URLSearchParams({ action: 'delete', key: key || '', idSantri: idSantri || key || '', namaSantri: nama || '', waktu: waktu || '' })
-                }).then(res => res.json()).then(data => { Toast.fire({ icon: 'success', title: 'Presensi dibatalkan!' }); fetchHistoryFromSheets(); }).catch(err => { fetchHistoryFromSheets(); });
+                postToGoogleNoCors({ action: 'delete', key: key || '', idSantri: idSantri || '', namaSantri: nama || '', waktu: waktu || '' })
+                .then(() => {
+                    Toast.fire({ icon: 'success', title: 'Presensi dibatalkan!' });
+                    setTimeout(() => fetchHistoryFromSheets(), 900);
+                })
+                .catch(err => {
+                    fetchHistoryFromSheets();
+                });
             }
         });
     }
@@ -1476,16 +1552,15 @@
         if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
         if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
         
-        fetch(SCRIPT_URL)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('offlineAlert').classList.add('hidden');
+        fetchGoogleJsonp(function(data) {
+            const offlineAlert = document.getElementById('offlineAlert');
+            if(offlineAlert) offlineAlert.classList.add('hidden');
             if(syncText) syncText.innerText = "CONNECTED";
             if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
             if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
             if(btnIcon) btnIcon.classList.remove('fa-spin');
 
-            if(data.status === 'online') {
+            if(data && data.status === 'online') {
                 if(Array.isArray(data.history)) {
                     presensiHistory = data.history.filter(item => {
                         if (deletedKeys.has(item.key)) return false;
@@ -1496,14 +1571,17 @@
                     renderHistoryTable();
                 }
                 if(Array.isArray(data.santri) && data.santri.length > 0) syncMasterSantriList(data.santri);
-                
-                if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
-                if(!document.getElementById('view-progressSantri').classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
+                const kalenderView = document.getElementById('view-kalender');
+                if(kalenderView && !kalenderView.classList.contains('hidden')) renderClassCalendar();
+                const progressView = document.getElementById('view-progressSantri');
+                if(progressView && !progressView.classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
                 if(isManual) Toast.fire({ icon: 'success', title: 'Data Mutakhir' });
+            } else {
+                throw new Error('Respons Google Apps Script tidak valid.');
             }
-        })
-        .catch(err => {
-            document.getElementById('offlineAlert').classList.remove('hidden');
+        }, function(err) {
+            const offlineAlert = document.getElementById('offlineAlert');
+            if(offlineAlert) offlineAlert.classList.remove('hidden');
             if(syncText) syncText.innerText = "DISCONNECTED";
             if(syncPing) syncPing.className = "hidden";
             if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
