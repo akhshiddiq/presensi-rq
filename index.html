@@ -1057,7 +1057,7 @@
     
     // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-connected-v1-kartu-v2';
+    const SCRIPT_URL_VERSION = '2026-09-15-connected-v2-acuan-fix';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
@@ -1554,7 +1554,7 @@
             if (finished) return;
             cleanup();
             if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.'));
-        }, 15000);
+        }, 30000);
     }
 
     function postToGoogleNoCors(payload) {
@@ -1692,7 +1692,11 @@
             }
         }, function(err) {
             const offlineAlert = document.getElementById('offlineAlert');
-            if(offlineAlert) offlineAlert.classList.remove('hidden');
+            if(offlineAlert) {
+                offlineAlert.classList.remove('hidden');
+                const msg = offlineAlert.querySelector('p');
+                if(msg) msg.textContent = 'Belum terhubung ke Google Sheet. Pastikan Web App Apps Script sudah di-deploy sebagai versi terbaru dan aksesnya Anyone.';
+            }
             if(syncText) syncText.innerText = "DISCONNECTED";
             if(syncPing) syncPing.className = "hidden";
             if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
