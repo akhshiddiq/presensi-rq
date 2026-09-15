@@ -434,7 +434,7 @@
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrjz05RI6tU55eS_Otqb9_O3PPYJ6hCWW-DG8A0o2FXDhyEp721qMELMVZATmJLYs/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v5-gs-update-jsonp-sync';
+    const SCRIPT_URL_VERSION = '2026-09-15-v7-diagnostic-sync';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -683,7 +683,10 @@
            
            simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
            .then((serverResult) => {
-               setTimeout(() => { fetchHistoryFromSheets(); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 300);
+               if (!serverResult || serverResult.status !== 'success' || serverResult.verified === false) {
+                   throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
+               }
+               setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey }, verified: true }); }, 300);
            }).catch(err => {
                isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
                fetchHistoryFromSheets(); resolve({ error: true, message: String(err) });
@@ -699,9 +702,10 @@
        if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderHistoryTable(); Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
 
        simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
-       .then(() => {
+       .then((result) => {
+           if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
            Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-           setTimeout(() => { isProcessing = false; fetchHistoryFromSheets(); }, 300);
+           setTimeout(() => { isProcessing = false; fetchHistoryFromSheets(true); }, 300);
        }).catch(err => {
            isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') }); fetchHistoryFromSheets();
        });
@@ -723,18 +727,18 @@
         })
         .then((result) => {
             if (result.isConfirmed) {
-                if(key) deletedKeys.add(key);
-                presensiHistory = presensiHistory.filter(item => item.key !== key);
-                renderHistoryTable();
-                
                 requestGoogleJsonp({ action: 'deleteHistory', key: key || '' })
-                .then(() => {
+                .then((result) => {
+                    if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Data belum terhapus dari Google Sheet.');
+                    if(key) deletedKeys.add(key);
+                    presensiHistory = presensiHistory.filter(item => item.key !== key);
+                    renderHistoryTable();
                     Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus!' });
-                    setTimeout(() => fetchHistoryFromSheets(), 500);
+                    setTimeout(() => fetchHistoryFromSheets(true), 300);
                 })
                 .catch(err => {
                     Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
-                    fetchHistoryFromSheets();
+                    fetchHistoryFromSheets(true);
                 });
             }
         });
@@ -1048,7 +1052,7 @@
           button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
           button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
           Toast.fire({ icon: 'success', title: 'Data masuk ke Google Sheet', text: `${kelas}: ${acuan}× hadir = 100%` });
-          fetchHistoryFromSheets(false); renderProgressSantri(); if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
+          fetchHistoryFromSheets(true); renderProgressSantri(); if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
         })
         .catch((err) => {
           if (status) { status.className = 'text-[10px] font-bold text-red-600 mt-1'; status.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Gagal masuk ke Google Sheet'; }
@@ -1258,13 +1262,24 @@
         });
     }
 
+    async function cekDatabaseGoogle() {
+        const result = await requestGoogleJsonp({ action: 'diagnose' });
+        console.log('DIAGNOSIS GOOGLE SHEET:', result);
+        Toast.fire({ icon: 'success', title: 'Database terdeteksi', text: `${result.spreadsheetName || ''} · Riwayat: ${result.riwayatTarget || ''}` });
+        return result;
+    }
+
     function manualSync() {
         const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
         Toast.fire({ icon: 'info', title: 'Menarik data terbaru...' });
         fetchHistoryFromSheets(true);
     }
+    let syncRequestInFlight = false;
     function fetchHistoryFromSheets(isManual = false) {
+        if (syncRequestInFlight) return;
+        syncRequestInFlight = true;
         if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
+            syncRequestInFlight = false;
             const syncText = document.getElementById('syncStatusText');
             if(syncText) syncText.innerText = "URL BELUM DIATUR";
             return;
@@ -1275,6 +1290,7 @@
         if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
         
         fetchGoogleJsonp(function(data) {
+            syncRequestInFlight = false;
             const offlineAlert = document.getElementById('offlineAlert'); if(offlineAlert) offlineAlert.classList.add('hidden');
             if(syncText) syncText.innerText = "CONNECTED";
             if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
@@ -1300,6 +1316,7 @@
                 if(isManual) Toast.fire({ icon: 'success', title: 'Sinkronisasi Berhasil' });
             }
         }, function(err) {
+            syncRequestInFlight = false;
             const offlineAlert = document.getElementById('offlineAlert');
             if(offlineAlert) offlineAlert.classList.remove('hidden');
             if(syncText) syncText.innerText = "DISCONNECTED";
