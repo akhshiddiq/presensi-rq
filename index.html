@@ -1,3 +1,337 @@
+saya punya kode gs , save dan pahami jngn di kurangi 
+// =================================================================
+// KODE GOOGLE APPS SCRIPT - PRESENSI SANTRI RQ AL-KHANSA (FINAL)
+// =================================================================
+var SPREADSHEET_ID = "1iBn4kM63rVdsc2v-uPsfGDrn8w7BQhWmQLIZH7-pKhU";
+
+function getDatabaseSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function getSheetByGid(ss, gid) {
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId().toString() === gid.toString()) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+function getMasterSantriSheet(ss) {
+  return ss.getSheetByName("Data Master Absensi") || getSheetByGid(ss, "0") || ss.getSheetByName("Santri") || ss.getSheetByName("DataSantri") || ss.getSheets()[0];
+}
+
+function getRiwayatSheet(ss) {
+  var sheet = ss.getSheetByName("Riwayat Absen");
+  if (!sheet) {
+    sheet = ss.insertSheet("Riwayat Absen");
+    sheet.getRange(1, 1, 1, 8).setValues([["Key", "ID Santri", "Nama Santri", "Kelas", "Guru", "Waktu", "Hari", "Status"]]);
+    sheet.getRange(1, 1, 1, 8).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getAcuanSheet(ss) {
+  var sheet = ss.getSheetByName("Acuan Kehadiran");
+  if (!sheet) {
+    sheet = ss.insertSheet("Acuan Kehadiran");
+    sheet.getRange(1, 1, 1, 3).setValues([["Kelas", "Acuan 100%", "Terakhir Diubah"]]);
+    sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function ensureMasterHeader(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, 4).setValues([["ID", "Nama Santri", "Kelas", "Guru / Ustadz"]]);
+    sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+}
+
+function addMasterSantriToSheet(ss, id, nama, kelas, guru) {
+  var sheet = getMasterSantriSheet(ss);
+  ensureMasterHeader(sheet);
+  id = String(id || "").trim();
+  nama = String(nama || "").trim();
+  kelas = String(kelas || "").trim();
+  guru = String(guru || "").trim();
+  if (!nama || !kelas) return { status: "error", message: "Nama dan kelas wajib diisi." };
+  
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    var existingId = String(rows[i][0] || "").trim().toLowerCase();
+    if (id && existingId === id.toLowerCase()) return { status: "error", message: "ID santri sudah ada." };
+  }
+  if (!id) id = "IDSRQ" + String(Date.now()).slice(-6);
+  sheet.appendRow([id, nama, kelas, guru]);
+  SpreadsheetApp.flush();
+  return { status: "success", message: "Santri berhasil ditambahkan", data: { id: id } };
+}
+
+function deleteMasterSantriFromSheet(ss, id) {
+  var sheet = getMasterSantriSheet(ss);
+  var targetId = String(id || "").trim().toLowerCase();
+  if (!targetId) return { status: "error", message: "ID santri wajib diisi." };
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var r = rows.length - 1; r >= 1; r--) {
+    if (String(rows[r][0] || "").trim().toLowerCase() === targetId) {
+      sheet.deleteRow(r + 1);
+      SpreadsheetApp.flush();
+      return { status: "success", message: "Santri berhasil dihapus" };
+    }
+  }
+  return { status: "warning", message: "ID santri tidak ditemukan" };
+}
+
+function doGet(e) {
+  var ss = getDatabaseSpreadsheet();
+  var params = (e && e.parameter) ? e.parameter : {};
+  var action = String(params.action || "").trim().toLowerCase();
+  var callback = String(params.callback || "").trim();
+
+  try {
+    // 1. PING / TEST KONEKSI
+    if (action === "ping" || action === "testconnection") {
+      return outputJsonpOrJson({ status: "online", message: "Google Apps Script terhubung", spreadsheetId: SPREADSHEET_ID }, callback);
+    }
+
+    // 2. TAMBAH MASTER SANTRI
+    if (action === "addmastersantri" || action === "add_master_santri") {
+      var resAdd = addMasterSantriToSheet(ss, params.id, params.nama, params.kelas, params.guru);
+      return outputJsonpOrJson(resAdd, callback);
+    }
+
+    // 3. HAPUS MASTER SANTRI
+    if (action === "deletemastersantri" || action === "delete_master_santri") {
+      var resDel = deleteMasterSantriFromSheet(ss, params.id);
+      return outputJsonpOrJson(resDel, callback);
+    }
+
+    // 4. SIMPAN PRESENSI KE SHEET "Riwayat Absen"
+    if (action === "saveattendance" || action === "save_attendance") {
+      var sheetRiwayat = getRiwayatSheet(ss);
+      var idSave = String(params.idSantri || "MANUAL").trim();
+      var namaSave = String(params.namaSantri || "Santri").trim();
+      var kelasSave = String(params.kelas || "-").trim();
+      var guruSave = String(params.guru || "-").trim();
+      var rawStatus = String(params.status || "Hadir").trim();
+      var statusSave = "Hadir";
+      var low = rawStatus.toLowerCase();
+      if (low.indexOf("sakit") >= 0) statusSave = "Sakit";
+      else if (low.indexOf("izin") >= 0) statusSave = "Izin";
+      else if (low.indexOf("tidak hadir") >= 0 || low.indexOf("alfa") >= 0) statusSave = "Tidak Hadir (Alfa)";
+
+      var now = new Date();
+      var waktuSave = String(params.waktu || Utilities.formatDate(now, "Asia/Jakarta", "dd/MM/yyyy HH.mm.ss"));
+      var hariSave = String(params.hari || ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][now.getDay()]);
+      var keySave = String(params.key || ("WEB_" + Date.now() + "_" + Math.random().toString(36).substring(2,8))).trim();
+
+      sheetRiwayat.appendRow([keySave, idSave, namaSave, kelasSave, guruSave, waktuSave, hariSave, statusSave]);
+      SpreadsheetApp.flush();
+      return outputJsonpOrJson({ status: "success", message: "Presensi tersimpan", data: { key: keySave } }, callback);
+    }
+
+    // 5. HAPUS / BATALKAN PRESENSI DARI SHEET "Riwayat Absen"
+    if (action === "deletehistory" || action === "delete" || action === "batal" || action === "hapus") {
+      var sheetRiwayatDel = getRiwayatSheet(ss);
+      var targetKey = String(params.key || "").trim().toLowerCase();
+      var rowsRiwayat = sheetRiwayatDel.getDataRange().getValues();
+      var deleted = false;
+      for (var r = rowsRiwayat.length - 1; r >= 1; r--) {
+        var cellKey = String(rowsRiwayat[r][0] || "").trim().toLowerCase();
+        if (targetKey && cellKey === targetKey) {
+          sheetRiwayatDel.deleteRow(r + 1);
+          deleted = true;
+          break;
+        }
+      }
+      SpreadsheetApp.flush();
+      return outputJsonpOrJson({ status: deleted ? "success" : "warning", message: deleted ? "Berhasil dihapus" : "Data tidak ditemukan" }, callback);
+    }
+
+    // 6. SIMPAN ACUAN KEHADIRAN KE SHEET "Acuan Kehadiran"
+    if (action === "saveacuan" || action === "save_acuan") {
+      var kelasAcuan = String(params.kelas || "").trim();
+      var nilaiAcuan = Math.max(1, Math.round(Number(params.acuan) || 12));
+      if (!kelasAcuan) return outputJsonpOrJson({ status: "error", message: "Nama kelas wajib diisi." }, callback);
+
+      var sheetAcuan = getAcuanSheet(ss);
+      var acuanRows = sheetAcuan.getDataRange().getValues();
+      var foundRow = -1;
+      for (var ar = 1; ar < acuanRows.length; ar++) {
+        if (String(acuanRows[ar][0] || "").trim().toLowerCase() === kelasAcuan.toLowerCase()) {
+          foundRow = ar + 1;
+          break;
+        }
+      }
+      var stamp = Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH.mm.ss");
+      if (foundRow > 0) {
+        sheetAcuan.getRange(foundRow, 1, 1, 3).setValues([[kelasAcuan, nilaiAcuan, stamp]]);
+      } else {
+        sheetAcuan.appendRow([kelasAcuan, nilaiAcuan, stamp]);
+      }
+      SpreadsheetApp.flush();
+      return outputJsonpOrJson({ status: "success", message: "Acuan berhasil disimpan", kelas: kelasAcuan, acuan: nilaiAcuan }, callback);
+    }
+
+    // 7. AMBIL SEMUA DATA (DEFAULT doGet UNTUK SINKRONISASI)
+    var sheetRiwayatRead = getRiwayatSheet(ss);
+    var dataRiwayat = sheetRiwayatRead.getDataRange().getDisplayValues();
+    var historyList = [];
+    if (dataRiwayat.length > 1) {
+      for (var i = 1; i < dataRiwayat.length; i++) {
+        var row = dataRiwayat[i];
+        if (row[0] || row[1] || row[2]) {
+          historyList.push({
+            key: String(row[0] || ""),
+            idSantri: String(row[1] || ""),
+            namaSantri: String(row[2] || ""),
+            kelas: String(row[3] || ""),
+            guru: String(row[4] || ""),
+            waktu: String(row[5] || ""),
+            hari: String(row[6] || ""),
+            status: String(row[7] || "Hadir")
+          });
+        }
+      }
+    }
+    historyList.reverse();
+
+    // Ambil Master Santri
+    var santriList = [];
+    var sheetSantri = getMasterSantriSheet(ss);
+    if (sheetSantri) {
+      var dataSantri = sheetSantri.getDataRange().getDisplayValues();
+      if (dataSantri.length > 1) {
+        for (var j = 1; j < dataSantri.length; j++) {
+          var sRow = dataSantri[j];
+          var idMaster = String(sRow[0] || "").trim();
+          var namaMaster = String(sRow[1] || "").trim();
+          var kelasMaster = String(sRow[2] || "").trim();
+          var guruMaster = String(sRow[3] || "").trim();
+          if (idMaster || namaMaster) {
+            santriList.push({ id: idMaster, nama: namaMaster, kelas: kelasMaster, guru: guruMaster });
+          }
+        }
+      }
+    }
+
+    // Ambil Acuan Kehadiran
+    var acuanMap = {};
+    var sheetAcuanRead = getAcuanSheet(ss);
+    var dataAcuan = sheetAcuanRead.getDataRange().getDisplayValues();
+    if (dataAcuan.length > 1) {
+      for (var k = 1; k < dataAcuan.length; k++) {
+        var kelasAc = String(dataAcuan[k][0] || "").trim();
+        var nilaiAc = Number(dataAcuan[k][1]);
+        if (kelasAc && Number.isFinite(nilaiAc) && nilaiAc >= 1) {
+          acuanMap[kelasAc] = Math.round(nilaiAc);
+        }
+      }
+    }
+
+    var result = {
+      status: "online",
+      history: historyList,
+      santri: santriList,
+      acuan: acuanMap
+    };
+
+    return outputJsonpOrJson(result, callback);
+
+  } catch (err) {
+    return outputJsonpOrJson({ status: "error", message: err.toString(), history: [], santri: [], acuan: {} }, callback);
+  }
+}
+
+function outputJsonpOrJson(obj, callback) {
+  var cb = String(callback || "").trim();
+  if (cb && /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(cb)) {
+    return ContentService.createTextOutput(cb + "(" + JSON.stringify(obj) + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  return doGet(e);
+}
+Memori diperbarui
+
+Siap. Kode GS tersebut sudah saya simpan sebagai referensi kerja dan saya pahami.
+
+Saya akan menjaga seluruh kode, struktur, fungsi, dan fitur yang ada. Saya tidak akan mengurangi, menghapus, atau mengubah bagian apa pun kecuali Anda secara jelas meminta perubahan.
+
+Kode ini saya kenali sebagai:
+
+Google Apps Script — Presensi Santri RQ Al-Khansa (FINAL)
+
+Termasuk fungsi utama seperti:
+
+koneksi Spreadsheet berdasarkan SPREADSHEET_ID
+Master Santri
+tambah/hapus santri
+Riwayat Absen
+simpan dan hapus presensi
+Acuan Kehadiran
+sinkronisasi data melalui doGet
+doPost
+JSON/JSONP response
+pencarian Sheet berdasarkan nama maupun GID
+data history, santri, dan acuan
+
+Kalau nanti Anda meminta perubahan atau penambahan fitur, saya akan bekerja dari kode GS ini, bukan membuat ulang dari nol dan bukan menghilangkan fitur yang sudah ada.
+
+html22.docx
+Dokumen
+dan ini html nya tolong perbaiki agar tidak eroor dan bikin bisa konek dengan google skrip dan sheet
+
+
+Sudah saya perbaiki HTML yang Anda kirim tanpa mengurangi fitur yang sudah ada. Saya cek struktur JavaScript-nya dan menemukan beberapa masalah yang memang bisa membuat HTML error.
+
+Perbaikan utama:
+
+Memperbaiki syntax error JavaScript pada bagian Gemini TTS yang membuat seluruh script bisa berhenti berjalan.
+Menyesuaikan koneksi HTML dengan doGet() GS Anda menggunakan JSONP, sehingga HTML lokal tetap bisa berkomunikasi dengan Google Apps Script.
+saveAttendance → tersambung ke Riwayat Absen.
+deleteHistory → bisa menghapus data dari Sheet.
+saveAcuan → tersambung ke Acuan Kehadiran.
+Menambahkan koneksi Master Santri dari GS ke HTML. Sebelumnya HTML belum benar-benar mengambil data.santri dari response GS.
+Menambahkan fungsi tambah/hapus santri yang sesuai dengan GS Anda: addMasterSantri dan deleteMasterSantri.
+Setelah data Master Santri berubah, daftar kelas di HTML ikut diperbarui.
+Memperbaiki proses sinkronisasi supaya status koneksi menampilkan CONNECTED / DISCONNECTED dengan benar.
+Saya juga sudah melakukan pengecekan syntax JavaScript dan hasilnya JS syntax OK.
+
+HTML Anda memang sudah memiliki mekanisme JSONP dan URL Apps Script, tetapi sebelumnya ada bagian yang belum lengkap/bermasalah. Mekanisme JSONP tersebut terlihat pada HTML asli Anda. URL Apps Script juga sudah tertanam di HTML yang Anda kirim.
+
+File HTML yang sudah diperbaiki
+
+Download HTML Presensi RQ Al-Khansa — Terhubung GS
+
+Yang perlu dilakukan di Google Apps Script
+
+Kode GS yang Anda kirim tidak perlu saya kurangi atau ubah. HTML ini sudah dibuat mengikuti action yang tersedia di GS tersebut, termasuk saveAttendance, deleteHistory, saveAcuan, serta Master Santri.
+
+Pastikan deployment GS Anda:
+
+Deploy → New deployment
+Pilih Web app
+Execute as: Me
+Who has access: Anyone
+Salin URL yang berakhiran /exec
+Buka HTML → Pengaturan
+Masukkan URL /exec tersebut.
+Klik Simpan.
+Klik Sinkron.
+
+Catatan penting: HTML yang Anda kirim sudah mempunyai URL /exec bawaan, tetapi saya tidak bisa memastikan dari sini apakah URL deployment itu masih deployment GS yang aktif milik Anda. Jadi kalau setelah dibuka masih muncul DISCONNECTED, masukkan URL /exec terbaru dari deployment GS Anda di menu Pengaturan.
+
+Saya juga mempertahankan fitur-fitur HTML yang sudah ada seperti kamera QR, input manual, kalender, riwayat, kartu absen, progress, acuan kehadiran, data santri, WhatsApp, mode gelap, dan pengaturan. Struktur koneksi presensi sebelumnya memang sudah menggunakan saveAttendance dan mengambil riwayat dari server.
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -21,7 +355,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -262,7 +596,7 @@
                 <th class="p-4">Nama Lengkap</th>
                 <th class="p-4">Kelas</th>
                 <th class="p-4">Status</th>
-                <th class="p-4 text-center">Aksi</th>
+                <th class="p-4 text-center w-28">Aksi</th>
               </tr>
             </thead>
             <tbody id="riwayatTableBody" class="divide-y divide-gray-50 riwayat-table-body"></tbody>
@@ -427,14 +761,14 @@
 
   <script>
     const MASTER_KELAS_TETAP = ['Abdurrahman','Abu Ubaidah','Zubair','Ali','Abu Bakar','Bilal','Hamzah','Fatimah','Umar','Utsman'];
-    const MASTER_DATA_SANTRI_EMBEDDED = [{"id":"IDSRQ001","nama":"Alfatih Ahmad Badawi","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ002","nama":"Atthar Raffasya Alghifari","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ003","nama":"Muhammad Atthaya Azka","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ004","nama":"Muhammad Rasyidd Albarr","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ005","nama":"Muhammad Tristan Arka Santosa","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ006","nama":"Khanza Almira","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ007","nama":"Keenan Arkana Ramadhan Setiawan","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ008","nama":"Defrand Augustav Muttaqin","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ009","nama":"Naufal Giebran Jayadi","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ010","nama":"Sabran Nur Awal","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ011","nama":"R. Tsabit Arsakha Mahdan","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ012","nama":"Farid Nahra Rafihi Dayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ013","nama":"Muhammad Bilal Faherzi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ014","nama":"Satrio Abdul Jalil","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ015","nama":"Muhamad Zaid Khairul Ihsan","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ016","nama":"Riski Agung Zaki Hidayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ017","nama":"Sulthan Hutama","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ018","nama":"Arsya Altan Mutaqi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ019","nama":"Muhammad Irsyad Dirgantara","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ020","nama":"Ahmad Khalafi Aulia","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ021","nama":"Abdurrahman Malik Ibrahim","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ022","nama":"Muhammad Syafiq Ibrahim","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ023","nama":"Nabila Azalia Putri Aquilla","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ024","nama":"Marsha Adeeva Mezaluna","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ025","nama":"Haura Hanindya","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ026","nama":"Riska Zakiyah Hidayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ027","nama":"Zarina Azzakia Putri Siwi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ028","nama":"Alesha Assyabiya","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ029","nama":"Yumna Kamidia Rinjani","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ030","nama":"Almira Azzalea","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ031","nama":"Calista Naura Salsabila","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ033","nama":"Alya Zahirah","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ035","nama":"Muhammad Auris Hilmi Ilham","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ036","nama":"Muhamad Yudanta Irham","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ037","nama":"Ahsan Ruzain Ramadhan","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ038","nama":"Ihsan Hamizan Ramadhan","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ039","nama":"Ahmad Rumi Ibrahim Khidr H","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ040","nama":"Anggun Ramania Martin","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ041","nama":"Arsenio Yusuf Wijaya","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ042","nama":"Athar Salim Agni Elmansyah","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ043","nama":"Haizam Irawan","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ044","nama":"Jovita Shaqueena Nismara","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ045","nama":"Rayya Fakhra Falisha","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ046","nama":"Reyna Fazilatun Nisa","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ047","nama":"Rimba Maulana","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ048","nama":"Yasmin Naura Jamila","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ049","nama":"Yodha Achmad Ramadhan","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ050","nama":"Zafran Malik Abdullah","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ051","nama":"Afiqa Misha Shafan","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ052","nama":"Alifiandra ahmad hudaya","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ053","nama":"Aqilah Rizky Hardiyansyah","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ054","nama":"Dilara adrena ramadhani","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ055","nama":"Hanif Rafisqi Arfadhia","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ056","nama":"Kahfi Ibadurrahman","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ057","nama":"Lujayn Syua Izora","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ058","nama":"Muhammad Ibrohim Syahreza","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ059","nama":"Muhammad Zein Izz","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ060","nama":"Rafka Wijdan Guntoro","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ061","nama":"Syahda Nur Maulida","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ062","nama":"Yumna Azkadina","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ063","nama":"Zaid Aflahul Mubarok","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ064","nama":"Anindya Rahmadina Putri Siwi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ065","nama":"Arkhan Salman Al-farisi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ066","nama":"Fathan Halim","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ067","nama":"Kenziko San Andrelie","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ068","nama":"Muhammad Dzaky Halim","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ069","nama":"Novia Alika Juventia","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ070","nama":"Radhiya Muhammad Rafaizan","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ071","nama":"Rianti Khairina Sheza","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ072","nama":"Sakura Nadia Zuhastasi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ073","nama":"Elmira Davina Ariesty","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ074","nama":"Hevanika Zhafira Adrinof","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ075","nama":"Iffa Astila Rahma","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ076","nama":"Nurhalimah","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ077","nama":"Salsabila Azzahra","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ078","nama":"Althaffatan Amsyar","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ079","nama":"Argantara Tsaqib Rabbani S","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ080","nama":"M. Fauzan","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ081","nama":"Yasif Abqory","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ082","nama":"Yura Laksamana Semeru","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ083","nama":"Zidan Dirga Pratama Alamsyah","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ084","nama":"Alzam Irawan","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ085","nama":"Fathir Santosa","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ086","nama":"Qianno Kenzie Hamizan","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ087","nama":"Muhammad Yusuf Wiranatanagara","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ088","nama":"Muhammad Gibran Adyastha","kelas":"Abdurrahman","guru":"Kak Sidik"},{"id":"IDSRQ089","nama":"Randu Putra Bulian","kelas":"Abu Ubaidah","guru":"Kak Sidik"}];
+    const MASTER_DATA_SANTRI_EMBEDDED = [{"id":"IDSRQ001","nama":"Alfatih Ahmad Badawi","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ002","nama":"Atthar Raffasya Alghifari","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ003","nama":"Muhammad Atthaya Azka","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ004","nama":"Muhammad Rasyidd Albarr","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ005","nama":"Muhammad Tristan Arka Santosa","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ006","nama":"Khanza Almira","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ007","nama":"Keenan Arkana Ramadhan Setiawan","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ008","nama":"Defrand Augustav Muttaqin","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ009","nama":"Naufal Giebran Jayadi","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ010","nama":"Sabran Nur Awal","kelas":"Abdurrahman","guru":"Ustadz Sidik"},{"id":"IDSRQ011","nama":"R. Tsabit Arsakha Mahdan","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ012","nama":"Farid Nahra Rafihi Dayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ013","nama":"Muhammad Bilal Faherzi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ014","nama":"Satrio Abdul Jalil","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ015","nama":"Muhamad Zaid Khairul Ihsan","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ016","nama":"Riski Agung Zaki Hidayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ017","nama":"Sulthan Hutama","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ018","nama":"Arsya Altan Mutaqi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ019","nama":"Muhammad Irsyad Dirgantara","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ020","nama":"Ahmad Khalafi Aulia","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ021","nama":"Abdurrahman Malik Ibrahim","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ022","nama":"Muhammad Syafiq Ibrahim","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ023","nama":"Nabila Azalia Putri Aquilla","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ024","nama":"Marsha Adeeva Mezaluna","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ025","nama":"Haura Hanindya","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ026","nama":"Riska Zakiyah Hidayat","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ027","nama":"Zarina Azzakia Putri Siwi","kelas":"Abu Ubaidah","guru":"Ustadz Sidik"},{"id":"IDSRQ028","nama":"Alesha Assyabiya","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ029","nama":"Yumna Kamidia Rinjani","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ030","nama":"Almira Azzalea","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ031","nama":"Calista Naura Salsabila","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ033","nama":"Alya Zahirah","kelas":"Zubair","guru":"Ustadz Sidik"},{"id":"IDSRQ035","nama":"Muhammad Auris Hilmi Ilham","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ036","nama":"Muhamad Yudanta Irham","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ037","nama":"Ahsan Ruzain Ramadhan","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ038","nama":"Ihsan Hamizan Ramadhan","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ039","nama":"Ahmad Rumi Ibrahim Khidr H","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ040","nama":"Anggun Ramania Martin","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ041","nama":"Arsenio Yusuf Wijaya","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ042","nama":"Athar Salim Agni Elmansyah","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ043","nama":"Haizam Irawan","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ044","nama":"Jovita Shaqueena Nismara","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ045","nama":"Rayya Fakhra Falisha","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ046","nama":"Reyna Fazilatun Nisa","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ047","nama":"Rimba Maulana","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ048","nama":"Yasmin Naura Jamila","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ049","nama":"Yodha Achmad Ramadhan","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ050","nama":"Zafran Malik Abdullah","kelas":"Abu Bakar","guru":"Ustadzah Mega"},{"id":"IDSRQ051","nama":"Afiqa Misha Shafan","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ052","nama":"Alifiandra ahmad hudaya","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ053","nama":"Aqilah Rizky Hardiyansyah","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ054","nama":"Dilara adrena ramadhani","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ055","nama":"Hanif Rafisqi Arfadhia","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ056","nama":"Kahfi Ibadurrahman","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ057","nama":"Lujayn Syua Izora","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ058","nama":"Muhammad Ibrohim Syahreza","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ059","nama":"Muhammad Zein Izz","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ060","nama":"Rafka Wijdan Guntoro","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ061","nama":"Syahda Nur Maulida","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ062","nama":"Yumna Azkadina","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ063","nama":"Zaid Aflahul Mubarok","kelas":"Bilal","guru":"Ustadzah Mega"},{"id":"IDSRQ064","nama":"Anindya Rahmadina Putri Siwi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ065","nama":"Arkhan Salman Al-farisi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ066","nama":"Fathan Halim","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ067","nama":"Kenziko San Andrelie","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ068","nama":"Muhammad Dzaky Halim","kelas":"Hamzah","guru":"Ustadz Mega"},{"id":"IDSRQ069","nama":"Novia Alika Juventia","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ070","nama":"Radhiya Muhammad Rafaizan","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ071","nama":"Rianti Khairina Sheza","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ072","nama":"Sakura Nadia Zuhastasi","kelas":"Hamzah","guru":"Ustadzah Mega"},{"id":"IDSRQ073","nama":"Elmira Davina Ariesty","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ074","nama":"Hevanika Zhafira Adrinof","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ075","nama":"Iffa Astila Rahma","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ076","nama":"Nurhalimah","kelas":"Fatimah","guru":"Ustadzah Mega"},{"id":"IDSRQ077","nama":"Salsabila Azzahra","kelas":"Fatimah","guru":"Ustadz Mega"},{"id":"IDSRQ078","nama":"Althaffatan Amsyar","kelas":"Umar","guru":"Ustadzah Mega"},{"id":"IDSRQ079","nama":"Argantara Tsaqib Rabbani S","kelas":"Umar","guru":"Ustadz Sidik"},{"id":"IDSRQ080","nama":"M. Fauzan","kelas":"Umar","guru":"Ustadz Sidik"},{"id":"IDSRQ081","nama":"Yasif Abqory","kelas":"Umar","guru":"Ustadz Sidik"},{"id":"IDSRQ082","nama":"Yura Laksamana Semeru","kelas":"Umar","guru":"Ustadz Sidik"},{"id":"IDSRQ083","nama":"Zidan Dirga Pratama Alamsyah","kelas":"Umar","guru":"Ustadz Sidik"},{"id":"IDSRQ084","nama":"Alzam Irawan","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ085","nama":"Fathir Santosa","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ086","nama":"Qianno Kenzie Hamizan","kelas":"Utsman","guru":"Ustadz Sidik"},{"id":"IDSRQ087","nama":"Muhammad Yusuf Wiranatanagara","kelas":"Ali","guru":"Ustadz Sidik"},{"id":"IDSRQ088","nama":"Muhammad Gibran Adyastha","kelas":"Abdurrahman","guru":"Kak Sidik"},{"id":"IDSRQ089","nama":"Randu Putra Bulian","kelas":"Abu Ubaidah","guru":"Kak Sidik"}];
     let masterDataSantri = MASTER_DATA_SANTRI_EMBEDDED.map(s => ({...s}));
     let cachedMasterClasses = [];
     try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVwD8NnFe7sa02w3dtzpfD1PPy-IOoDZ3gtUTjhA3gHhTEEt1DDmZMN0I93ZOAC9XS/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v2-updated-url';
+    const SCRIPT_URL_VERSION = '2026-09-15-v4-jsonp-sync';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -449,7 +783,7 @@
     let deletedKeys = new Set();
     let newlyAddedKeysMap = new Map();
     let syncInterval;
-    let html5QrCode;
+    let html5QrCode = null;
     let isProcessing = false;
     let isCameraOn = false;
     let lastScannedId = "";
@@ -563,7 +897,7 @@
           uniqueClasses.forEach(c => el.innerHTML += `<option value="${c}">${c}</option>`);
           if (currVal && uniqueClasses.includes(currVal)) el.value = currVal;
       };
-      createOptions('manualKelasSelect'); createOptions('kalenderKelasSelect'); createOptions('persiswaKelasSelect');
+      createOptions('manualKelasSelect'); createOptions('kalenderKelasSelect');
     }
     populateClassDropdowns();
     
@@ -634,7 +968,7 @@
     function getCustomDateForSubmission(isLive = true) {
         const inputId = isLive ? 'scanDateInput' : 'manualDateInput'; const dateVal = document.getElementById(inputId).value; const now = new Date();
         if(dateVal) {
-            const [y, m, d] = dateVal.split('-'); const customDate = new Date(y, m-1, d, now.getHours(), now.getMinutes(), now.getSeconds()); const tz = customDate.getTimezoneOffset() * 60000;
+            const [y, m, d] = dateVal.split('-'); const customDate = new Date(y, m-1, d, now.getHours(), now.getMinutes(), now.getSeconds());
             return { waktu: `${d}/${m}/${y} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][customDate.getDay()] };
         }
         return { waktu: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][now.getDay()] };
@@ -707,6 +1041,74 @@
        });
     }
 
+    function hapusData(key, event) {
+        if(event) event.stopPropagation();
+        const targetItem = presensiHistory.find(item => item.key === key) || {};
+        const nama = targetItem.namaSantri || "";
+        
+        Swal.fire({ 
+            title: 'Hapus Riwayat Presensi?', 
+            text: nama ? `Yakin ingin menghapus presensi ${nama} secara permanen dari web dan Google Sheet?` : "Data akan dihapus permanen dari sistem dan Google Sheet.", 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonColor: '#d33', 
+            cancelButtonColor: '#8b5cf6', 
+            confirmButtonText: 'Ya, Hapus!' 
+        })
+        .then((result) => {
+            if (result.isConfirmed) {
+                if(key) deletedKeys.add(key);
+                presensiHistory = presensiHistory.filter(item => item.key !== key);
+                renderHistoryTable();
+                
+                requestGoogleJsonp({ action: 'deleteHistory', key: key || '' })
+                .then(() => {
+                    Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus!' });
+                    setTimeout(() => fetchHistoryFromSheets(), 500);
+                })
+                .catch(err => {
+                    Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
+                    fetchHistoryFromSheets();
+                });
+            }
+        });
+    }
+
+    function renderRiwayatTable() {
+        const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
+        if(!tbody) return;
+        let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
+        data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
+        if(count) count.innerText = data.length;
+        if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
+        empty?.classList.add('hidden');
+        let html = '';
+        data.forEach((item,index) => {
+            const st = String(item.status || '').toLowerCase();
+            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
+            
+            const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm inline-flex items-center justify-center" title="Hapus Permanen"><i class="fas fa-trash-alt"></i></button>`;
+            
+            html += `<tr class="hover:bg-violet-50/50 transition-colors">
+                        <td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td>
+                        <td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td>
+                        <td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td>
+                        <td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td>
+                        <td class="p-4">${badge}</td>
+                        <td class="p-4 text-center">${deleteBtn}</td>
+                     </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+    
+    function parseGoogleSheetDate(dateString) { if (!dateString) return null; try { let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/); if (match) return new Date(match[3], match[2] - 1, match[1]); return new Date(dateString); } catch(e) { return null; } }
+    function formatRiwayatTanggal(item) {
+        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'], hariNama = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const match = String(item?.waktu || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (match) { const d = parseInt(match[1], 10), m = parseInt(match[2], 10) - 1, y = parseInt(match[3], 10), date = new Date(y, m, d); if (!isNaN(date.getTime())) return `${hariNama[date.getDay()]}, ${d} ${bulan[m]}`; }
+        return String(item?.hari || '').replace(/^Minggu$/i, 'Ahad') || '-';
+    }
+
     function renderManualStudents() {
         const kelas = document.getElementById('manualKelasSelect').value, listContainer = document.getElementById('manualStudentList'), checkAll = document.getElementById('checkAllManual');
         checkAll.checked = false; document.getElementById('selectedCountText').innerText = "0 dipilih"; document.getElementById('searchManualStudent').value = "";
@@ -741,79 +1143,6 @@
         isProcessing = false; document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`; document.getElementById('checkAllManual').checked = false;
         playAudioFeedback('ok', null); Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
         fetchHistoryFromSheets();
-    }
-
-    function hapusData(key, event) {
-        if(event) event.stopPropagation();
-        
-        // Cari data yang ingin dihapus
-        const targetItem = presensiHistory.find(item => item.key === key) || {};
-        const nama = targetItem.namaSantri || "";
-        
-        Swal.fire({ 
-            title: 'Hapus Riwayat Presensi?', 
-            text: nama ? `Yakin ingin menghapus presensi ${nama} secara permanen?` : "Data akan dihapus permanen dari sistem dan Google Sheet.", 
-            icon: 'warning', 
-            showCancelButton: true, 
-            confirmButtonColor: '#d33', 
-            cancelButtonColor: '#8b5cf6', 
-            confirmButtonText: 'Ya, Hapus!' 
-        })
-        .then((result) => {
-            if (result.isConfirmed) {
-                // Sembunyikan dari UI terlebih dahulu
-                if(key) deletedKeys.add(key);
-                presensiHistory = presensiHistory.filter(item => item.key !== key);
-                renderHistoryTable(); // Refresh tabel riwayat
-                
-                // Kirim perintah JSONP ke Google Script untuk menghapus dari Sheet "Riwayat Absen"
-                requestGoogleJsonp({ action: 'deleteHistory', key: key || '' })
-                .then(() => {
-                    Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus!' });
-                    setTimeout(() => fetchHistoryFromSheets(), 500); // Tarik ulang data bersih
-                })
-                .catch(err => {
-                    Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
-                    fetchHistoryFromSheets(); // Kembalikan data jika gagal di server
-                });
-            }
-        });
-    }
-
-    // Mengubah tampilan tabel renderHistoryTable dan renderRiwayatTable agar memunculkan tombol hapus
-    function renderRiwayatTable() {
-        const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
-        if(!tbody) return;
-        let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
-        data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
-        if(count) count.innerText = data.length;
-        if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
-        empty?.classList.add('hidden');
-        let html = '';
-        data.forEach((item,index) => {
-            const st = String(item.status || '').toLowerCase();
-            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
-            
-            // Tambahan Tombol Hapus (Tong Sampah) per Baris
-            const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm" title="Hapus Data"><i class="fas fa-trash-alt"></i> Hapus</button>`;
-            
-            html += `<tr class="hover:bg-violet-50/50 transition-colors">
-                        <td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td>
-                        <td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td>
-                        <td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td>
-                        <td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td>
-                        <td class="p-4">${badge}</td>
-                        <td class="p-4 text-center">${deleteBtn}</td>
-                     </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-    function parseGoogleSheetDate(dateString) { if (!dateString) return null; try { let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/); if (match) return new Date(match[3], match[2] - 1, match[1]); return new Date(dateString); } catch(e) { return null; } }
-    function formatRiwayatTanggal(item) {
-        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'], hariNama = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const match = String(item?.waktu || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (match) { const d = parseInt(match[1], 10), m = parseInt(match[2], 10) - 1, y = parseInt(match[3], 10), date = new Date(y, m, d); if (!isNaN(date.getTime())) return `${hariNama[date.getDay()]}, ${d} ${bulan[m]}`; }
-        return String(item?.hari || '').replace(/^Minggu$/i, 'Ahad') || '-';
     }
 
     function prepareLaporanSantriOptions() {
@@ -911,21 +1240,6 @@
         
         if(!details.length) { detailBody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data presensi untuk santri ini pada bulan tersebut.</td></tr>'; } 
         else { detailBody.innerHTML = details.map((d,i) => `<tr class="hover:bg-emerald-50/50"><td class="p-3 text-center font-bold text-gray-500">${i+1}</td><td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(d.tanggal)}</td><td class="p-3 font-semibold text-gray-600">${escapeHtmlLaporan(d.hari)}</td><td class="p-3">${getLaporanStatusBadge(d.status)}</td></tr>`).join(''); }
-    }
-
-    function renderRiwayatTable() {
-        const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
-        if(!tbody) return;
-        let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
-        data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
-        if(count) count.innerText = data.length;
-        if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
-        empty?.classList.add('hidden');
-        tbody.innerHTML = data.map((item,index) => {
-            const st = String(item.status || '').toLowerCase();
-            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
-            return `<tr class="hover:bg-violet-50/50 transition-colors"><td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td><td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td><td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td><td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td><td class="p-4">${badge}</td></tr>`;
-        }).join('');
     }
 
     function prepareKalenderOptions() {
@@ -1134,8 +1448,191 @@
     }
     function salinLaporanWAWali(text) { navigator.clipboard?.writeText(text).then(() => Toast.fire({icon:'success', title:'Laporan berhasil disalin'})).catch(() => { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); Toast.fire({icon:'success', title:'Laporan berhasil disalin'}); }); }
     function kirimWAWaliPersonal(text) { window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); }
-    
-    window.onload = function() { loadDarkMode(); applyLogo(); updateAudioUI(); populateClassDropdowns(); fetchHistoryFromSheets(); syncInterval = setInterval(fetchHistoryFromSheets, 4000); if ('speechSynthesis' in window) window.speechSynthesis.getVoices(); }
+
+    function normalizeMasterSantriRows(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map((s) => ({
+            id: String(s?.id ?? s?.ID ?? '').trim(),
+            nama: String(s?.nama ?? s?.namaSantri ?? s?.['Nama Santri'] ?? '').trim(),
+            kelas: String(s?.kelas ?? s?.Kelas ?? '').trim(),
+            guru: String(s?.guru ?? s?.['Guru / Ustadz'] ?? '').trim()
+        })).filter(s => s.id || s.nama);
+    }
+
+    function renderDataSantriMaster() {
+        const tbody = document.getElementById('dataSantriMasterBody');
+        const empty = document.getElementById('dataSantriMasterEmpty');
+        const count = document.getElementById('dataSantriMasterCount');
+        const search = String(document.getElementById('searchDataSantriMaster')?.value || '').trim().toLowerCase();
+        if (!tbody) return;
+
+        const data = (Array.isArray(masterDataSantri) ? masterDataSantri : []).filter(s => {
+            if (!search) return true;
+            return [s.id, s.nama, s.kelas, s.guru].some(v => String(v || '').toLowerCase().includes(search));
+        });
+
+        if (count) count.textContent = `${data.length} santri`;
+        if (!data.length) {
+            tbody.innerHTML = '';
+            empty?.classList.remove('hidden');
+            return;
+        }
+        empty?.classList.add('hidden');
+
+        tbody.innerHTML = data.map((s, i) => `
+            <tr class="hover:bg-emerald-50/60 transition-colors">
+                <td class="p-3 text-center font-bold text-gray-500">${i + 1}</td>
+                <td class="p-3 font-semibold text-gray-700">${escapeHtmlLaporan(s.id || '-')}</td>
+                <td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(s.nama || '-')}</td>
+                <td class="p-3 font-semibold text-emerald-700">${escapeHtmlLaporan(s.kelas || '-')}</td>
+                <td class="p-3 text-gray-600">${escapeHtmlLaporan(s.guru || '-')}</td>
+                <td class="p-3 text-center">
+                    <button type="button" onclick="hapusDataSantriMaster('${String(s.id || '').replace(/'/g, "\\'")}', event)"
+                        class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors inline-flex items-center justify-center"
+                        title="Hapus Santri">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function tambahDataSantriMaster() {
+        const id = String(document.getElementById('masterNewId')?.value || '').trim();
+        const nama = String(document.getElementById('masterNewNama')?.value || '').trim();
+        const kelas = String(document.getElementById('masterNewKelas')?.value || '').trim();
+        const guru = String(document.getElementById('masterNewGuru')?.value || '').trim();
+
+        if (!nama || !kelas) {
+            Toast.fire({ icon: 'warning', title: 'Nama dan kelas wajib diisi' });
+            return;
+        }
+
+        try {
+            Toast.fire({ icon: 'info', title: 'Menyimpan data santri...' });
+            const result = await requestGoogleJsonp({
+                action: 'addMasterSantri',
+                id, nama, kelas, guru
+            });
+
+            if (result?.status !== 'success') {
+                throw new Error(result?.message || 'Gagal menambah santri.');
+            }
+
+            ['masterNewId','masterNewNama','masterNewKelas','masterNewGuru'].forEach(idEl => {
+                const el = document.getElementById(idEl);
+                if (el) el.value = '';
+            });
+
+            Toast.fire({ icon: 'success', title: 'Santri berhasil ditambahkan' });
+            await fetchHistoryFromSheets(false);
+            renderDataSantriMaster();
+            populateClassDropdowns();
+        } catch (err) {
+            Toast.fire({ icon: 'error', title: 'Gagal menambah santri', text: String(err?.message || err) });
+        }
+    }
+
+    function hapusDataSantriMaster(id, event) {
+        if (event) event.stopPropagation();
+        const targetId = String(id || '').trim();
+        if (!targetId) return;
+
+        const santri = masterDataSantri.find(s => String(s.id || '').trim() === targetId);
+        Swal.fire({
+            title: 'Hapus Data Santri?',
+            text: santri?.nama ? `Yakin ingin menghapus ${santri.nama} secara permanen dari Google Sheet?` : 'Data akan dihapus permanen dari Google Sheet.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(async (result) => {
+            if (!result.isConfirmed) return;
+            try {
+                const response = await requestGoogleJsonp({
+                    action: 'deleteMasterSantri',
+                    id: targetId
+                });
+                if (response?.status !== 'success') {
+                    throw new Error(response?.message || 'Data santri tidak ditemukan.');
+                }
+                masterDataSantri = masterDataSantri.filter(s => String(s.id || '').trim() !== targetId);
+                populateClassDropdowns();
+                renderDataSantriMaster();
+                Toast.fire({ icon: 'success', title: 'Santri berhasil dihapus' });
+                setTimeout(() => fetchHistoryFromSheets(false), 250);
+            } catch (err) {
+                Toast.fire({ icon: 'error', title: 'Gagal menghapus santri', text: String(err?.message || err) });
+            }
+        });
+    }
+
+    function manualSync() {
+        const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
+        Toast.fire({ icon: 'info', title: 'Menarik data terbaru...' });
+        fetchHistoryFromSheets(true);
+    }
+    function fetchHistoryFromSheets(isManual = false) {
+        if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
+            const syncText = document.getElementById('syncStatusText');
+            if(syncText) syncText.innerText = "URL BELUM DIATUR";
+            return;
+        }
+        const syncText = document.getElementById('syncStatusText'), syncPing = document.getElementById('syncStatusPing'), syncDot = document.getElementById('syncStatusDot'), btnIcon = document.getElementById('iconSyncManual');
+        if(syncText) syncText.innerText = "SYNCING...";
+        if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+        if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+        
+        fetchGoogleJsonp(function(data) {
+            const offlineAlert = document.getElementById('offlineAlert'); if(offlineAlert) offlineAlert.classList.add('hidden');
+            if(syncText) syncText.innerText = "CONNECTED";
+            if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+            if(btnIcon) btnIcon.classList.remove('fa-spin');
+            
+            if(data && (data.status === 'online' || data.status === 'success')) {
+                if(Array.isArray(data.santri)) {
+                    masterDataSantri = normalizeMasterSantriRows(data.santri);
+                    window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
+                    populateClassDropdowns();
+                    if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
+                }
+                if(Array.isArray(data.history)) {
+                    presensiHistory = data.history.filter(item => !deletedKeys.has(item.key));
+                    renderRiwayatTable();
+                }
+                if(data.acuan && typeof data.acuan === 'object') {
+                    acuanKehadiranData = Object.assign({}, data.acuan);
+                    try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
+                    if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
+                }
+                if(isManual) Toast.fire({ icon: 'success', title: 'Sinkronisasi Berhasil' });
+            }
+        }, function(err) {
+            const offlineAlert = document.getElementById('offlineAlert');
+            if(offlineAlert) offlineAlert.classList.remove('hidden');
+            if(syncText) syncText.innerText = "DISCONNECTED";
+            if(syncPing) syncPing.className = "hidden";
+            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
+            if(btnIcon) btnIcon.classList.remove('fa-spin');
+        });
+    }
+
+    window.onload = function() {
+        loadDarkMode();
+        applyLogo();
+        updateAudioUI();
+        setDateInputsDefault();
+        populateClassDropdowns();
+        fetchHistoryFromSheets();
+        if (syncInterval) clearInterval(syncInterval);
+        syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+        if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+    }
   </script>
 </body>
 </html>
+
+Upgrade ke Plus
