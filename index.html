@@ -394,9 +394,6 @@
       <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-menu-item">
         <i class="fas fa-calendar-alt"></i> <span>Kalender Kelas</span>
       </button>
-      <button onclick="switchTab('persiswa')" id="tab-persiswa" class="nav-menu-item">
-        <i class="fas fa-users"></i> <span>Absen Per Kelas &amp; WA</span>
-      </button>
       <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-menu-item history-menu">
         <i class="fas fa-history"></i> <span class="riwayat-menu-text">Riwayat</span>
       </button>
@@ -405,6 +402,9 @@
       </button>
       <button onclick="switchTab('progressSantri')" id="tab-progressSantri" class="nav-menu-item student-report-menu">
         <i class="fas fa-chart-line"></i> <span>Progress Kehadiran</span>
+      </button>
+      <button onclick="switchTab('waWaliSantri')" id="tab-waWaliSantri" class="nav-menu-item student-report-menu">
+        <i class="fab fa-whatsapp"></i> <span>Laporan WA Wali Santri</span>
       </button>
     </div>
 
@@ -459,38 +459,6 @@
                      </div>
                 </div>
 
-            </div>
-        </div>
-
-        <!-- Tabel Riwayat Pemindaian Hari Ini (Tepat di Bawah Kamera) -->
-        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden flex flex-col">
-            <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border-b border-gray-100">
-                <div>
-                   <h2 class="font-extrabold text-gray-800 text-sm flex items-center gap-2">
-                     <i class="fas fa-clipboard-list text-brand-green"></i> Riwayat Scan Hari Ini
-                   </h2>
-                   <p class="text-[11px] text-gray-500 mt-0.5">Daftar santri yang sudah berhasil melakukan scan presensi.</p>
-                </div>
-            </div>
-            
-            <div class="table-container p-0">
-                <table class="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                        <tr class="bg-emerald-50 text-[10px] text-brand-green uppercase tracking-wider font-extrabold border-b border-emerald-100">
-                            <th class="p-3 pl-4 sm:pl-5 text-center w-10">Batal</th>
-                            <th class="p-3">Waktu Pemindaian</th>
-                            <th class="p-3">Nama Lengkap</th>
-                            <th class="p-3">Kelas (Halaqah)</th>
-                            <th class="p-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody" class="text-xs divide-y divide-gray-50">
-                    </tbody>
-                </table>
-            </div>
-            <div id="emptyHistory" class="p-8 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 flex-grow">
-                 <i class="fas fa-box-open text-2xl mb-2 text-gray-300"></i>
-                 <p class="text-xs font-medium">Belum ada data presensi yang masuk hari ini.</p>
             </div>
         </div>
     </div>
@@ -646,66 +614,6 @@
         </div>
     </div>
 
-    <!-- ================= TAB 4: ABSEN PER KELAS & WA ================= -->
-    <div id="view-persiswa" class="hidden animate-fade-in space-y-5">
-        <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
-          <div class="p-4 sm:p-5 bg-slate-50 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div class="flex items-center gap-3">
-                 <div class="w-10 h-10 rounded-full bg-amber-50 text-brand-accent border border-amber-100 flex items-center justify-center text-sm"><i class="fas fa-users"></i></div>
-                 <div>
-                    <h2 class="font-extrabold text-gray-800 text-base">Absen Kalender Per Kelas & Kirim WA</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">Pilih kelas & bulan untuk memantau absensi sekaligus mengirim rekap ke Wali Santri.</p>
-                 </div>
-              </div>
-              <div>
-                 <button onclick="kirimRekapKelasWA()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-float flex items-center gap-2 active:scale-95">
-                    <i class="fab fa-whatsapp text-lg"></i> Kirim Rekap 1 Kelas ke WA
-                 </button>
-              </div>
-          </div>
-
-          <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div>
-                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
-                    <select id="persiswaKelasSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white font-bold text-brand-green py-2.5"></select>
-                 </div>
-                 <div>
-                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Bulan</label>
-                    <select id="persiswaBulanSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white py-2.5">
-                        <option value="0">Januari</option>
-                        <option value="1">Februari</option>
-                        <option value="2">Maret</option>
-                        <option value="3">April</option>
-                        <option value="4">Mei</option>
-                        <option value="5">Juni</option>
-                        <option value="6">Juli</option>
-                        <option value="7">Agustus</option>
-                        <option value="8">September</option>
-                        <option value="9">Oktober</option>
-                        <option value="10">November</option>
-                        <option value="11">Desember</option>
-                    </select>
-                 </div>
-                 <div>
-                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Tahun</label>
-                    <select id="persiswaTahunSelect" onchange="renderPerSiswaCalendar()" class="modern-input bg-white py-2.5"></select>
-                 </div>
-          </div>
-
-          <!-- Legenda Warna -->
-          <div class="p-3 border-b border-gray-100 bg-slate-50/50 flex flex-wrap gap-5 justify-center text-xs font-bold text-gray-700">
-             <span class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-md bg-emerald-500 shadow-sm"></div> Hadir (✅)</span>
-             <span class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-md bg-blue-500 shadow-sm"></div> Sakit (💊)</span>
-             <span class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-md bg-amber-500 shadow-sm"></div> Izin (ℹ️)</span>
-             <span class="flex items-center gap-1.5"><div class="w-3.5 h-3.5 rounded-md bg-red-500 shadow-sm"></div> Alfa (🅰️)</span>
-          </div>
-
-          <div class="p-4 overflow-x-auto relative w-full bg-white" style="max-height: 65vh;">
-               <div id="persiswaContainer" class="space-y-3.5 min-w-[900px] max-w-4xl mx-auto">
-               </div>
-          </div>
-        </div>
-    </div>
     <!-- ================= TAB 5: RIWAYAT PRESENSI ================= -->
     <div id="view-riwayat" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
@@ -825,6 +733,29 @@
       </div>
     </div>
 
+    <!-- ================= TAB 8: LAPORAN WA WALI SANTRI PERSONAL ================= -->
+    <div id="view-waWaliSantri" class="hidden animate-fade-in space-y-5">
+      <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+        <div class="p-5 sm:p-6 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fab fa-whatsapp"></i></div>
+            <div>
+              <h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">📱 Laporan WA Wali Santri</h2>
+              <p class="text-sm text-emerald-700/70 mt-1">Laporan personal setiap santri dalam bentuk kartu yang rapi, lengkap dengan rekap dan apresiasi sesuai persentase kehadiran.</p>
+            </div>
+          </div>
+          <button onclick="manualSync(); renderWaWaliSantri()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui</button>
+        </div>
+        <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label><select id="waWaliKelasSelect" onchange="prepareWaWaliSantri()" class="modern-input bg-white font-bold text-brand-green py-2.5"><option value="">-- Pilih Kelas --</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Bulan</label><select id="waWaliBulanSelect" onchange="renderWaWaliSantri()" class="modern-input bg-white py-2.5"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tahun</label><select id="waWaliTahunSelect" onchange="renderWaWaliSantri()" class="modern-input bg-white py-2.5"></select></div>
+        </div>
+        <div id="waWaliEmpty" class="p-10 text-center text-gray-400 bg-gray-50/50"><i class="fab fa-whatsapp text-4xl mb-3 text-emerald-200"></i><p class="font-bold text-sm">Pilih kelas untuk melihat laporan personal wali santri.</p></div>
+        <div id="waWaliResult" class="hidden p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-5"></div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Tombol Navigasi Mobile (Bawah) -->
@@ -832,10 +763,10 @@
     <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
     <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
-    <button onclick="switchTab('persiswa')" id="mob-persiswa" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-users text-sm mb-0.5"></i> Per Kelas</button>
     <button onclick="switchTab('riwayat')" id="mob-riwayat" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none text-violet-600"><i class="fas fa-history text-sm mb-0.5"></i> Riwayat</button>
     <button onclick="switchTab('laporanSantri')" id="mob-laporanSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-user-check text-sm mb-0.5"></i> Per Santri</button>
     <button onclick="switchTab('progressSantri')" id="mob-progressSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-line text-sm mb-0.5"></i> Progress</button>
+    <button onclick="switchTab('waWaliSantri')" id="mob-waWaliSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fab fa-whatsapp text-sm mb-0.5"></i> WA Wali</button>
   </nav>
 
   <!-- Modal Pengaturan -->
@@ -1261,11 +1192,12 @@
       'persiswa': { label: 'Absen Per Kelas & WA', icon: 'fas fa-users' },
       'riwayat': { label: 'Riwayat', icon: 'fas fa-history' },
       'laporanSantri': { label: 'Laporan Absen Per Santri', icon: 'fas fa-user-check' },
-      'progressSantri': { label: 'Progress Kehadiran', icon: 'fas fa-chart-line' }
+      'progressSantri': { label: 'Progress Kehadiran', icon: 'fas fa-chart-line' },
+      'waWaliSantri': { label: 'Laporan WA Wali Santri', icon: 'fab fa-whatsapp' }
     };
 
     function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri'].forEach(id => {
+      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri', 'waWaliSantri'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
          if(dBtn) dBtn.classList.remove('active');
@@ -1283,6 +1215,7 @@
       if(tabId === 'riwayat') prepareRiwayatOptions();
       if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
       if(tabId === 'progressSantri') prepareProgressOptions();
+      if(tabId === 'waWaliSantri') prepareWaWaliSantri();
     }
 
     async function toggleCamera() {
@@ -1565,7 +1498,6 @@
                 if(Array.isArray(data.santri) && data.santri.length > 0) syncMasterSantriList(data.santri);
                 
                 if(!document.getElementById('view-kalender').classList.contains('hidden')) renderClassCalendar();
-                if(!document.getElementById('view-persiswa').classList.contains('hidden')) renderPerSiswaCalendar();
                 if(!document.getElementById('view-progressSantri').classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
                 if(isManual) Toast.fire({ icon: 'success', title: 'Data Mutakhir' });
             }
@@ -1880,7 +1812,7 @@
             const persen = Math.round((jumlahHadir / acuanKelas) * 100);
             let progresNote = '';
             if (jumlahHadir >= acuanKelas) {
-                progresNote = jumlahHadir === 12
+                progresNote = jumlahHadir === acuanKelas
                     ? `🌟 *SANTRI RAJIN* — Target ${acuanKelas}× tercapai! MasyaAllah, sangat rajin!`
                     : `🌟 *SANTRI RAJIN* — ${jumlahHadir}× hadir, luar biasa! Melebihi target ${acuanKelas}×.`;
             } else if (jumlahHadir > 0) {
@@ -2221,6 +2153,125 @@
     fetchHistoryFromSheets = function(isManual=false) {
       return _oldFetchProgress(isManual);
     };
+
+    // ============================================================
+    // LAPORAN WA WALI SANTRI PERSONAL
+    // Menggunakan data yang sama dengan Progress Kehadiran + acuan kelas.
+    // ============================================================
+    function getWaWaliStats(santri, bulan, tahun) {
+      const stats = { hadir: 0, sakit: 0, izin: 0, alfa: 0 };
+      const seen = {};
+      presensiHistory.forEach(r => {
+        const idMatch = String(r.idSantri || '').trim().toLowerCase() === String(santri.id || '').trim().toLowerCase();
+        const nameMatch = String(r.namaSantri || '').trim().toLowerCase() === String(santri.nama || '').trim().toLowerCase();
+        if(!idMatch && !nameMatch) return;
+        const dt = parseGoogleSheetDate(r.waktu);
+        if(!dt || dt.getMonth() !== Number(bulan) || dt.getFullYear() !== Number(tahun)) return;
+        const dayKey = dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate();
+        if(seen[dayKey]) return;
+        seen[dayKey] = true;
+        const st = String(r.status || '').toLowerCase();
+        if(st.includes('hadir') && !st.includes('tidak')) stats.hadir++;
+        else if(st.includes('sakit')) stats.sakit++;
+        else if(st.includes('izin')) stats.izin++;
+        else stats.alfa++;
+      });
+      return stats;
+    }
+
+    function getWaWaliPraise(persen, hadir, acuan) {
+      if(hadir === 0) return '🌱 Belum ada kehadiran tercatat pada periode ini. Mari kita mulai kembali dengan semangat dan istiqamah.';
+      if(persen >= 100) return '🌟 MasyaAllah, luar biasa! Kehadiran sudah mencapai target. Semoga terus istiqamah dan semakin rajin menuntut ilmu.';
+      if(persen >= 90) return '🏆 MasyaAllah, sangat baik! Kehadirannya sangat tinggi. Pertahankan semangat dan istiqamahnya ya.';
+      if(persen >= 75) return '👏 Alhamdulillah, kehadirannya baik sekali. Terus tingkatkan semangat agar semakin mendekati target.';
+      if(persen >= 60) return '😊 Alhamdulillah, sudah cukup baik. Yuk, lebih semangat lagi agar kehadirannya semakin meningkat.';
+      if(persen >= 40) return '💪 Semangat terus! Masih ada kesempatan untuk meningkatkan kehadiran dan mengejar target bersama.';
+      return '🌱 Mari kita tingkatkan lagi kehadirannya. Dengan semangat dan dukungan bersama, insyaAllah bisa menjadi lebih baik.';
+    }
+
+    function buildWaWaliText(santri, stats, bulan, tahun) {
+      const acuan = getAcuanKelas(santri.kelas);
+      const persen = Math.round((stats.hadir / acuan) * 100);
+      const monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan)];
+      return `📚 *LAPORAN KEHADIRAN SANTRI* 📚\n\n` +
+        `Assalamu'alaikum Ayah/Bunda/Wali Santri 🙏\n\n` +
+        `👤 *Nama:* ${santri.nama}\n` +
+        `🏫 *Kelas:* ${santri.kelas || '-'}\n` +
+        `📅 *Periode:* ${monthName} ${tahun}\n\n` +
+        `📊 *REKAP KEHADIRAN*\n` +
+        `✅ Hadir : *${stats.hadir}×*\n` +
+        `💊 Sakit : *${stats.sakit}×*\n` +
+        `ℹ️ Izin : *${stats.izin}×*\n` +
+        `🅰️ Alfa : *${stats.alfa}×*\n\n` +
+        `🎯 *Persentase Kehadiran: ${persen}%*\n` +
+        `📌 Acuan ${acuan}× hadir = 100%\n\n` +
+        `💬 *Apresiasi:*\n${getWaWaliPraise(persen, stats.hadir, acuan)}\n\n` +
+        `Semoga Allah senantiasa memberikan kemudahan, kesehatan, dan keberkahan dalam setiap langkah menuntut ilmu. Aamiin 🤲`;
+    }
+
+    function prepareWaWaliSantri() {
+      const kelas = document.getElementById('waWaliKelasSelect');
+      const tahun = document.getElementById('waWaliTahunSelect');
+      const bulan = document.getElementById('waWaliBulanSelect');
+      if(!kelas || !tahun || !bulan) return;
+      const old = kelas.value;
+      kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).forEach(c => {
+        kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`;
+      });
+      if(old) kelas.value = old;
+      if(tahun.options.length === 0) {
+        const y = new Date().getFullYear();
+        for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`;
+        tahun.value = y;
+      }
+      if(!bulan.dataset.initialized) { bulan.value = new Date().getMonth(); bulan.dataset.initialized='1'; }
+      renderWaWaliSantri();
+    }
+
+    function salinLaporanWAWali(text) {
+      navigator.clipboard?.writeText(text).then(() => Toast.fire({icon:'success', title:'Laporan berhasil disalin'})).catch(() => {
+        const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); Toast.fire({icon:'success', title:'Laporan berhasil disalin'});
+      });
+    }
+
+    function kirimWAWaliPersonal(text) {
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+
+    function renderWaWaliSantri() {
+      const kelas=document.getElementById('waWaliKelasSelect'), bulan=document.getElementById('waWaliBulanSelect'), tahun=document.getElementById('waWaliTahunSelect');
+      const empty=document.getElementById('waWaliEmpty'), result=document.getElementById('waWaliResult');
+      if(!kelas || !bulan || !tahun || !empty || !result) return;
+      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); return; }
+      const students=masterDataSantri.filter(s=>s.kelas===kelas.value);
+      if(!students.length) { empty.classList.remove('hidden'); result.classList.add('hidden'); return; }
+      result.innerHTML=students.map((santri,index)=>{
+        const stats=getWaWaliStats(santri,bulan.value,tahun.value);
+        const acuan=getAcuanKelas(santri.kelas);
+        const persen=Math.round((stats.hadir/acuan)*100);
+        const text=buildWaWaliText(santri,stats,bulan.value,tahun.value);
+        const praise=getWaWaliPraise(persen,stats.hadir,acuan);
+        const bar=Math.min(100,persen);
+        return `<article class="rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
+            <div class="flex items-center gap-3 min-w-0"><div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shrink-0">${index+1}</div><div class="min-w-0"><h3 class="font-extrabold text-gray-800 text-base truncate">${escapeHtmlLaporan(santri.nama)}</h3><p class="text-xs text-gray-500 mt-0.5">Kelas ${escapeHtmlLaporan(santri.kelas||'-')}</p></div></div>
+            <div class="text-right shrink-0"><div class="text-2xl font-black text-emerald-600">${persen}%</div><div class="text-[10px] font-bold text-gray-500">kehadiran</div></div>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <div class="rounded-2xl bg-emerald-100/70 p-3 text-center"><div class="text-lg font-black text-emerald-700">${stats.hadir}×</div><div class="text-[10px] font-bold text-emerald-700">✅ Hadir</div></div>
+            <div class="rounded-2xl bg-blue-50 p-3 text-center"><div class="text-lg font-black text-blue-700">${stats.sakit}×</div><div class="text-[10px] font-bold text-blue-700">💊 Sakit</div></div>
+            <div class="rounded-2xl bg-amber-50 p-3 text-center"><div class="text-lg font-black text-amber-700">${stats.izin}×</div><div class="text-[10px] font-bold text-amber-700">ℹ️ Izin</div></div>
+            <div class="rounded-2xl bg-red-50 p-3 text-center"><div class="text-lg font-black text-red-700">${stats.alfa}×</div><div class="text-[10px] font-bold text-red-700">🅰️ Alfa</div></div>
+          </div>
+          <div class="mt-4"><div class="flex justify-between text-[11px] font-bold text-gray-500 mb-1"><span>Acuan ${acuan}× = 100%</span><span>${stats.hadir}× hadir</span></div><div class="h-3 rounded-full bg-gray-200 overflow-hidden"><div class="h-full rounded-full bg-emerald-500" style="width:${bar}%"></div></div></div>
+          <div class="mt-4 rounded-2xl bg-white border border-emerald-100 p-3 text-sm font-semibold text-gray-700 leading-relaxed">${escapeHtmlLaporan(praise)}</div>
+          <div class="mt-4 flex gap-2"><button onclick='salinLaporanWAWali(${JSON.stringify(text)})' class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-extrabold"><i class="fas fa-copy mr-1"></i> Salin</button><button onclick='kirimWAWaliPersonal(${JSON.stringify(text)})' class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-extrabold"><i class="fab fa-whatsapp mr-1"></i> Buka WhatsApp</button></div>
+        </article>`;
+      }).join('');
+      empty.classList.add('hidden'); result.classList.remove('hidden');
+    }
+
 </script>
 </body>
 </html>
