@@ -681,10 +681,14 @@
            const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
            if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderHistoryTable();
            
+           markHistoryWritePending(tempRecord);
            simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
            .then((serverResult) => {
-               setTimeout(() => { fetchHistoryFromSheets(); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 300);
+               if (!serverResult || serverResult.status !== 'success' || serverResult.verified !== true) throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
+               markHistoryWriteComplete(unikey);
+               setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 500);
            }).catch(err => {
+               pendingHistoryWrites.delete(unikey);
                isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
                fetchHistoryFromSheets(); resolve({ error: true, message: String(err) });
            });
@@ -698,12 +702,16 @@
        
        if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderHistoryTable(); Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
 
+       markHistoryWritePending(tempRecord);
        simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
        .then((result) => {
-           if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
+           if (!result || result.status !== 'success' || result.verified !== true) throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
+           markHistoryWriteComplete(unikey);
            Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-           setTimeout(() => { isProcessing = false; fetchHistoryFromSheets(true); }, 300);
+           // Beri waktu callback write selesai, lalu minta snapshot terbaru.
+           setTimeout(() => { isProcessing = false; fetchHistoryFromSheets(true); }, 500);
        }).catch(err => {
+           pendingHistoryWrites.delete(unikey);
            isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') }); fetchHistoryFromSheets();
        });
     }
@@ -738,8 +746,11 @@
                 if (!response || response.status !== 'success' || response.verified !== true) {
                     throw new Error((response && response.message) || 'Google Sheet belum mengonfirmasi penghapusan.');
                 }
-                deletedKeys.add(String(key));
-                presensiHistory = presensiHistory.filter(item => String(item.key) !== String(key));
+                const deletedKey = String(key);
+                historyRevision++;
+                pendingHistoryWrites.delete(deletedKey);
+                deletedKeys.add(deletedKey);
+                presensiHistory = presensiHistory.filter(item => String(item.key) !== deletedKey);
                 renderHistoryTable();
                 Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus dari Google Sheet!' });
                 await new Promise(resolve => setTimeout(resolve, 400));
@@ -1277,9 +1288,54 @@
         fetchHistoryFromSheets(true);
     }
     let syncRequestInFlight = false;
+    // Penanda perubahan lokal. Setiap proses simpan/hapus menaikkan nomor ini.
+    // Respons sync yang dimulai sebelum perubahan tidak boleh menimpa data terbaru.
+    let historyRevision = 0;
+    let pendingHistoryWrites = new Map();
+
+    function markHistoryWritePending(record) {
+        historyRevision++;
+        if (record && record.key) pendingHistoryWrites.set(String(record.key), record);
+        return historyRevision;
+    }
+
+    function markHistoryWriteComplete(key) {
+        if (key) pendingHistoryWrites.delete(String(key));
+        historyRevision++;
+        return historyRevision;
+    }
+
+    function mergeServerHistory(serverHistory, requestRevision) {
+        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
+        // Jika ada write lokal setelah request sync dimulai, jangan mengganti seluruh array
+        // dengan snapshot lama. Gabungkan snapshot server dengan data lokal yang masih pending.
+        const byKey = new Map();
+        incoming.forEach(item => {
+            if (!item || !item.key) return;
+            const k = String(item.key);
+            if (!deletedKeys.has(k)) byKey.set(k, item);
+        });
+
+        const current = Array.isArray(presensiHistory) ? presensiHistory : [];
+        if (requestRevision !== historyRevision) {
+            current.forEach(item => {
+                if (!item || !item.key) return;
+                const k = String(item.key);
+                if (pendingHistoryWrites.has(k) && !deletedKeys.has(k)) byKey.set(k, item);
+            });
+        }
+        pendingHistoryWrites.forEach((item, k) => {
+            if (!deletedKeys.has(k)) byKey.set(k, item);
+        });
+
+        presensiHistory = Array.from(byKey.values());
+        renderRiwayatTable();
+    }
+
     function fetchHistoryFromSheets(isManual = false) {
         if (syncRequestInFlight) return;
         syncRequestInFlight = true;
+        const requestRevision = historyRevision;
         if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
             const syncText = document.getElementById('syncStatusText');
             if(syncText) syncText.innerText = "URL BELUM DIATUR";
@@ -1306,8 +1362,7 @@
                     if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
                 }
                 if(Array.isArray(data.history)) {
-                    presensiHistory = data.history.filter(item => !deletedKeys.has(item.key));
-                    renderRiwayatTable();
+                    mergeServerHistory(data.history, requestRevision);
                 }
                 if(data.acuan && typeof data.acuan === 'object') {
                     acuanKehadiranData = Object.assign({}, data.acuan);
@@ -1341,4 +1396,3 @@
   </script>
 </body>
 </html>
-
