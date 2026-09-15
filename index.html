@@ -1024,7 +1024,7 @@
     
     // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v2';
+    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v3';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
@@ -1218,7 +1218,7 @@
     function handleLogoError(imgEl) { imgEl.classList.add('hidden'); document.getElementById('defaultLogoIcon')?.classList.remove('hidden'); }
 
     function populateClassDropdowns() {
-      const uniqueClasses = [...new Set(masterDataSantri.map(s => s.kelas))].filter(Boolean).sort();
+      const uniqueClasses = [...new Set([...(Array.isArray(window.__serverMasterClasses) ? window.__serverMasterClasses : []), ...masterDataSantri.map(s => s.kelas)])].filter(Boolean).sort((a,b) => String(a).localeCompare(String(b), 'id'));
       const createOptions = (elId) => {
           const el = document.getElementById(elId);
           if(!el) return;
@@ -1857,6 +1857,12 @@
                     renderHistoryTable();
                 }
                 if(Array.isArray(data.santri)) syncMasterSantriList(data.santri);
+                if(Array.isArray(data.classes) && data.classes.length) {
+                    window.__serverMasterClasses = data.classes.map(v => String(v || '').trim()).filter(Boolean);
+                    populateClassDropdowns();
+                } else {
+                    window.__serverMasterClasses = [];
+                }
                 if(data.acuan && typeof data.acuan === 'object') {
                     let localAcuan = {};
                     try { localAcuan = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); } catch(e) {}
