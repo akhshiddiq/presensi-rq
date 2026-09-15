@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { background-color: #f8fafc; color: #334155; font-family: 'Inter', sans-serif; }
@@ -99,8 +100,11 @@
       #view-riwayat .riwayat-table-body td { padding: 13px 11px; } #view-riwayat .riwayat-date { font-size: 15px; }
       #view-riwayat .riwayat-name { font-size: 16px; } #view-riwayat .riwayat-class { font-size: 15px; } #view-riwayat .riwayat-status { font-size: 14px; }
     }
+    .syncing-dot { animation: pulse-green 1.5s infinite; }
+    @keyframes pulse-green { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
   <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-md">
     <div class="flex items-center gap-3 w-full sm:w-auto mb-1.5 sm:mb-0">
@@ -121,7 +125,7 @@
     </div>
     
     <div class="flex items-center gap-2 self-end sm:self-auto">
-      <a href="https://docs.google.com/spreadsheets/d/1iBn4kM63rVdsc2v-uPsfGDrn8w7BQhWmQLIZH7-pKhU/edit?gid=1160146646#gid=1160146646" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
+      <a href="https://docs.google.com/spreadsheets/d/1ZHSSeZ2l65phUsf7RVCpX5uffuHRSs-v56wXaDMhVjU/edit" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
       <button onclick="manualSync()" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-blue-600/80 hover:bg-blue-500 backdrop-blur-md rounded-lg transition-all shadow-sm border border-blue-400/30 text-[11px] font-bold" title="Tarik Data Terbaru Sekarang"><i id="iconSyncManual" class="fas fa-sync-alt text-blue-200"></i> <span class="hidden sm:inline">Sinkron</span></button>
       <button onclick="cycleAudioMode()" id="btnHeaderAudio" class="flex items-center gap-1.5 px-2.5 py-1.5 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[11px] font-medium" title="Ubah Mode Suara"><i id="audioIcon" class="fas fa-robot text-brand-gold text-[12px]"></i><span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span></button>
       <button onclick="toggleDarkMode()" id="btnDarkMode" class="flex items-center justify-center w-9 h-8 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[12px]" title="Ganti Mode Malam / Siang"><i id="darkModeIcon" class="fas fa-moon"></i></button>
@@ -143,7 +147,7 @@
     
     <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-xl shadow-sm items-start gap-3">
         <i class="fas fa-wifi-slash mt-1 text-xs"></i>
-        <div><h4 class="font-bold text-xs">Koneksi Terputus</h4><p class="text-[11px] mt-0.5">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p></div>
+        <div><h4 class="font-bold text-xs">Koneksi Terputus / Menyinkronkan</h4><p class="text-[11px] mt-0.5">Sistem sedang mencoba menghubungi Google Sheet Server...</p></div>
     </div>
 
     <div id="view-live" class="space-y-5 animate-fade-in block">
@@ -247,11 +251,11 @@
     <div id="view-riwayat" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
         <div class="p-5 sm:p-6 bg-violet-50 border-b border-violet-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 border border-violet-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-history"></i></div><div><h2 class="font-extrabold text-violet-900 text-2xl sm:text-3xl">Riwayat Presensi</h2><p class="text-sm text-violet-700/70 mt-1">Daftar seluruh riwayat presensi.</p></div></div>
+          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 border border-violet-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-history"></i></div><div><h2 class="font-extrabold text-violet-900 text-2xl sm:text-3xl">Riwayat Presensi</h2><p class="text-sm text-violet-700/70 mt-1">Daftar riwayat seluruh presensi multi-device yang digabungkan dari Server.</p></div></div>
           <button onclick="manualSync()" class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Muat Ulang Riwayat</button>
         </div>
         <div class="p-4 bg-violet-50/50 border-b border-violet-100 flex items-center justify-between gap-2">
-          <span class="font-extrabold text-violet-800 text-base"><i class="fas fa-list mr-2"></i> Riwayat Presensi</span><span class="text-sm font-bold text-violet-700"><span id="riwayatCount">0</span> data</span>
+          <span class="font-extrabold text-violet-800 text-base"><i class="fas fa-list mr-2"></i> Riwayat Presensi <span id="syncingIndicator" class="hidden text-xs text-violet-500 font-medium ml-2"><i class="fas fa-circle syncing-dot"></i> Sinkronisasi background aktif</span></span><span class="text-sm font-bold text-violet-700"><span id="riwayatCount">0</span> data</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse min-w-[720px]">
@@ -268,7 +272,7 @@
             <tbody id="riwayatTableBody" class="divide-y divide-gray-50 riwayat-table-body"></tbody>
           </table>
         </div>
-        <div id="emptyRiwayat" class="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50"><i class="fas fa-history text-3xl mb-2 text-violet-200"></i><p class="text-sm font-medium">Belum ada riwayat presensi yang sesuai.</p></div>
+        <div id="emptyRiwayat" class="p-10 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50"><i class="fas fa-history text-3xl mb-2 text-violet-200"></i><p class="text-sm font-medium">Belum ada riwayat presensi yang dimuat.</p></div>
       </div>
     </div>
 
@@ -337,18 +341,18 @@
     <div id="view-dataSantri" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
         <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-user-graduate"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">👨‍🎓 Data Nama Santri</h2><p class="text-sm text-emerald-700/70 mt-1">Sumber utama: Google Sheet <b>Data Master Absensi</b>. Perubahan di Sheet otomatis dipakai oleh semua menu presensi.</p></div></div>
+          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-user-graduate"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">👨‍🎓 Data Nama Santri</h2><p class="text-sm text-emerald-700/70 mt-1">Sumber utama: Google Sheet <b>Data Master Absensi</b>. Perubahan tersinkron di seluruh device.</p></div></div>
           <button onclick="manualSync(); renderDataSantriMaster();" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Sinkronkan</button>
         </div>
         <div class="p-4 sm:p-6 border-b border-gray-100 bg-white">
-          <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 mb-5"><p class="font-extrabold text-emerald-900 text-sm">Satu sumber data untuk seluruh sistem</p><p class="text-xs text-emerald-800/80 mt-1 leading-relaxed">Tambah/hapus langsung di Google Sheet akan tersinkron ke web. Anda juga dapat menambah santri dari form di bawah; data akan ditulis ke Sheet lalu otomatis muncul di semua menu.</p></div>
+          <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 mb-5"><p class="font-extrabold text-emerald-900 text-sm">Satu sumber data untuk seluruh sistem</p><p class="text-xs text-emerald-800/80 mt-1 leading-relaxed">Selalu terhubung dengan Google Sheets. Tidak ada data yang tersimpan secara lokal/hardcode di HTML ini. Data ditambahkan lewat form di bawah akan langsung dikirim ke Server.</p></div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3"><input id="masterNewId" class="modern-input" placeholder="ID Santri (contoh: IDSRQ090)"><input id="masterNewNama" class="modern-input" placeholder="Nama Santri"><input id="masterNewKelas" class="modern-input" placeholder="Kelas"><input id="masterNewGuru" class="modern-input" placeholder="Guru / Ustadz"></div>
-          <div class="flex flex-wrap gap-2 mt-3"><button onclick="tambahDataSantriMaster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-user-plus"></i> Tambah Santri</button><button onclick="renderDataSantriMaster();" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-list"></i> Tampilkan Data</button></div>
+          <div class="flex flex-wrap gap-2 mt-3"><button onclick="tambahDataSantriMaster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-user-plus"></i> Tambah Santri ke Server</button><button onclick="renderDataSantriMaster();" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-list"></i> Tampilkan Data</button></div>
         </div>
         <div class="p-4 sm:p-6">
           <div class="flex flex-col sm:flex-row gap-3 justify-between mb-4"><input id="searchDataSantriMaster" oninput="renderDataSantriMaster()" class="modern-input sm:max-w-md" placeholder="Cari ID / nama / kelas / guru..."><div id="dataSantriMasterCount" class="text-sm font-extrabold text-emerald-700 flex items-center">0 santri</div></div>
           <div class="overflow-x-auto rounded-2xl border border-gray-200"><table class="w-full text-sm"><thead class="bg-emerald-50 text-emerald-900 font-extrabold"><tr><th class="p-3 text-center">No</th><th class="p-3 text-left">ID</th><th class="p-3 text-left">Nama Santri</th><th class="p-3 text-left">Kelas</th><th class="p-3 text-left">Guru / Ustadz</th><th class="p-3 text-center">Aksi</th></tr></thead><tbody id="dataSantriMasterBody" class="divide-y divide-gray-100 bg-white"></tbody></table></div>
-          <div id="dataSantriMasterEmpty" class="hidden p-8 text-center text-gray-400 font-medium">Belum ada data santri dari Google Sheet.</div>
+          <div id="dataSantriMasterEmpty" class="hidden p-8 text-center text-gray-400 font-medium">Belum ada data santri dari Google Sheet. Sedang memuat...</div>
         </div>
       </div>
     </div>
@@ -356,14 +360,14 @@
     <div id="view-acuanKehadiran" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
         <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-bullseye"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">🎯 Acuan Kehadiran 100%</h2><p class="text-sm text-emerald-700/70 mt-1">Tentukan jumlah kehadiran yang menjadi patokan 100% untuk setiap kelas. Acuan ini menjadi patokan bersama seluruh laporan.</p></div></div>
-          <button onclick="manualSync(); prepareAcuanKehadiran();" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui Data</button>
+          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-bullseye"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">🎯 Acuan Kehadiran 100%</h2><p class="text-sm text-emerald-700/70 mt-1">Tentukan jumlah kehadiran yang menjadi patokan 100% untuk setiap kelas. Disinkronkan dengan Google Sheets.</p></div></div>
+          <button onclick="manualSync(); prepareAcuanKehadiran();" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui Data Server</button>
         </div>
         <div class="p-4 sm:p-6 bg-white">
-          <div class="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 mb-5"><div class="flex items-start gap-3"><div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i class="fas fa-info-circle"></i></div><div><p class="font-extrabold text-amber-900 text-sm">Patokan utama sistem</p><p class="text-xs text-amber-800/80 mt-1 leading-relaxed">Contoh: jika Abdurrahman diisi <b>12</b>, maka 12 kali hadir = 100%. Angka ini otomatis digunakan oleh <b>Kartu Absen, Progress Kehadiran, dan laporan WA</b>.</p></div></div></div>
+          <div class="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 mb-5"><div class="flex items-start gap-3"><div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i class="fas fa-info-circle"></i></div><div><p class="font-extrabold text-amber-900 text-sm">Patokan utama sistem</p><p class="text-xs text-amber-800/80 mt-1 leading-relaxed">Angka ini otomatis digunakan oleh <b>Kartu Absen, Progress Kehadiran, dan laporan WA</b>.</p></div></div></div>
           <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
             <div class="hidden sm:grid grid-cols-[70px_1fr_220px_120px] bg-emerald-50 text-emerald-900 text-xs font-extrabold uppercase tracking-wide"><div class="p-4 text-center">No</div><div class="p-4">Nama Kelas</div><div class="p-4">Acuan 100%</div><div class="p-4 text-center">Aksi</div></div>
-            <div id="acuanKehadiranList" class="divide-y divide-gray-100 bg-white"><div class="p-8 text-center text-gray-400 text-sm font-medium">Memuat daftar kelas...</div></div>
+            <div id="acuanKehadiranList" class="divide-y divide-gray-100 bg-white"><div class="p-8 text-center text-gray-400 text-sm font-medium">Memuat daftar kelas dari Server...</div></div>
           </div>
         </div>
       </div>
@@ -372,7 +376,7 @@
     <div id="view-progressSantri" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
         <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-chart-line"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">📈 Progress Kehadiran</h2><p class="text-sm text-emerald-700/70 mt-1">Pantau progres kehadiran santri per kelas. Acuan 100% dapat diatur berbeda untuk setiap kelas dan otomatis digunakan pada laporan terkait.</p></div></div>
+          <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-chart-line"></i></div><div><h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">📈 Progress Kehadiran</h2><p class="text-sm text-emerald-700/70 mt-1">Pantau progres kehadiran santri per kelas berdasarkan acuan Server.</p></div></div>
           <button onclick="manualSync(); renderProgressSantri()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui</button>
         </div>
         <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -408,9 +412,9 @@
                <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-sm bg-white py-2.5"><option value="ai">🤖 Suara Gemini AI Studio (Ramah & Motivasi)</option><option value="sfx">🔔 Efek Suara (Blup / Ting-Dong / Laser)</option><option value="off">🔇 Mute / Tanpa Suara</option></select>
                <div id="sfxOptionsContainer" class="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-sm"><span class="font-bold text-gray-600">Jenis Efek Suara:</span><select id="modalSfxType" onchange="updateSfxType(this.value)" class="p-2 rounded-lg border border-gray-200 text-xs font-semibold bg-white outline-none"><option value="blup">🫧 Blup (Gelembung Air)</option><option value="tingdong">🔔 Ting-Dong (Melodis)</option><option value="laser">⚡ Laser Star Wars (Pew Pew!)</option></select></div>
             </div>
-            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Barakallah fiikum"* (Suara Ikhwan Ramah).</p></div>
+            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Barakallah fiikum"*.</p></div>
             <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Google Apps Script</label><input type="text" id="inputUrlSheet" class="modern-input font-mono text-xs py-2.5" placeholder="Tempel URL Google Apps Script /exec di sini"></div>
-            <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="text" id="inputUrlLogo" class="modern-input text-xs py-2.5" placeholder="https://lh3.googleusercontent.com/d/... atau https://..."></div>
+            <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="text" id="inputUrlLogo" class="modern-input text-xs py-2.5" placeholder="https://..."></div>
         </div>
         <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3.5 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95 text-sm">Simpan Pengaturan</button>
     </div>
@@ -421,23 +425,24 @@
     <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-lg w-full relative z-10 animate-fade-in border border-gray-100 flex flex-col max-h-[90vh]">
         <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3 shrink-0"><h3 class="text-base font-extrabold text-amber-600"><i class="fab fa-whatsapp mr-2"></i> Draft Laporan WhatsApp</h3><button onclick="document.getElementById('waModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button></div>
         <div class="mb-4 overflow-y-auto flex-grow bg-slate-50 p-4 rounded-xl border border-gray-200 shadow-inner"><pre id="waPreviewText" class="text-xs font-mono whitespace-pre-wrap leading-relaxed text-gray-700"></pre></div>
-        <div class="flex gap-3 shrink-0 mt-2"><button onclick="salinTeksWA()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-300 transition-all text-sm flex items-center justify-center gap-2"><i class="fas fa-copy"></i> Salin Teks</button><button onclick="kirimLaporanWAAli()" class="flex-1 bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-all shadow-[0_5px_20px_-5px_rgba(16,185,129,0.4)] text-sm flex items-center justify-center gap-2"><i class="fas fa-paper-plane"></i> Kirim ke +628577...</button></div>
+        <div class="flex gap-3 shrink-0 mt-2"><button onclick="salinTeksWA()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-300 transition-all text-sm flex items-center justify-center gap-2"><i class="fas fa-copy"></i> Salin Teks</button><button onclick="kirimLaporanWAAli()" class="flex-1 bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-all shadow-[0_5px_20px_-5px_rgba(16,185,129,0.4)] text-sm flex items-center justify-center gap-2"><i class="fas fa-paper-plane"></i> Kirim WA</button></div>
     </div>
   </div>
 
   <script>
-    const MASTER_KELAS_TETAP = ['Abdurrahman','Abu Ubaidah','Zubair','Ali','Abu Bakar','Bilal','Hamzah','Fatimah','Umar','Utsman'];
-    // Data santri HANYA diambil dari Google Sheet aktif. Tidak ada data master santri bawaan di HTML.
+    // DATA SOURCE OF TRUTH = SERVER (Tidak ada data master yang di-hardcode)
     let masterDataSantri = [];
     let serverMasterLoaded = false;
-    let cachedMasterClasses = [];
-    try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
-    const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
+    
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
+    // UPDATE SCRIPT URL VERSION TO CLEAR STALE CACHE
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQkZPiNBCcI58kWexHTn6lbtx21fvqqhHc4-xNBb-2zDJzalsIQRoet99fC_LttYMTXg/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v12-SERVER-MASTER-ONLY';
+    const SCRIPT_URL_VERSION = '2026-09-16-MULTI-DEVICE-SYNC-V1';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
-    if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
+    if (storedScriptVersion !== SCRIPT_URL_VERSION) { 
+        localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); 
+        localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); 
+    }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
@@ -445,12 +450,18 @@
     let sfxType = localStorage.getItem('sfxType') || 'blup';
     let currentFacingMode = 'environment';
     
+    // STATE MANAGEMENTS
     let presensiHistory = []; 
     let acuanKehadiranData = {};
-    let deletedKeys = new Set();
-    let deletedMasterIds = new Set();
-    let newlyAddedKeysMap = new Map();
+    
+    // CONCURRENCY QUEUE & SYNC STATE
     let syncInterval;
+    let syncRequestInFlight = false;
+    let syncRequestedAfterFlight = false;
+    let attendanceWriteQueue = Promise.resolve(); // Memastikan writes dilakukan sequential di lokal, menghindari race
+    let pendingHistoryWrites = new Map(); // Map untuk mem-bypass snapshot lama dengan transaksi lokal yang belum terkonfirmasi
+    let deletedKeys = new Set();
+    
     let html5QrCode = null;
     let isProcessing = false;
     let isCameraOn = false;
@@ -459,18 +470,12 @@
     let audioCtx = null;
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true });
 
-    function setDateInputsDefault() {
-        const today = new Date().toISOString().split('T')[0];
-        const di = document.getElementById('scanDateInput');
-        const mi = document.getElementById('manualDateInput');
-        if(di && !di.value) di.value = today;
-        if(mi && !mi.value) mi.value = today;
-    }
     function getAudioContext() {
         if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) audioCtx = new AudioContext(); }
         if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
         return audioCtx;
     }
+
     function playSynthSound(type) {
         try {
             const ctx = getAudioContext(); if (!ctx) return;
@@ -500,12 +505,7 @@
             }
         } catch (e) { console.warn("Audio synth error:", e); }
     }
-    function playAudioFeedback(type, santri) {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        if (audioMode === 'off') return;
-        if (audioMode === 'sfx') playSynthSound(type === 'ok' ? sfxType : 'blup');
-        else if (audioMode === 'ai') { if (type === 'ok') playGeminiTtsGreeting(); else playSynthSound('blup'); }
-    }
+
     function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i); return bytes.buffer; }
     function pcmToWav(pcm16Data, sampleRate = 24000) {
         const numChannels = 1, bytesPerSample = 2, blockAlign = numChannels * bytesPerSample, byteRate = sampleRate * blockAlign;
@@ -518,6 +518,7 @@
         let offset = 44; for (let i = 0; i < pcm16Data.length; i++, offset += 2) view.setInt16(offset, pcm16Data[i], true);
         return new Blob([buffer], { type: 'audio/wav' });
     }
+
     async function playGeminiTtsGreeting() {
         if (!geminiApiKey || geminiApiKey.trim() === "") { playSynthSound('blup'); return; }
         try {
@@ -535,57 +536,248 @@
             } else playSynthSound('blup');
         } catch (err) { playSynthSound('blup'); }
     }
-    function updateAudioUI() {
-        const btnIcon = document.getElementById('audioIcon'), btnLabel = document.getElementById('audioLabelHeader');
-        const modalSelect = document.getElementById('modalAudioMode'), modalSfxSelect = document.getElementById('modalSfxType'), modalApiKeyInput = document.getElementById('inputGeminiApiKey'), sfxContainer = document.getElementById('sfxOptionsContainer');
-        if (modalSelect) modalSelect.value = audioMode; if (modalSfxSelect) modalSfxSelect.value = sfxType; if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
-        if (sfxContainer) { if (audioMode === 'sfx') sfxContainer.classList.remove('hidden'); else sfxContainer.classList.add('hidden'); }
-        if (audioMode === 'ai') { btnIcon.className = "fas fa-robot text-brand-gold text-[12px]"; btnLabel.innerText = "Gemini AI Studio"; } else if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Efek Suara (" + sfxType.toUpperCase() + ")"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
-    }
-    function cycleAudioMode() {
-        getAudioContext();
-        if (audioMode === 'ai') audioMode = 'sfx'; else if (audioMode === 'sfx') audioMode = 'off'; else audioMode = 'ai';
-        localStorage.setItem('audioMode', audioMode); updateAudioUI();
-        if (audioMode === 'sfx') playSynthSound(sfxType); else if (audioMode === 'ai') playGeminiTtsGreeting();
-    }
-    function updateAudioModeFromSelect(val) { audioMode = val; localStorage.setItem('audioMode', audioMode); updateAudioUI(); }
-    function updateSfxType(val) { sfxType = val; localStorage.setItem('sfxType', sfxType); playSynthSound(sfxType); updateAudioUI(); }
 
-    function applyLogo() {
-      const img = document.getElementById('appLogo'), defIcon = document.getElementById('defaultLogoIcon');
-      if (LOGO_URL && LOGO_URL.trim() !== '') { img.src = LOGO_URL; img.classList.remove('hidden'); defIcon.classList.add('hidden'); } else { img.classList.add('hidden'); defIcon.classList.remove('hidden'); }
+    function playAudioFeedback(type, santri) {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (audioMode === 'off') return;
+        if (audioMode === 'sfx') playSynthSound(type === 'ok' ? sfxType : 'blup');
+        else if (audioMode === 'ai') { if (type === 'ok') playGeminiTtsGreeting(); else playSynthSound('blup'); }
     }
-    function handleLogoError(imgEl) { imgEl.classList.add('hidden'); document.getElementById('defaultLogoIcon')?.classList.remove('hidden'); }
-    function populateClassDropdowns() {
-      const sumberKelas = [...MASTER_KELAS_TETAP, ...(Array.isArray(cachedMasterClasses) ? cachedMasterClasses : []), ...(Array.isArray(window.__serverMasterClasses) ? window.__serverMasterClasses : []), ...masterDataSantri.map(s => s.kelas)];
-      const uniqueClasses = [...new Set(sumberKelas.map(c => String(c || '').trim()).filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b), 'id'));
-      const createOptions = (elId) => {
-          const el = document.getElementById(elId); if(!el) return;
-          const currVal = el.value; el.innerHTML = `<option value="">-- Pilih Kelas --</option>`;
-          uniqueClasses.forEach(c => el.innerHTML += `<option value="${c}">${c}</option>`);
-          if (currVal && uniqueClasses.includes(currVal)) el.value = currVal;
-      };
-      createOptions('manualKelasSelect'); createOptions('kalenderKelasSelect');
+
+    function makeScriptUrl(extraParams = {}) {
+        const base = String(SCRIPT_URL || '').trim(), separator = base.includes('?') ? '&' : '?';
+        const params = new URLSearchParams(extraParams); return base + separator + params.toString();
     }
-    populateClassDropdowns();
     
-    function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'riwayat', 'laporanSantri', 'progressSantri', 'acuanKehadiran', 'dataSantri'].forEach(id => {
-         document.getElementById(`view-${id}`)?.classList.add('hidden');
-         let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
-         if(dBtn) dBtn.classList.remove('active');
-         if(mBtn) { mBtn.classList.remove('text-brand-green', 'active'); mBtn.classList.add('text-gray-400'); }
-      });
-      document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
-      document.getElementById(`tab-${tabId}`)?.classList.add('active');
-      let mobBtn = document.getElementById(`mob-${tabId}`);
-      if(mobBtn){ mobBtn.classList.add('active'); mobBtn.classList.remove('text-gray-400'); if(tabId === 'riwayat'){ mobBtn.classList.add('text-violet-600'); mobBtn.classList.remove('text-brand-green'); } else { mobBtn.classList.add('text-brand-green'); mobBtn.classList.remove('text-violet-600'); } }
-      if(tabId === 'kalender') prepareKalenderOptions();
-      if(tabId === 'riwayat') renderRiwayatTable();
-      if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
-      if(tabId === 'progressSantri') prepareProgressOptions();
-      if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
-      if(tabId === 'dataSantri') renderDataSantriMaster();
+    function fetchGoogleJsonp(onSuccess, onError, extraParams = {}) {
+        if (!SCRIPT_URL || !SCRIPT_URL.includes('script.google.com/macros/s/')) { if (typeof onError === 'function') onError(new Error('URL Google Apps Script tidak valid.')); return; }
+        // CRITICAL FOR CONCURRENCY: Ensure absolutely unique callback names per request so they don't overwrite each other.
+        const callbackName = '__presensiJsonp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+        const script = document.createElement('script'); let finished = false;
+        
+        const cleanup = () => { finished = true; try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); };
+        
+        window[callbackName] = function(data) { if (finished) return; cleanup(); if (typeof onSuccess === 'function') onSuccess(data); };
+        script.onerror = function() { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.')); };
+        
+        script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() })); 
+        script.async = true; 
+        document.head.appendChild(script);
+        
+        setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 30000);
+    }
+    
+    function requestGoogleJsonp(payload) {
+        return new Promise((resolve, reject) => {
+            fetchGoogleJsonp(data => { if (data && (data.status === 'success' || data.status === 'online' || data.status === 'warning')) resolve(data); else reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.')); }, reject, payload || {});
+        });
+    }
+
+    // Mencegah data pending tertimpa oleh snapshot sheet lama sebelum sheet berhasil terupdate
+    function mergeServerHistory(serverHistory) {
+        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
+        const byKey = new Map();
+        
+        // 1. Add all server data
+        incoming.forEach(item => {
+            if (!item || !item.key) return;
+            const k = String(item.key);
+            if (!deletedKeys.has(k)) byKey.set(k, Object.assign({}, item, { sync: 'saved' }));
+        });
+
+        // 2. Overlay pending local writes (ini memastikan HP tidak kehilangan record yang sedang dikirim)
+        pendingHistoryWrites.forEach((item, k) => {
+            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
+        });
+
+        presensiHistory = Array.from(byKey.values());
+        renderRiwayatTable();
+    }
+
+    function fetchHistoryFromSheets(isManual = false) {
+        if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
+        syncRequestInFlight = true;
+        
+        if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
+            document.getElementById('syncStatusText').innerText = "URL BELUM DIATUR";
+            syncRequestInFlight = false;
+            return;
+        }
+        
+        document.getElementById('syncingIndicator')?.classList.remove('hidden');
+        document.getElementById('syncStatusText').innerText = "SYNCING...";
+        document.getElementById('syncStatusPing').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+        document.getElementById('syncStatusDot').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+        document.getElementById('iconSyncManual').classList.add('fa-spin');
+        
+        fetchGoogleJsonp(function(data) {
+            syncRequestInFlight = false;
+            document.getElementById('offlineAlert').classList.add('hidden');
+            document.getElementById('syncingIndicator')?.classList.add('hidden');
+            document.getElementById('syncStatusText').innerText = "CONNECTED";
+            document.getElementById('syncStatusPing').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+            document.getElementById('syncStatusDot').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+            document.getElementById('iconSyncManual').classList.remove('fa-spin');
+            
+            if(data && (data.status === 'online' || data.status === 'success')) {
+                // MASTER SANTRI - Source of truth dari Google Sheet
+                if(Array.isArray(data.santri)) {
+                    masterDataSantri = data.santri.filter(s => String(s.id).trim() && String(s.nama).trim());
+                    serverMasterLoaded = true;
+                    populateClassDropdowns();
+                    if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
+                    if(!document.getElementById('view-manual')?.classList.contains('hidden')) renderManualStudents();
+                    if(!document.getElementById('view-laporanSantri')?.classList.contains('hidden')) renderKartuAbsenStudents();
+                }
+                // RIWAYAT - Merge dengan pending
+                if(Array.isArray(data.history)) {
+                    mergeServerHistory(data.history);
+                }
+                // ACUAN 
+                if(data.acuan && typeof data.acuan === 'object') {
+                    acuanKehadiranData = Object.assign({}, data.acuan);
+                    if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
+                }
+                if(isManual) Toast.fire({ icon: 'success', title: 'Data sinkron dengan Server' });
+            }
+            if (syncRequestedAfterFlight) {
+                syncRequestedAfterFlight = false;
+                setTimeout(() => fetchHistoryFromSheets(false), 500);
+            }
+        }, function(err) {
+            syncRequestInFlight = false;
+            if (syncRequestedAfterFlight) {
+                syncRequestedAfterFlight = false;
+                setTimeout(() => fetchHistoryFromSheets(false), 500);
+            }
+            document.getElementById('offlineAlert').classList.remove('hidden');
+            document.getElementById('syncingIndicator')?.classList.add('hidden');
+            document.getElementById('syncStatusText').innerText = "DISCONNECTED";
+            document.getElementById('syncStatusPing').className = "hidden";
+            document.getElementById('syncStatusDot').className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
+            document.getElementById('iconSyncManual').classList.remove('fa-spin');
+        }, { action: 'getData' });
+    }
+
+    function manualSync() {
+        Toast.fire({ icon: 'info', title: 'Menarik data terbaru dari server...' });
+        fetchHistoryFromSheets(true);
+    }
+
+    function getCustomDateForSubmission(isLive = true) {
+        const inputId = isLive ? 'scanDateInput' : 'manualDateInput'; 
+        const dateVal = document.getElementById(inputId).value; 
+        const now = new Date();
+        if(dateVal) {
+            const [y, m, d] = dateVal.split('-'); 
+            const customDate = new Date(y, m-1, d, now.getHours(), now.getMinutes(), now.getSeconds());
+            return { waktu: `${d}/${m}/${y} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][customDate.getDay()] };
+        }
+        return { waktu: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][now.getDay()] };
+    }
+
+    // Fungsi utama menulis data dengan queue agar aman ketika di spam (Concurrent Safe lokal)
+    function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
+        // UNIQUE KEY (UUID/Idempotency key) untuk mencegah duplikasi di multi-device
+        const uniqueKey = "WEB_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
+        
+        const tempRecord = { key: uniqueKey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading' };
+        
+        // Simpan sbg pending
+        pendingHistoryWrites.set(uniqueKey, tempRecord);
+        
+        // Tampilkan langsung di UI (Optimistic UI update)
+        if(!Array.isArray(presensiHistory)) presensiHistory = [];
+        presensiHistory.unshift(tempRecord);
+        renderRiwayatTable();
+        Toast.fire({ icon: 'success', title: `${namaSantri} (${status}) - Mengirim...` });
+
+        // Push ke queue promise
+        attendanceWriteQueue = attendanceWriteQueue.then(() => {
+            return requestGoogleJsonp({
+                action: 'saveAttendance',
+                idSantri: idSantri,
+                namaSantri: namaSantri,
+                kelas: kelas,
+                guru: guru,
+                status: status,
+                key: uniqueKey,
+                waktu: timeObj.waktu,
+                hari: timeObj.hari
+            }).then((result) => {
+                if (!result || result.status !== 'success') throw new Error(result?.message || 'Gagal menyimpan');
+                
+                // Berhasil tersimpan di server, hapus dari pending karena akan ditarik saat sync berikutnya.
+                // Tapi set sbg saved di UI sementara.
+                pendingHistoryWrites.delete(uniqueKey);
+                
+                const idx = presensiHistory.findIndex(x => String(x.key) === uniqueKey);
+                if (idx >= 0) {
+                    presensiHistory[idx].sync = 'saved';
+                    renderRiwayatTable();
+                }
+                Toast.fire({ icon: 'success', title: 'Tersimpan ke Server' });
+                fetchHistoryFromSheets(); // Trigger sync
+            }).catch(err => {
+                // Hapus dari pending, anggap gagal
+                pendingHistoryWrites.delete(uniqueKey);
+                presensiHistory = presensiHistory.filter(x => String(x.key) !== uniqueKey);
+                renderRiwayatTable();
+                Toast.fire({ icon: 'error', title: 'Gagal mengirim ke Server', text: String(err?.message || err) });
+            });
+        }).catch(() => {}); // Catch chain error if any
+    }
+
+    // Fungsi async untuk Bulk Manual (menunggu tiap item sebelum lanjut, concurrency aman lewat queue)
+    async function processAbsenManualBulk() {
+        getAudioContext();
+        const checkedCbs = document.querySelectorAll('.manual-student-cb:checked'), status = document.getElementById('statusManualBulk').value, cTime = getCustomDateForSubmission(false);
+        if (checkedCbs.length === 0) { Toast.fire({ icon: 'warning', title: 'Belum ada santri yang dicentang!' }); return; }
+        
+        isProcessing = true; 
+        Toast.fire({ icon: 'info', title: `Memproses ${checkedCbs.length} presensi...` });
+        
+        for(let i=0; i<checkedCbs.length; i++) {
+            const santri = masterDataSantri.find(s => String(s.id) === checkedCbs[i].value);
+            if(santri) { 
+                postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime);
+                checkedCbs[i].checked = false;
+            }
+        }
+        
+        isProcessing = false; 
+        document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`; 
+        document.getElementById('checkAllManual').checked = false;
+        playAudioFeedback('ok', null); 
+        Swal.fire({ icon: 'success', title: 'Berhasil', text: `${checkedCbs.length} permintaan dikirim ke antrean server.`, confirmButtonColor: '#059669', timer: 2000 });
+    }
+
+    function extractSantriIdFromQr(decodedText) {
+       const raw = String(decodedText || '').trim(); if(!raw) return '';
+       if(masterDataSantri.some(s => String(s.id).trim() === raw)) return raw;
+       try { const obj = JSON.parse(raw); const candidates = [obj.idSantri, obj.id, obj.ID, obj.kode, obj.nis]; for(const c of candidates) { const id = String(c || '').trim(); if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id; } } catch(e) {}
+       try { const u = new URL(raw); for(const key of ['idSantri','id','kode','nis']) { const id = String(u.searchParams.get(key) || '').trim(); if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id; }
+          const lastPart = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || ''); if(lastPart && masterDataSantri.some(s => String(s.id).trim() === lastPart)) return lastPart; } catch(e) {}
+       const tokens = raw.split(/[\s,;|:/?=&]+/).filter(Boolean); const match = tokens.find(token => masterDataSantri.some(s => String(s.id).trim() === token));
+       return match || raw;
+    }
+
+    function processScanResult(decodedText) {
+       const now = Date.now(), qrId = extractSantriIdFromQr(decodedText); if (!qrId) return;
+       // Cooldown 2.5s to prevent scanning same ID multiple times instantly
+       if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
+       
+       lastScannedId = qrId; lastScanTime = now; 
+       
+       const flashEl = document.getElementById('scanFlash'); 
+       if (flashEl) { flashEl.classList.remove('animate-camera-flash'); void flashEl.offsetWidth; flashEl.classList.add('animate-camera-flash'); }
+       
+       const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
+       if(!santri) { playAudioFeedback('error', null); Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di database server.` }); return; }
+       
+       playAudioFeedback('ok', santri); 
+       const cTime = getCustomDateForSubmission(true);
+       postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
     }
 
     async function toggleCamera() {
@@ -613,141 +805,20 @@
             }
         }
     }
+    
     async function switchCameraDirection() {
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
         Toast.fire({ icon: 'info', title: `Kamera dialihkan ke ${currentFacingMode === 'environment' ? 'Belakang' : 'Depan'}` });
         if (isCameraOn && html5QrCode) { try { await html5QrCode.stop(); isCameraOn = false; await toggleCamera(); } catch (e) { } }
     }
-    function triggerCameraFlash() {
-        const flashEl = document.getElementById('scanFlash'); if (!flashEl) return;
-        flashEl.classList.remove('animate-camera-flash'); void flashEl.offsetWidth; flashEl.classList.add('animate-camera-flash');
-    }
 
-    function extractSantriIdFromQr(decodedText) {
-       const raw = String(decodedText || '').trim(); if(!raw) return '';
-       if(masterDataSantri.some(s => String(s.id).trim() === raw)) return raw;
-       try { const obj = JSON.parse(raw); const candidates = [obj.idSantri, obj.id, obj.ID, obj.kode, obj.nis]; for(const c of candidates) { const id = String(c || '').trim(); if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id; } } catch(e) {}
-       try { const u = new URL(raw); for(const key of ['idSantri','id','kode','nis']) { const id = String(u.searchParams.get(key) || '').trim(); if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id; }
-          const lastPart = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || ''); if(lastPart && masterDataSantri.some(s => String(s.id).trim() === lastPart)) return lastPart; } catch(e) {}
-       const tokens = raw.split(/[\s,;|:/?=&]+/).filter(Boolean); const match = tokens.find(token => masterDataSantri.some(s => String(s.id).trim() === token));
-       return match || raw;
-    }
-    
-    function getCustomDateForSubmission(isLive = true) {
-        const inputId = isLive ? 'scanDateInput' : 'manualDateInput'; const dateVal = document.getElementById(inputId).value; const now = new Date();
-        if(dateVal) {
-            const [y, m, d] = dateVal.split('-'); const customDate = new Date(y, m-1, d, now.getHours(), now.getMinutes(), now.getSeconds());
-            return { waktu: `${d}/${m}/${y} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][customDate.getDay()] };
-        }
-        return { waktu: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][now.getDay()] };
-    }
-    
-    function processScanResult(decodedText) {
-       const now = Date.now(), qrId = extractSantriIdFromQr(decodedText); if (!qrId) return;
-       if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
-       // Scan berbeda tetap boleh masuk antrean; duplikasi ID ditahan oleh cooldown.
-       lastScannedId = qrId; lastScanTime = now; triggerCameraFlash();
-       const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
-       if(!santri) { playAudioFeedback('error', null); Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
-       playAudioFeedback('ok', santri); const cTime = getCustomDateForSubmission(true);
-       postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
-    }
-
-    function makeScriptUrl(extraParams = {}) {
-        const base = String(SCRIPT_URL || '').trim(), separator = base.includes('?') ? '&' : '?';
-        const params = new URLSearchParams(extraParams); return base + separator + params.toString();
-    }
-    function fetchGoogleJsonp(onSuccess, onError, extraParams = {}) {
-        if (!SCRIPT_URL || !SCRIPT_URL.includes('script.google.com/macros/s/')) { if (typeof onError === 'function') onError(new Error('URL Google Apps Script tidak valid.')); return; }
-        const callbackName = '__presensiJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-        const script = document.createElement('script'); let finished = false;
-        const cleanup = () => { finished = true; try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); };
-        window[callbackName] = function(data) { if (finished) return; cleanup(); if (typeof onSuccess === 'function') onSuccess(data); };
-        script.onerror = function() { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.')); };
-        script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() })); script.async = true; document.head.appendChild(script);
-        setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 30000);
-    }
-    function requestGoogleJsonp(payload) {
-        return new Promise((resolve, reject) => {
-            fetchGoogleJsonp(data => { if (data && (data.status === 'success' || data.status === 'online' || data.status === 'warning')) resolve(data); else reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.')); }, reject, payload || {});
-        });
-    }
-
-    function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
-        return requestGoogleJsonp({ action: 'saveAttendance', idSantri: idSantri || 'MANUAL', namaSantri: namaSantri || 'Santri', kelas: kelas || '-', guru: guru || '-', status: status || 'Hadir', key: key || '', waktu: timeObj?.waktu || '', hari: timeObj?.hari || '' });
-    }
-
-    function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
-       return new Promise((resolve) => {
-           const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now(); newlyAddedKeysMap.set(unikey, nowTime);
-           const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
-           if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderHistoryTable();
-           
-           markHistoryWritePending(tempRecord);
-           simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
-           .then((serverResult) => {
-               if (!serverResult || serverResult.status !== 'success' || serverResult.verified !== true) throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
-               markHistoryWriteComplete(unikey);
-               setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 500);
-           }).catch(err => {
-               pendingHistoryWrites.delete(unikey);
-               isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
-               fetchHistoryFromSheets(); resolve({ error: true, message: String(err) });
-           });
-       });
-    }
-
-    function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
-       // Tampilkan langsung di layar, tetapi kirim ke server melalui antrean berurutan.
-       const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
-       newlyAddedKeysMap.set(unikey, nowTime);
-       const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
-       if(!Array.isArray(presensiHistory)) presensiHistory = [];
-       presensiHistory.unshift(tempRecord);
-       renderRiwayatTable();
-       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
-       markHistoryWritePending(tempRecord);
-
-       attendanceWriteQueue = attendanceWriteQueue
-         .catch(() => {})
-         .then(() => simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey))
-         .then((result) => {
-             if (!result || result.status !== 'success' || result.verified !== true) {
-                 throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
-             }
-             markHistoryWriteComplete(unikey);
-             newlyAddedKeysMap.delete(unikey);
-             if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
-             else {
-                 const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
-                 if (idx >= 0) presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {sync:'saved'});
-                 renderRiwayatTable();
-             }
-             Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-         })
-         .catch(err => {
-             pendingHistoryWrites.delete(unikey);
-             newlyAddedKeysMap.delete(unikey);
-             presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
-             renderRiwayatTable();
-             Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
-         });
-    }
-
-    async function hapusData(key, event) {
+    function hapusData(key, event) {
         if(event) event.stopPropagation();
-        const targetItem = presensiHistory.find(item => item.key === key) || {};
-        const nama = targetItem.namaSantri || "";
-        if (!key || String(key).startsWith('temp_')) {
-            Toast.fire({ icon: 'error', title: 'Key presensi tidak valid. Silakan perbarui data terlebih dahulu.' });
-            return;
-        }
-        const wasSyncing = !!syncInterval;
-        if (wasSyncing) { clearInterval(syncInterval); syncInterval = null; }
+        if (!key) { Toast.fire({ icon: 'error', title: 'Key tidak valid.' }); return; }
         
         Swal.fire({ 
-            title: 'Hapus Riwayat Presensi?', 
-            text: nama ? `Yakin ingin menghapus presensi ${nama} secara permanen dari web dan Google Sheet?` : "Data akan dihapus permanen dari sistem dan Google Sheet.", 
+            title: 'Hapus Riwayat Permanen?', 
+            text: "Data akan dihapus permanen dari server Google Sheets.", 
             icon: 'warning', 
             showCancelButton: true, 
             confirmButtonColor: '#d33', 
@@ -755,31 +826,77 @@
             confirmButtonText: 'Ya, Hapus!' 
         })
         .then(async (result) => {
-            if (!result.isConfirmed) {
-                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
-                return;
-            }
+            if (!result.isConfirmed) return;
+            
+            // Mark as deleted locally to hide instantly
+            deletedKeys.add(String(key));
+            presensiHistory = presensiHistory.filter(item => String(item.key) !== String(key));
+            renderRiwayatTable();
+            Toast.fire({ icon: 'info', title: 'Menghapus dari Server...' });
+
             try {
                 const response = await requestGoogleJsonp({ action: 'deleteHistory', key: String(key) });
-                if (!response || response.status !== 'success' || response.verified !== true) {
-                    throw new Error((response && response.message) || 'Google Sheet belum mengonfirmasi penghapusan.');
+                if (!response || response.status !== 'success') {
+                    throw new Error(response?.message || 'Gagal dihapus dari server.');
                 }
-                const deletedKey = String(key);
-                historyRevision++;
-                pendingHistoryWrites.delete(deletedKey);
-                deletedKeys.add(deletedKey);
-                presensiHistory = presensiHistory.filter(item => String(item.key) !== deletedKey);
-                renderHistoryTable();
-                Toast.fire({ icon: 'success', title: 'Presensi berhasil dihapus dari Google Sheet!' });
-                await new Promise(resolve => setTimeout(resolve, 400));
-                await fetchHistoryFromSheets(true);
+                Toast.fire({ icon: 'success', title: 'Berhasil dihapus dari Server!' });
+                fetchHistoryFromSheets(); // Trigger sync
             } catch (err) {
-                Toast.fire({ icon: 'error', title: 'Gagal menghapus presensi', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
-                await fetchHistoryFromSheets(true);
-            } finally {
-                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+                deletedKeys.delete(String(key)); // Revert if failed
+                fetchHistoryFromSheets(); 
+                Toast.fire({ icon: 'error', title: 'Gagal menghapus', text: String(err?.message || err) });
             }
         });
+    }
+
+    function hapusDataSantriMaster(id, event) {
+        if (event) event.stopPropagation();
+        if (!id) return;
+        
+        Swal.fire({
+            title: 'Hapus Data Santri?',
+            text: 'Data akan dihapus permanen dari Google Sheet.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!'
+        }).then(async (result) => {
+            if (!result.isConfirmed) return;
+            Toast.fire({ icon: 'info', title: 'Menghapus...' });
+            try {
+                const response = await requestGoogleJsonp({ action: 'deleteMasterSantri', id: String(id) });
+                if (response?.status !== 'success') throw new Error(response?.message || 'Gagal menghapus');
+                Toast.fire({ icon: 'success', title: 'Santri dihapus dari Server' });
+                fetchHistoryFromSheets();
+            } catch (err) {
+                Toast.fire({ icon: 'error', title: 'Gagal menghapus santri', text: String(err?.message || err) });
+            }
+        });
+    }
+
+    async function tambahDataSantriMaster() {
+        const id = String(document.getElementById('masterNewId')?.value || '').trim();
+        const nama = String(document.getElementById('masterNewNama')?.value || '').trim();
+        const kelas = String(document.getElementById('masterNewKelas')?.value || '').trim();
+        const guru = String(document.getElementById('masterNewGuru')?.value || '').trim();
+        
+        if (!nama || !kelas) { Toast.fire({ icon: 'warning', title: 'Nama dan kelas wajib diisi' }); return; }
+        
+        try {
+            Toast.fire({ icon: 'info', title: 'Menyimpan data santri ke Server...' });
+            const result = await requestGoogleJsonp({ action: 'addMasterSantri', id, nama, kelas, guru });
+            if (result?.status !== 'success') throw new Error(result?.message || 'Gagal menambah santri.');
+            
+            ['masterNewId','masterNewNama','masterNewKelas','masterNewGuru'].forEach(idEl => {
+                const el = document.getElementById(idEl);
+                if (el) el.value = '';
+            });
+            Toast.fire({ icon: 'success', title: 'Santri ditambahkan ke Server' });
+            fetchHistoryFromSheets();
+        } catch (err) {
+            Toast.fire({ icon: 'error', title: 'Gagal menambah santri', text: String(err?.message || err) });
+        }
     }
 
     function renderRiwayatTable() {
@@ -787,75 +904,236 @@
         if(!tbody) return;
         let data = Array.isArray(presensiHistory) ? [...presensiHistory] : [];
         data.sort((a,b) => (parseGoogleSheetDate(b.waktu)?.getTime() || 0) - (parseGoogleSheetDate(a.waktu)?.getTime() || 0));
+        
         if(count) count.innerText = data.length;
         if(!data.length) { tbody.innerHTML = ''; empty?.classList.remove('hidden'); return; }
         empty?.classList.add('hidden');
+        
         let html = '';
         data.forEach((item,index) => {
             const st = String(item.status || '').toLowerCase();
             let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
             
-            const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm inline-flex items-center justify-center" title="Hapus Permanen"><i class="fas fa-trash-alt"></i></button>`;
+            const isSyncing = item.sync === 'loading';
+            const syncIcon = isSyncing ? `<i class="fas fa-circle-notch fa-spin text-amber-500 mr-2" title="Sedang mengirim..."></i>` : ``;
+            const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm inline-flex items-center justify-center ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}" ${isSyncing ? 'disabled' : ''} title="Hapus Permanen"><i class="fas fa-trash-alt"></i></button>`;
             
-            html += `<tr class="hover:bg-violet-50/50 transition-colors">
+            html += `<tr class="hover:bg-violet-50/50 transition-colors ${isSyncing ? 'opacity-75' : ''}">
                         <td class="p-4 text-center font-extrabold text-gray-500">${index+1}</td>
-                        <td class="p-4"><span class="riwayat-date">${formatRiwayatTanggal(item)}</span></td>
-                        <td class="p-4"><p class="riwayat-name text-gray-800">${item.namaSantri || '-'}</p></td>
-                        <td class="p-4"><span class="riwayat-class text-violet-700">${item.kelas || '-'}</span></td>
+                        <td class="p-4"><span class="riwayat-date">${syncIcon}${formatRiwayatTanggal(item)}</span></td>
+                        <td class="p-4"><p class="riwayat-name text-gray-800">${escapeHtmlLaporan(item.namaSantri || '-')}</p></td>
+                        <td class="p-4"><span class="riwayat-class text-violet-700">${escapeHtmlLaporan(item.kelas || '-')}</span></td>
                         <td class="p-4">${badge}</td>
                         <td class="p-4 text-center">${deleteBtn}</td>
                      </tr>`;
         });
         tbody.innerHTML = html;
     }
-    
-    function parseGoogleSheetDate(dateString) { if (!dateString) return null; try { let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/); if (match) return new Date(match[3], match[2] - 1, match[1]); return new Date(dateString); } catch(e) { return null; } }
-    function formatRiwayatTanggal(item) {
-        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'], hariNama = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const match = String(item?.waktu || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (match) { const d = parseInt(match[1], 10), m = parseInt(match[2], 10) - 1, y = parseInt(match[3], 10), date = new Date(y, m, d); if (!isNaN(date.getTime())) return `${hariNama[date.getDay()]}, ${d} ${bulan[m]}`; }
-        return String(item?.hari || '').replace(/^Minggu$/i, 'Ahad') || '-';
+
+    function renderDataSantriMaster() {
+        const tbody = document.getElementById('dataSantriMasterBody');
+        const empty = document.getElementById('dataSantriMasterEmpty');
+        const count = document.getElementById('dataSantriMasterCount');
+        const search = String(document.getElementById('searchDataSantriMaster')?.value || '').trim().toLowerCase();
+        if (!tbody) return;
+        const data = masterDataSantri.filter(s => {
+            if (!search) return true;
+            return [s.id, s.nama, s.kelas, s.guru].some(v => String(v || '').toLowerCase().includes(search));
+        });
+        if (!serverMasterLoaded) {
+            if (count) count.textContent = 'Memuat...';
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-amber-600 font-semibold"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data santri dari Google Sheet...</td></tr>';
+            empty?.classList.add('hidden');
+            return;
+        }
+        if (count) count.textContent = `${data.length} santri`;
+        if (!data.length) {
+            tbody.innerHTML = '';
+            empty?.classList.remove('hidden');
+            return;
+        }
+        empty?.classList.add('hidden');
+        tbody.innerHTML = data.map((s, i) => `
+            <tr class="hover:bg-emerald-50/60 transition-colors">
+                <td class="p-3 text-center font-bold text-gray-500">${i + 1}</td>
+                <td class="p-3 font-semibold text-gray-700">${escapeHtmlLaporan(s.id || '-')}</td>
+                <td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(s.nama || '-')}</td>
+                <td class="p-3 font-semibold text-emerald-700">${escapeHtmlLaporan(s.kelas || '-')}</td>
+                <td class="p-3 text-gray-600">${escapeHtmlLaporan(s.guru || '-')}</td>
+                <td class="p-3 text-center">
+                    <button type="button" onclick="hapusDataSantriMaster('${String(s.id || '').replace(/'/g, "\\'")}', event)"
+                        class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors inline-flex items-center justify-center"
+                        title="Hapus Santri">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function populateClassDropdowns() {
+      if(!serverMasterLoaded) return;
+      const uniqueClasses = [...new Set(masterDataSantri.map(s => String(s.kelas || '').trim()).filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b), 'id'));
+      const createOptions = (elId) => {
+          const el = document.getElementById(elId); if(!el) return;
+          const currVal = el.value; el.innerHTML = `<option value="">-- Pilih Kelas --</option>`;
+          uniqueClasses.forEach(c => el.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`);
+          if (currVal && uniqueClasses.includes(currVal)) el.value = currVal;
+      };
+      createOptions('manualKelasSelect'); createOptions('kalenderKelasSelect');
     }
 
     function renderManualStudents() {
         const kelas = document.getElementById('manualKelasSelect').value, listContainer = document.getElementById('manualStudentList'), checkAll = document.getElementById('checkAllManual');
         checkAll.checked = false; document.getElementById('selectedCountText').innerText = "0 dipilih"; document.getElementById('searchManualStudent').value = "";
         if(!kelas) { listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu untuk melihat daftar santri.</p>'; document.getElementById('countTampilSantri').innerText = "0"; return; }
-        if(!serverMasterLoaded) {
-            listContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-6 font-semibold"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data santri dari Google Sheet...</p>';
-            document.getElementById('countTampilSantri').innerText = "0";
-            return;
-        }
+        
         const santris = masterDataSantri.filter(s => s.kelas === kelas); document.getElementById('countTampilSantri').innerText = santris.length;
         listContainer.innerHTML = santris.map(s => `
               <label class="student-item flex items-center gap-4 p-3 rounded-lg border border-gray-200 bg-white cursor-pointer hover:bg-emerald-50 transition-colors shadow-sm">
                   <input type="checkbox" class="manual-student-cb w-5 h-5 rounded border-gray-300 bg-white accent-emerald-600 cursor-pointer" value="${s.id}">
-                  <div class="flex-grow"><p class="font-bold text-sm text-gray-800">${s.nama}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${s.id}</p></div>
+                  <div class="flex-grow"><p class="font-bold text-sm text-gray-800">${escapeHtmlLaporan(s.nama)}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${escapeHtmlLaporan(s.id)}</p></div>
               </label>`).join('');
         document.querySelectorAll('.manual-student-cb').forEach(cb => cb.addEventListener('change', () => document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`));
     }
+    
     function filterManualStudents() {
         const query = document.getElementById('searchManualStudent').value.toLowerCase();
         document.querySelectorAll('.student-item').forEach(item => { item.style.display = item.querySelector('.font-bold').innerText.toLowerCase().includes(query) ? 'flex' : 'none'; });
         document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`;
     }
+    
     function toggleSelectAll() {
         const checkAll = document.getElementById('checkAllManual').checked;
         document.querySelectorAll('.manual-student-cb').forEach(cb => { if(cb.closest('.student-item').style.display !== 'none') cb.checked = checkAll; });
         document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`;
     }
-    async function processAbsenManualBulk() {
-        getAudioContext();
-        const checkedCbs = document.querySelectorAll('.manual-student-cb:checked'), status = document.getElementById('statusManualBulk').value, cTime = getCustomDateForSubmission(false);
-        if (checkedCbs.length === 0) { Toast.fire({ icon: 'warning', title: 'Belum ada santri yang dicentang!' }); return; }
-        isProcessing = true; let successCount = 0; Toast.fire({ icon: 'info', title: `Memproses ${checkedCbs.length} presensi...` });
-        for(let i=0; i<checkedCbs.length; i++) {
-            const santri = masterDataSantri.find(s => s.id === checkedCbs[i].value);
-            if(santri) { const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime); if(!result.error) { successCount++; checkedCbs[i].checked = false; } }
-        }
-        isProcessing = false; document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`; document.getElementById('checkAllManual').checked = false;
-        playAudioFeedback('ok', null); Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
-        fetchHistoryFromSheets();
+
+    function prepareKalenderOptions() {
+        populateClassDropdowns();
+        const selTahun = document.getElementById('kalenderTahunSelect');
+        if(selTahun.options.length === 0) { const currentYear = new Date().getFullYear(); for(let y = currentYear - 1; y <= currentYear + 2; y++) selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`; }
+        document.getElementById('kalenderBulanSelect').value = new Date().getMonth();
+        renderClassCalendar();
+    }
+    
+    function renderClassCalendar() {
+        const selKelas = document.getElementById('kalenderKelasSelect').value, selBulan = parseInt(document.getElementById('kalenderBulanSelect').value), selTahun = parseInt(document.getElementById('kalenderTahunSelect').value);
+        const tbody = document.getElementById('kalenderBody'), studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+        if(studentsInClass.length === 0) { tbody.innerHTML = `<tr><td colspan="32" class="p-10 text-center text-gray-400 font-medium">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>`; return; }
+        
+        tbody.innerHTML = studentsInClass.map(santri => {
+            let html = `<tr class="hover:bg-slate-50 transition-colors"><td class="p-2.5 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${escapeHtmlLaporan(santri.nama)}">${escapeHtmlLaporan(santri.nama)}</td>`;
+            for (let d = 1; d <= 31; d++) {
+                let targetDate = new Date(selTahun, selBulan, d);
+                if (targetDate.getMonth() !== selBulan) { html += `<td class="p-2 border-r border-gray-100 bg-gray-50 text-center">-</td>`; continue; }
+                let record = presensiHistory.find(item => {
+                    let itemDate = parseGoogleSheetDate(item.waktu); if(!itemDate) return false;
+                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
+                });
+                if (record) {
+                    const st = String(record.status).toLowerCase(); let colorClass = 'bg-emerald-500';
+                    if(st.includes('sakit')) colorClass = 'bg-blue-500'; else if(st.includes('izin')) colorClass = 'bg-amber-500'; else if(!st.includes('hadir')) colorClass = 'bg-red-500';
+                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
+                } else { html += `<td class="p-1 border-r border-gray-100 min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`; }
+            }
+            return html + `</tr>`;
+        }).join('');
+    }
+
+    function getUniqueClassNames() { return [...new Set(masterDataSantri.map(s => String(s.kelas || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'id')); }
+    
+    function getAcuanKelas(namaKelas) {
+      const kelas = String(namaKelas || '').trim(); if(!kelas) return 12;
+      const serverValue = Number(acuanKehadiranData && acuanKehadiranData[kelas]); 
+      return Number.isFinite(serverValue) && serverValue >= 1 ? Math.round(serverValue) : 12;
+    }
+
+    function simpanAcuanKelas(kelas) {
+      const safeId = encodeURIComponent(kelas);
+      const input = document.getElementById('acuanInput_' + safeId);
+      const button = document.getElementById('acuanSaveBtn_' + safeId);
+      const status = document.getElementById('acuanStatus_' + safeId);
+      if (!input || !button) return;
+      const nilaiInput = Number(input.value);
+      if (!Number.isFinite(nilaiInput) || nilaiInput < 1) {
+        Toast.fire({ icon: 'warning', title: 'Acuan harus berupa angka minimal 1' }); input.focus(); return;
+      }
+      const acuan = Math.max(1, Math.round(nilaiInput));
+      input.value = acuan; input.disabled = true; button.disabled = true;
+      button.classList.add('opacity-75', 'cursor-wait');
+      button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
+      
+      requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
+        .then((result) => {
+          if (!result || result.status !== 'success') throw new Error(result?.message || 'Gagal menyimpan.');
+          button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
+          button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
+          Toast.fire({ icon: 'success', title: 'Acuan tersimpan di Server' });
+          fetchHistoryFromSheets(true); 
+        })
+        .catch((err) => {
+          Toast.fire({ icon: 'error', title: 'Gagal', text: String(err?.message || err) });
+        })
+        .finally(() => {
+          input.disabled = false; button.disabled = false; button.classList.remove('opacity-75', 'cursor-wait');
+        });
+    }
+
+    function prepareAcuanKehadiran() {
+      const container = document.getElementById('acuanKehadiranList'); if(!container) return;
+      const classes = getUniqueClassNames();
+      if(classes.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas dari Server.</div>'; return; }
+      container.innerHTML = classes.map((kelas, index) => {
+        const safeId = encodeURIComponent(kelas), acuan = getAcuanKelas(kelas);
+        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" id="acuanSaveBtn_${safeId}" onclick="simpanAcuanKelas(${JSON.stringify(kelas)})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan ke Server\n              </button>\n            </div>\n          </div>\n        </div>`;
+      }).join('');
+    }
+
+    function onProgressKelasChange() {
+      const kelas = document.getElementById('progressKelasSelect'), display = document.getElementById('progressAcuanDisplay');
+      if(display) display.textContent = kelas && kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
+      renderProgressSantri();
+    }
+    
+    function prepareProgressOptions() {
+      const kelas = document.getElementById('progressKelasSelect'), tahun = document.getElementById('progressTahunSelect'), bulan = document.getElementById('progressBulanSelect'), display = document.getElementById('progressAcuanDisplay');
+      if(!kelas || !tahun || !bulan) return;
+      const oldKelas = kelas.value; kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      getUniqueClassNames().forEach(c => { kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`; });
+      if(oldKelas) kelas.value = oldKelas;
+      if(display) display.textContent = kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
+      if(tahun.options.length === 0) { const y = new Date().getFullYear(); for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`; tahun.value = y; }
+      if(!bulan.dataset.initialized) { bulan.value = new Date().getMonth(); bulan.dataset.initialized='1'; }
+      renderProgressSantri();
+    }
+    
+    function getProgressHadirCount(santriId, bulan, tahun) {
+      const dates = new Set();
+      presensiHistory.forEach(r => {
+        if(String(r.idSantri || '') !== String(santriId || '')) return;
+        const dt = parseGoogleSheetDate(r.waktu); if(!dt || dt.getMonth() !== Number(bulan) || dt.getFullYear() !== Number(tahun)) return;
+        const st = String(r.status || '').toLowerCase();
+        if(st.includes('hadir') && !st.includes('tidak')) dates.add(dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate());
+      });
+      return dates.size;
+    }
+    
+    function renderProgressSantri() {
+      const kelas = document.getElementById('progressKelasSelect'), bulan = document.getElementById('progressBulanSelect'), tahun = document.getElementById('progressTahunSelect'), acuanDisplay = document.getElementById('progressAcuanDisplay'), empty = document.getElementById('progressEmpty'), result = document.getElementById('progressResult'), list = document.getElementById('progressStudentList'), summary = document.getElementById('progressClassSummary');
+      if(!kelas || !bulan || !tahun || !empty || !result || !list || !summary) return;
+      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); if(acuanDisplay) acuanDisplay.textContent = 'Pilih kelas'; return; }
+      const acuan = getAcuanKelas(kelas.value); if(acuanDisplay) acuanDisplay.textContent = `${acuan}× hadir = 100%`;
+      const students = masterDataSantri.filter(s => s.kelas === kelas.value), monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan.value)];
+      const data = students.map((s,i)=>({s, hadir:getProgressHadirCount(s.id, bulan.value, tahun.value), no:i+1})).sort((a,b)=>b.hadir-a.hadir || a.s.nama.localeCompare(b.s.nama));
+      const rajin = data.filter(x=>x.hadir>=acuan).length;
+      summary.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="text-lg font-black text-gray-800">Kelas ${escapeHtmlLaporan(kelas.value)}</div><div class="text-sm font-semibold text-emerald-700">${monthName} ${tahun.value} · ${data.length} santri · Acuan ${acuan}× = 100%</div></div><div class="text-sm font-extrabold text-amber-700">🏆 ${rajin} Santri Rajin</div></div>`;
+      list.innerHTML = data.map(x=>{
+        const pct=Math.round(x.hadir/acuan*100), rajin=x.hadir>=acuan;
+        return `<div class="rounded-2xl border ${rajin?'border-amber-200 bg-amber-50':'border-gray-200 bg-white'} p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-extrabold text-gray-800 truncate">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div><div class="text-xs text-gray-500 mt-0.5">${escapeHtmlLaporan(x.s.kelas||'-')}</div></div><div class="text-right shrink-0"><div class="text-xl font-black ${rajin?'text-amber-600':'text-emerald-600'}">${pct}%</div><div class="text-[11px] font-bold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'🏆🌟 SANTRI RAJIN':x.hadir+' / '+acuan+' hadir'}</div></div></div><div class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner"><div class="h-full rounded-full transition-all duration-700 ease-out" style="width:${Math.min(100,pct)}%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div><div class="mt-2 text-xs font-semibold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?(x.hadir===acuan?'100% — target '+acuan+'× sudah tercapai':'Lebih dari '+acuan+'× hadir — sangat baik!'):'Sedang progres menuju '+acuan+' kali hadir'}</div></div>`;
+      }).join('');
+      empty.classList.add('hidden'); result.classList.remove('hidden');
     }
 
     function prepareLaporanSantriOptions() {
@@ -869,8 +1147,7 @@
         if(logo) logo.src = (typeof LOGO_URL !== 'undefined' && LOGO_URL) ? LOGO_URL : (typeof DEFAULT_LOGO_URL !== 'undefined' ? DEFAULT_LOGO_URL : '');
         if(search && !selKelas.value) search.value = ''; renderKartuAbsenStudents();
     }
-    function onKartuAbsenKelasChange() { const search = document.getElementById('laporanSantriSearch'); if(search) search.value = ''; renderKartuAbsenStudents(); }
-    function filterKartuAbsenStudents() { renderKartuAbsenStudents(); }
+    
     function renderKartuAbsenStudents() {
         const selKelas = document.getElementById('laporanSantriKelasSelect'), grid = document.getElementById('kartuAbsenStudentGrid'), empty = document.getElementById('laporanSantriEmpty'), count = document.getElementById('kartuAbsenStudentCount'), period = document.getElementById('kartuAbsenPeriodArea'), result = document.getElementById('laporanSantriResult'), search = document.getElementById('laporanSantriSearch');
         if(!selKelas || !grid || !empty) return;
@@ -884,27 +1161,14 @@
             return `<button type="button" onclick="pilihKartuAbsen(${JSON.stringify(value).replace(/"/g, '&quot;')})" class="group text-left rounded-2xl border border-sky-200 bg-sky-50 hover:bg-emerald-50 hover:border-emerald-400 p-3 sm:p-4 min-h-[82px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-300"><div class="flex items-center gap-2.5"><div class="flex-shrink-0 w-9 h-9 rounded-xl bg-white border border-sky-200 group-hover:border-emerald-200 text-sky-700 group-hover:text-emerald-700 flex items-center justify-center text-xs font-black shadow-sm">${escapeHtmlLaporan(initials || String(i+1))}</div><div class="min-w-0"><div class="text-sm font-extrabold text-gray-800 leading-snug">${escapeHtmlLaporan(s.nama || 'Tanpa Nama')}</div><div class="text-[10px] font-bold text-gray-500 mt-0.5">${escapeHtmlLaporan(s.kelas || selectedClass)}</div></div></div></button>`;
         }).join('');
     }
+
+    function onKartuAbsenKelasChange() { const search = document.getElementById('laporanSantriSearch'); if(search) search.value = ''; renderKartuAbsenStudents(); }
+    function filterKartuAbsenStudents() { renderKartuAbsenStudents(); }
+
     function pilihKartuAbsen(value) {
         const santri = masterDataSantri.find(s => String(s.id || s.nama || '') === String(value)); if(!santri) return;
         const result = document.getElementById('laporanSantriResult'); if(result) result.classList.remove('hidden');
         window.selectedKartuAbsenId = String(santri.id || santri.nama || ''); renderLaporanSantri(santri); setTimeout(() => document.getElementById('kartuAbsenCard')?.scrollIntoView({behavior:'smooth', block:'start'}), 60);
-    }
-    function escapeHtmlLaporan(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-    function getLaporanStatusBadge(status) {
-        const st = String(status || '').toLowerCase();
-        if(st.includes('hadir') && !st.includes('tidak')) return '<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg font-extrabold">✓ Hadir</span>';
-        if(st.includes('sakit')) return '<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg font-extrabold">💊 Sakit</span>';
-        if(st.includes('izin')) return '<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-extrabold">ℹ Izin</span>';
-        return '<span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-lg font-extrabold">✕ Alfa</span>';
-    }
-
-    function simpanNomorWaliKartu() { const input = document.getElementById('kartuAbsenWaliPhone'); if(input && window.selectedKartuAbsenId) try { localStorage.setItem('kartuAbsenNomorWali_' + String(window.selectedKartuAbsenId), input.value.trim()); } catch(e) {} }
-    function muatNomorWaliKartu(santri) { const input = document.getElementById('kartuAbsenWaliPhone'); if(input) try { input.value = localStorage.getItem('kartuAbsenNomorWali_' + String(santri?.id || santri?.nama || '').trim()) || ''; } catch(e) { input.value = ''; } }
-    function salinKartuAbsenWALaporan() { const ta = document.getElementById('kartuAbsenWAText'); if(ta && ta.value.trim()) salinLaporanWAWali(ta.value); }
-    function kirimKartuAbsenWAWali() {
-        const ta = document.getElementById('kartuAbsenWAText'); if(!ta || !ta.value.trim()) { Toast.fire({icon:'warning', title:'Laporan belum siap'}); return; }
-        const phoneInput = document.getElementById('kartuAbsenWaliPhone'); let phone = String(phoneInput?.value || '').replace(/[^0-9+]/g, '').replace(/^\+/, ''); if(phone.startsWith('0')) phone = '62' + phone.substring(1);
-        window.open(phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(ta.value) : 'https://wa.me/?text=' + encodeURIComponent(ta.value), '_blank');
     }
 
     function renderLaporanSantri(preselectedSantri = null) {
@@ -942,11 +1206,6 @@
         const pctEl = document.getElementById('kartuAbsenPercent'), bar = document.getElementById('kartuAbsenProgress'), badge = document.getElementById('kartuAbsenPeriodeBadge');
         if(pctEl) pctEl.innerText = `${pct}%`; if(bar) bar.style.width = `${pct}%`; if(badge) badge.innerText = `${bulanNama[bulan]} ${tahun}`;
         
-        const kartuWaText = document.getElementById('kartuAbsenWAText');
-        if(kartuWaText && typeof buildWaWaliText === 'function' && typeof getWaWaliStats === 'function') {
-            kartuWaText.value = buildWaWaliText(santri, getWaWaliStats(santri, bulan, tahun), bulan, tahun); muatNomorWaliKartu(santri);
-        }
-        
         const apresiasi = document.getElementById('laporanApresiasi');
         if(hadir >= 15) { apresiasi.classList.remove('hidden'); apresiasi.innerHTML = `<div class="flex items-start gap-3"><div class="text-3xl">🏆</div><div><div class="text-lg font-black text-amber-800">MasyaAllah, sangat rajin! 🌟</div><p class="text-sm font-semibold text-amber-700 mt-1">${escapeHtmlLaporan(santri.nama)} telah hadir <strong>${hadir} pertemuan</strong> pada ${bulanNama[bulan]} ${tahun}. Semoga istiqamah dalam belajar dan menuntut ilmu. Barakallah fiik!</p></div></div>`; } 
         else { apresiasi.classList.add('hidden'); apresiasi.innerHTML = ''; }
@@ -955,92 +1214,53 @@
         else { detailBody.innerHTML = details.map((d,i) => `<tr class="hover:bg-emerald-50/50"><td class="p-3 text-center font-bold text-gray-500">${i+1}</td><td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(d.tanggal)}</td><td class="p-3 font-semibold text-gray-600">${escapeHtmlLaporan(d.hari)}</td><td class="p-3">${getLaporanStatusBadge(d.status)}</td></tr>`).join(''); }
     }
 
-    function prepareKalenderOptions() {
-        populateClassDropdowns();
-        const selTahun = document.getElementById('kalenderTahunSelect');
-        if(selTahun.options.length === 0) { const currentYear = new Date().getFullYear(); for(let y = currentYear - 1; y <= currentYear + 2; y++) selTahun.innerHTML += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`; }
-        document.getElementById('kalenderBulanSelect').value = new Date().getMonth();
-        renderClassCalendar();
-    }
-    function renderClassCalendar() {
-        const selKelas = document.getElementById('kalenderKelasSelect').value, selBulan = parseInt(document.getElementById('kalenderBulanSelect').value), selTahun = parseInt(document.getElementById('kalenderTahunSelect').value);
-        const tbody = document.getElementById('kalenderBody'), studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
-        if(studentsInClass.length === 0) { tbody.innerHTML = `<tr><td colspan="32" class="p-10 text-center text-gray-400 font-medium">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>`; return; }
-        
-        tbody.innerHTML = studentsInClass.map(santri => {
-            let html = `<tr class="hover:bg-slate-50 transition-colors"><td class="p-2.5 border-r border-emerald-100 font-bold text-gray-800 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] truncate max-w-[200px]" title="${santri.nama}">${santri.nama}</td>`;
-            for (let d = 1; d <= 31; d++) {
-                let targetDate = new Date(selTahun, selBulan, d);
-                if (targetDate.getMonth() !== selBulan) { html += `<td class="p-2 border-r border-gray-100 bg-gray-50 text-center">-</td>`; continue; }
-                let record = presensiHistory.find(item => {
-                    let itemDate = parseGoogleSheetDate(item.waktu); if(!itemDate) return false;
-                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
-                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selBulan && itemDate.getFullYear() === selTahun;
-                });
-                if (record) {
-                    const st = String(record.status).toLowerCase(); let colorClass = 'bg-emerald-500';
-                    if(st.includes('sakit')) colorClass = 'bg-blue-500'; else if(st.includes('izin')) colorClass = 'bg-amber-500'; else if(!st.includes('hadir')) colorClass = 'bg-red-500';
-                    html += `<td class="p-1 border-r border-emerald-50 bg-white min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md ${colorClass} shadow-[inset_0_0_0_2px_#fff]" title="${record.status}"></div></td>`;
-                } else { html += `<td class="p-1 border-r border-gray-100 min-w-[28px] text-center"><div class="w-4 h-4 mx-auto rounded-md bg-gray-100 border border-gray-200"></div></td>`; }
-            }
-            return html + `</tr>`;
-        }).join('');
-    }
-    function buatLaporanWAKalender() {
-        const selKelas = document.getElementById('kalenderKelasSelect').value, bSelect = document.getElementById('kalenderBulanSelect'), monthName = bSelect.options[bSelect.selectedIndex].text, selTahun = document.getElementById('kalenderTahunSelect').value, studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
-        if(studentsInClass.length === 0) { Toast.fire({ icon: 'error', title: 'Tidak ada data santri!' }); return; }
-        
-        let daysInMonth = new Date(selTahun, parseInt(bSelect.value) + 1, 0).getDate(), acuanKelas = getAcuanKelas(selKelas);
-        let text = `🗓 *KALENDER PRESENSI KELAS* 🗓\n*_KELAS ${selKelas.toUpperCase()}_*\n\n📅 *Bulan:* ${monthName} ${selTahun}\n\n*Rekap Kehadiran Harian (Tanggal 1-${daysInMonth}):*\n\n🎯 *Acuan Kehadiran:* ${acuanKelas}× hadir = 100%\n_Keaktifan boleh lebih dari ${acuanKelas}× dan persentase akan terus bertambah._\n\n`;
-        
-        studentsInClass.forEach((santri, index) => {
-            let daysEmojiLine = '', jumlahHadir = 0;
-            for(let d = 1; d <= daysInMonth; d++) {
-                let record = presensiHistory.find(item => {
-                    let itemDate = parseGoogleSheetDate(item.waktu); if(!itemDate) return false;
-                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
-                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === parseInt(bSelect.value) && itemDate.getFullYear() === parseInt(selTahun);
-                });
-                if(record) {
-                    const st = String(record.status).toLowerCase();
-                    if(st.includes('hadir') && !st.includes('tidak')) { daysEmojiLine += '✅'; jumlahHadir++; } else if(st.includes('sakit')) daysEmojiLine += '💊'; else if(st.includes('izin')) daysEmojiLine += 'ℹ️'; else daysEmojiLine += '🅰️';
-                }
-            }
-            if (daysEmojiLine === '') daysEmojiLine = '-';
-            const persen = Math.round((jumlahHadir / acuanKelas) * 100);
-            let progresNote = jumlahHadir >= acuanKelas ? (jumlahHadir === acuanKelas ? `🌟 *SANTRI RAJIN* — Target ${acuanKelas}× tercapai! MasyaAllah, sangat rajin!` : `🌟 *SANTRI RAJIN* — ${jumlahHadir}× hadir, luar biasa! Melebihi target ${acuanKelas}×.`) : `📈 *Progres Kehadiran :* ${persen}%`;
-            text += `*${index + 1}. ${santri.nama}*\n[ ${daysEmojiLine} ]\n${progresNote}\n\n`;
-        });
-        text += `*KETERANGAN:*\n✅ = Hadir\n💊 = Sakit\nℹ️ = Izin\n🅰️ = Alfa\n\n`;
-        document.getElementById('waPreviewText').innerText = text; document.getElementById('waModal').classList.remove('hidden');
-    }
-    function downloadKalenderCSV() {
-        const table = document.getElementById('kalenderTableElement'); if (!table) return;
-        let rows = table.querySelectorAll('tr'); if (rows.length <= 1) { Toast.fire({ icon: 'error', title: 'Data kalender kosong' }); return; }
-        let csv = [], headerArr = []; rows[0].querySelectorAll('th').forEach(th => headerArr.push(`"${th.innerText.trim()}"`)); csv.push(headerArr.join(','));
-        for (let i = 1; i < rows.length; i++) {
-            let rowData = [], nameCell = rows[i].querySelector('td'); rowData.push(`"${nameCell.innerText.trim()}"`);
-            let dayTds = rows[i].querySelectorAll('td');
-            for (let j = 1; j < dayTds.length; j++) {
-                let div = dayTds[j].querySelector('div'), st = '-';
-                if(div) { let title = div.getAttribute('title') || ''; if(title.toLowerCase().includes('hadir')) st = '✅'; else if(title.toLowerCase().includes('sakit')) st = '💊'; else if(title.toLowerCase().includes('izin')) st = 'ℹ️'; else st = '🅰️'; }
-                rowData.push(`"${st}"`);
-            }
-            csv.push(rowData.join(','));
-        }
-        const selKelas = document.getElementById('kalenderKelasSelect').value, bSelect = document.getElementById('kalenderBulanSelect'), monthName = bSelect.options[bSelect.selectedIndex].text, selTahun = document.getElementById('kalenderTahunSelect').value;
-        const blob = new Blob([csv.join('\n')], { type: 'text/csv' }), url = window.URL.createObjectURL(blob), a = document.createElement('a');
-        a.setAttribute('hidden', ''); a.setAttribute('href', url); a.setAttribute('download', `Kalender_Presensi_Kelas_${selKelas}_${monthName}_${selTahun}.csv`);
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        Toast.fire({ icon: 'success', title: 'Kalender diunduh!' });
+    function escapeHtmlLaporan(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+    
+    function getLaporanStatusBadge(status) {
+        const st = String(status || '').toLowerCase();
+        if(st.includes('hadir') && !st.includes('tidak')) return '<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg font-extrabold">✓ Hadir</span>';
+        if(st.includes('sakit')) return '<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg font-extrabold">💊 Sakit</span>';
+        if(st.includes('izin')) return '<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-extrabold">ℹ Izin</span>';
+        return '<span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-lg font-extrabold">✕ Alfa</span>';
     }
 
-    function salinTeksWA() {
-        const text = document.getElementById('waPreviewText').innerText;
-        navigator.clipboard.writeText(text).then(() => { Toast.fire({ icon: 'success', title: 'Teks berhasil disalin!' }); })
-        .catch(() => { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.focus(); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea); Toast.fire({ icon: 'success', title: 'Teks berhasil disalin!' }); });
+    function parseGoogleSheetDate(dateString) { if (!dateString) return null; try { let match = String(dateString).match(/(\d{2})\/(\d{2})\/(\d{4})/); if (match) return new Date(match[3], match[2] - 1, match[1]); return new Date(dateString); } catch(e) { return null; } }
+    
+    function formatRiwayatTanggal(item) {
+        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'], hariNama = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const match = String(item?.waktu || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (match) { const d = parseInt(match[1], 10), m = parseInt(match[2], 10) - 1, y = parseInt(match[3], 10), date = new Date(y, m, d); if (!isNaN(date.getTime())) return `${hariNama[date.getDay()]}, ${d} ${bulan[m]}`; }
+        return String(item?.hari || '').replace(/^Minggu$/i, 'Ahad') || '-';
     }
-    function kirimLaporanWAAli() { const text = document.getElementById('waPreviewText').innerText, targetNumber = "+6285774042121", encoded = encodeURIComponent(text); window.open(`https://api.whatsapp.com/send?phone=${targetNumber}&text=${encoded}`, '_blank'); }
+
+    function switchTab(tabId) {
+      ['live', 'manual', 'kalender', 'riwayat', 'laporanSantri', 'progressSantri', 'acuanKehadiran', 'dataSantri'].forEach(id => {
+         document.getElementById(`view-${id}`)?.classList.add('hidden');
+         let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
+         if(dBtn) dBtn.classList.remove('active');
+         if(mBtn) { mBtn.classList.remove('text-brand-green', 'active'); mBtn.classList.add('text-gray-400'); }
+      });
+      document.getElementById(`view-${tabId}`)?.classList.remove('hidden');
+      document.getElementById(`tab-${tabId}`)?.classList.add('active');
+      let mobBtn = document.getElementById(`mob-${tabId}`);
+      if(mobBtn){ mobBtn.classList.add('active'); mobBtn.classList.remove('text-gray-400'); if(tabId === 'riwayat'){ mobBtn.classList.add('text-violet-600'); mobBtn.classList.remove('text-brand-green'); } else { mobBtn.classList.add('text-brand-green'); mobBtn.classList.remove('text-violet-600'); } }
+      
+      if(tabId === 'kalender') prepareKalenderOptions();
+      if(tabId === 'riwayat') renderRiwayatTable();
+      if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
+      if(tabId === 'progressSantri') prepareProgressOptions();
+      if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
+      if(tabId === 'dataSantri') renderDataSantriMaster();
+    }
+
+    function setDateInputsDefault() {
+        const today = new Date().toISOString().split('T')[0];
+        const di = document.getElementById('scanDateInput');
+        const mi = document.getElementById('manualDateInput');
+        if(di && !di.value) di.value = today;
+        if(mi && !mi.value) mi.value = today;
+    }
+
     function bukaModalUrl() { document.getElementById('inputUrlSheet').value = SCRIPT_URL; document.getElementById('inputUrlLogo').value = LOGO_URL; updateAudioUI(); document.getElementById('settingModal').classList.remove('hidden'); }
     function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
     function simpanUrl() {
@@ -1052,6 +1272,13 @@
             applyLogo(); tutupModalUrl(); Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan' }); fetchHistoryFromSheets();
         } else { Toast.fire({ icon: 'error', title: 'URL Sheet tidak valid' }); }
     }
+
+    function applyLogo() {
+      const img = document.getElementById('appLogo'), defIcon = document.getElementById('defaultLogoIcon');
+      if (LOGO_URL && LOGO_URL.trim() !== '') { img.src = LOGO_URL; img.classList.remove('hidden'); defIcon.classList.add('hidden'); } else { img.classList.add('hidden'); defIcon.classList.remove('hidden'); }
+    }
+    function handleLogoError(imgEl) { imgEl.classList.add('hidden'); document.getElementById('defaultLogoIcon')?.classList.remove('hidden'); }
+    
     function applyDarkMode(isDark) {
         document.body.classList.toggle('dark-mode', !!isDark);
         const icon = document.getElementById('darkModeIcon'), btn = document.getElementById('btnDarkMode');
@@ -1061,388 +1288,37 @@
     function toggleDarkMode() { applyDarkMode(!document.body.classList.contains('dark-mode')); }
     function loadDarkMode() { const saved = localStorage.getItem('presensiDarkMode'); applyDarkMode(saved === '1'); }
 
-    const PROGRESS_ACUAN_STORAGE_KEY = 'presensiAcuanKehadiranPerKelas';
-    function getUniqueClassNames() { return [...new Set(masterDataSantri.map(s => String(s.kelas || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'id')); }
-    function getAcuanKelas(namaKelas) {
-      const kelas = String(namaKelas || '').trim(); if(!kelas) return 12;
-      const serverValue = Number(acuanKehadiranData && acuanKehadiranData[kelas]); if(Number.isFinite(serverValue) && serverValue >= 1) return Math.round(serverValue);
-      try { const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); const value = Number(saved[kelas]); return Number.isFinite(value) && value >= 1 ? Math.round(value) : 12; } catch(e) { return 12; }
+    function updateAudioUI() {
+        const btnIcon = document.getElementById('audioIcon'), btnLabel = document.getElementById('audioLabelHeader');
+        const modalSelect = document.getElementById('modalAudioMode'), modalSfxSelect = document.getElementById('modalSfxType'), modalApiKeyInput = document.getElementById('inputGeminiApiKey'), sfxContainer = document.getElementById('sfxOptionsContainer');
+        if (modalSelect) modalSelect.value = audioMode; if (modalSfxSelect) modalSfxSelect.value = sfxType; if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
+        if (sfxContainer) { if (audioMode === 'sfx') sfxContainer.classList.remove('hidden'); else sfxContainer.classList.add('hidden'); }
+        if (audioMode === 'ai') { btnIcon.className = "fas fa-robot text-brand-gold text-[12px]"; btnLabel.innerText = "Gemini AI Studio"; } else if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Efek Suara (" + sfxType.toUpperCase() + ")"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
     }
-    function setAcuanKelas(namaKelas, value) {
-      const kelas = String(namaKelas || '').trim(), acuan = Math.max(1, Math.round(Number(value) || 12)); if(!kelas) return acuan;
-      acuanKehadiranData[kelas] = acuan; try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {} return acuan;
+    function cycleAudioMode() {
+        getAudioContext();
+        if (audioMode === 'ai') audioMode = 'sfx'; else if (audioMode === 'sfx') audioMode = 'off'; else audioMode = 'ai';
+        localStorage.setItem('audioMode', audioMode); updateAudioUI();
+        if (audioMode === 'sfx') playSynthSound(sfxType); else if (audioMode === 'ai') playGeminiTtsGreeting();
     }
-    function simpanAcuanKelas(kelas) {
-      const safeId = encodeURIComponent(kelas);
-      const input = document.getElementById('acuanInput_' + safeId);
-      const button = document.getElementById('acuanSaveBtn_' + safeId);
-      const status = document.getElementById('acuanStatus_' + safeId);
-      if (!input || !button) return;
-      const nilaiInput = Number(input.value);
-      if (!Number.isFinite(nilaiInput) || nilaiInput < 1) {
-        Toast.fire({ icon: 'warning', title: 'Acuan harus berupa angka minimal 1' }); input.focus(); return;
-      }
-      const acuan = Math.max(1, Math.round(nilaiInput));
-      input.value = acuan; input.disabled = true; button.disabled = true;
-      button.classList.add('opacity-75', 'cursor-wait');
-      button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
-      if (status) { status.className = 'text-[10px] font-bold text-amber-600 mt-1'; status.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim data ke Google Sheet...'; }
-      requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
-        .then((result) => {
-          if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi penyimpanan.');
-          setAcuanKelas(kelas, acuan);
-          if (status) { status.className = 'text-[10px] font-bold text-emerald-600 mt-1'; status.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Data masuk ke Google Sheet ✓'; }
-          button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
-          button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
-          Toast.fire({ icon: 'success', title: 'Data masuk ke Google Sheet', text: `${kelas}: ${acuan}× hadir = 100%` });
-          fetchHistoryFromSheets(true); renderProgressSantri(); if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
-        })
-        .catch((err) => {
-          if (status) { status.className = 'text-[10px] font-bold text-red-600 mt-1'; status.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Gagal masuk ke Google Sheet'; }
-          Toast.fire({ icon: 'error', title: 'Acuan gagal disimpan', text: String(err?.message || err) });
-        })
-        .finally(() => {
-          input.disabled = false; button.disabled = false; button.classList.remove('opacity-75', 'cursor-wait');
-          if (status && status.className.includes('text-red-600')) { button.innerHTML = '<i class="fas fa-save"></i> <span>Coba Lagi</span>'; button.classList.remove('bg-emerald-700'); }
-        });
-    }
-    function prepareAcuanKehadiran() {
-      const container = document.getElementById('acuanKehadiranList'); if(!container) return;
-      const classes = getUniqueClassNames();
-      if(classes.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas.</div>'; return; }
-      container.innerHTML = classes.map((kelas, index) => {
-        const safeId = encodeURIComponent(kelas), acuan = getAcuanKelas(kelas);
-        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" id="acuanSaveBtn_${safeId}" onclick="simpanAcuanKelas(${JSON.stringify(kelas)})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
-      }).join('');
-    }
-    function onProgressKelasChange() {
-      const kelas = document.getElementById('progressKelasSelect'), display = document.getElementById('progressAcuanDisplay');
-      if(display) display.textContent = kelas && kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
-      renderProgressSantri();
-    }
-    function prepareProgressOptions() {
-      const kelas = document.getElementById('progressKelasSelect'), tahun = document.getElementById('progressTahunSelect'), bulan = document.getElementById('progressBulanSelect'), display = document.getElementById('progressAcuanDisplay');
-      if(!kelas || !tahun || !bulan) return;
-      const oldKelas = kelas.value; kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-      getUniqueClassNames().forEach(c => { kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`; });
-      if(oldKelas) kelas.value = oldKelas;
-      if(display) display.textContent = kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
-      if(tahun.options.length === 0) { const y = new Date().getFullYear(); for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`; tahun.value = y; }
-      if(!bulan.dataset.initialized) { bulan.value = new Date().getMonth(); bulan.dataset.initialized='1'; }
-      renderProgressSantri();
-    }
-    function getProgressHadirCount(santriId, bulan, tahun) {
-      const dates = new Set();
-      presensiHistory.forEach(r => {
-        if(String(r.idSantri || '') !== String(santriId || '')) return;
-        const dt = parseGoogleSheetDate(r.waktu); if(!dt || dt.getMonth() !== Number(bulan) || dt.getFullYear() !== Number(tahun)) return;
-        const st = String(r.status || '').toLowerCase();
-        if(st.includes('hadir') && !st.includes('tidak')) dates.add(dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate());
-      });
-      return dates.size;
-    }
-    function renderProgressSantri() {
-      const kelas = document.getElementById('progressKelasSelect'), bulan = document.getElementById('progressBulanSelect'), tahun = document.getElementById('progressTahunSelect'), acuanDisplay = document.getElementById('progressAcuanDisplay'), empty = document.getElementById('progressEmpty'), result = document.getElementById('progressResult'), list = document.getElementById('progressStudentList'), summary = document.getElementById('progressClassSummary');
-      if(!kelas || !bulan || !tahun || !empty || !result || !list || !summary) return;
-      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); if(acuanDisplay) acuanDisplay.textContent = 'Pilih kelas'; return; }
-      const acuan = getAcuanKelas(kelas.value); if(acuanDisplay) acuanDisplay.textContent = `${acuan}× hadir = 100%`;
-      const students = masterDataSantri.filter(s => s.kelas === kelas.value), monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan.value)];
-      const data = students.map((s,i)=>({s, hadir:getProgressHadirCount(s.id, bulan.value, tahun.value), no:i+1})).sort((a,b)=>b.hadir-a.hadir || a.s.nama.localeCompare(b.s.nama));
-      const rajin = data.filter(x=>x.hadir>=acuan).length;
-      summary.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="text-lg font-black text-gray-800">Kelas ${escapeHtmlLaporan(kelas.value)}</div><div class="text-sm font-semibold text-emerald-700">${monthName} ${tahun.value} · ${data.length} santri · Acuan ${acuan}× = 100%</div></div><div class="text-sm font-extrabold text-amber-700">🏆 ${rajin} Santri Rajin</div></div>`;
-      list.innerHTML = data.map(x=>{
-        const pct=Math.round(x.hadir/acuan*100), rajin=x.hadir>=acuan;
-        return `<div class="rounded-2xl border ${rajin?'border-amber-200 bg-amber-50':'border-gray-200 bg-white'} p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-extrabold text-gray-800 truncate">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div><div class="text-xs text-gray-500 mt-0.5">${escapeHtmlLaporan(x.s.kelas||'-')}</div></div><div class="text-right shrink-0"><div class="text-xl font-black ${rajin?'text-amber-600':'text-emerald-600'}">${pct}%</div><div class="text-[11px] font-bold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'🏆🌟 SANTRI RAJIN':x.hadir+' / '+acuan+' hadir'}</div></div></div><div class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner"><div class="h-full rounded-full transition-all duration-700 ease-out" style="width:${Math.min(100,pct)}%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div><div class="mt-2 text-xs font-semibold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?(x.hadir===acuan?'100% — target '+acuan+'× sudah tercapai':'Lebih dari '+acuan+'× hadir — sangat baik!'):'Sedang progres menuju '+acuan+' kali hadir'}</div></div>`;
-      }).join('');
-      empty.classList.add('hidden'); result.classList.remove('hidden');
-    }
-
-    function getWaWaliStats(santri, bulan, tahun) {
-      const stats = { hadir: 0, sakit: 0, izin: 0, alfa: 0 }, seen = {};
-      presensiHistory.forEach(r => {
-        const idMatch = String(r.idSantri || '').trim().toLowerCase() === String(santri.id || '').trim().toLowerCase(), nameMatch = String(r.namaSantri || '').trim().toLowerCase() === String(santri.nama || '').trim().toLowerCase();
-        if(!idMatch && !nameMatch) return;
-        const dt = parseGoogleSheetDate(r.waktu); if(!dt || dt.getMonth() !== Number(bulan) || dt.getFullYear() !== Number(tahun)) return;
-        const dayKey = dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate(); if(seen[dayKey]) return; seen[dayKey] = true;
-        const st = String(r.status || '').toLowerCase();
-        if(st.includes('hadir') && !st.includes('tidak')) stats.hadir++; else if(st.includes('sakit')) stats.sakit++; else if(st.includes('izin')) stats.izin++; else stats.alfa++;
-      });
-      return stats;
-    }
-    function getWaWaliPraise(persen, hadir, acuan) {
-      if(hadir === 0) return '🌱 Belum ada kehadiran tercatat pada periode ini. Mari kita mulai kembali dengan semangat dan istiqamah.';
-      if(persen >= 100) return '🌟 MasyaAllah, luar biasa! Kehadiran sudah mencapai target. Semoga terus istiqamah dan semakin rajin menuntut ilmu.';
-      if(persen >= 90) return '🏆 MasyaAllah, sangat baik! Kehadirannya sangat tinggi. Pertahankan semangat dan istiqamahnya ya.';
-      if(persen >= 75) return '👏 Alhamdulillah, kehadirannya baik sekali. Terus tingkatkan semangat agar semakin mendekati target.';
-      if(persen >= 60) return '😊 Alhamdulillah, sudah cukup baik. Yuk, lebih semangat lagi agar kehadirannya semakin meningkat.';
-      if(persen >= 40) return '💪 Semangat terus! Masih ada kesempatan untuk meningkatkan kehadiran dan mengejar target bersama.';
-      return '🌱 Mari kita tingkatkan lagi kehadirannya. Dengan semangat dan dukungan bersama, insyaAllah bisa menjadi lebih baik.';
-    }
-    function buildWaWaliText(santri, stats, bulan, tahun) {
-      const acuan = getAcuanKelas(santri.kelas), persen = Math.round((stats.hadir / acuan) * 100), monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan)];
-      return `📚 *LAPORAN KEHADIRAN SANTRI* 📚\n\nAssalamu'alaikum Ayah/Bunda/Wali Santri 🙏\n\n👤 *Nama:* ${santri.nama}\n🏫 *Kelas:* ${santri.kelas || '-'}\n📅 *Periode:* ${monthName} ${tahun}\n\n📊 *REKAP KEHADIRAN*\n✅ Hadir : *${stats.hadir}×*\n💊 Sakit : *${stats.sakit}×*\nℹ️ Izin : *${stats.izin}×*\n🅰️ Alfa : *${stats.alfa}×*\n\n🎯 *Persentase Kehadiran: ${persen}%*\n📌 Acuan ${acuan}× hadir = 100%\n\n💬 *Apresiasi:*\n${getWaWaliPraise(persen, stats.hadir, acuan)}\n\nSemoga Allah senantiasa memberikan kemudahan, kesehatan, dan keberkahan dalam setiap langkah menuntut ilmu. Aamiin 🤲`;
-    }
-    function salinLaporanWAWali(text) { navigator.clipboard?.writeText(text).then(() => Toast.fire({icon:'success', title:'Laporan berhasil disalin'})).catch(() => { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); Toast.fire({icon:'success', title:'Laporan berhasil disalin'}); }); }
-    function kirimWAWaliPersonal(text) { window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); }
-
-    function normalizeMasterSantriRows(list) {
-        if (!Array.isArray(list)) return [];
-        return list.map((s) => ({
-            id: String(s?.id ?? s?.ID ?? '').trim(),
-            nama: String(s?.nama ?? s?.namaSantri ?? s?.['Nama Santri'] ?? '').trim(),
-            kelas: String(s?.kelas ?? s?.Kelas ?? '').trim(),
-            guru: String(s?.guru ?? s?.['Guru / Ustadz'] ?? '').trim()
-        })).filter(s => s.id || s.nama);
-    }
-
-    function renderDataSantriMaster() {
-        const tbody = document.getElementById('dataSantriMasterBody');
-        const empty = document.getElementById('dataSantriMasterEmpty');
-        const count = document.getElementById('dataSantriMasterCount');
-        const search = String(document.getElementById('searchDataSantriMaster')?.value || '').trim().toLowerCase();
-        if (!tbody) return;
-
-        const data = (Array.isArray(masterDataSantri) ? masterDataSantri : []).filter(s => {
-            if (!search) return true;
-            return [s.id, s.nama, s.kelas, s.guru].some(v => String(v || '').toLowerCase().includes(search));
-        });
-
-        if (!serverMasterLoaded) {
-            if (count) count.textContent = 'Memuat...';
-            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-amber-600 font-semibold"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data santri dari Google Sheet...</td></tr>';
-            empty?.classList.add('hidden');
-            return;
-        }
-        if (count) count.textContent = `${data.length} santri`;
-        if (!data.length) {
-            tbody.innerHTML = '';
-            empty?.classList.remove('hidden');
-            return;
-        }
-        empty?.classList.add('hidden');
-
-        tbody.innerHTML = data.map((s, i) => `
-            <tr class="hover:bg-emerald-50/60 transition-colors">
-                <td class="p-3 text-center font-bold text-gray-500">${i + 1}</td>
-                <td class="p-3 font-semibold text-gray-700">${escapeHtmlLaporan(s.id || '-')}</td>
-                <td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(s.nama || '-')}</td>
-                <td class="p-3 font-semibold text-emerald-700">${escapeHtmlLaporan(s.kelas || '-')}</td>
-                <td class="p-3 text-gray-600">${escapeHtmlLaporan(s.guru || '-')}</td>
-                <td class="p-3 text-center">
-                    <button type="button" onclick="hapusDataSantriMaster('${String(s.id || '').replace(/'/g, "\\'")}', event)"
-                        class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors inline-flex items-center justify-center"
-                        title="Hapus Santri">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    async function tambahDataSantriMaster() {
-        const id = String(document.getElementById('masterNewId')?.value || '').trim();
-        const nama = String(document.getElementById('masterNewNama')?.value || '').trim();
-        const kelas = String(document.getElementById('masterNewKelas')?.value || '').trim();
-        const guru = String(document.getElementById('masterNewGuru')?.value || '').trim();
-
-        if (!nama || !kelas) {
-            Toast.fire({ icon: 'warning', title: 'Nama dan kelas wajib diisi' });
-            return;
-        }
-
-        try {
-            Toast.fire({ icon: 'info', title: 'Menyimpan data santri...' });
-            const result = await requestGoogleJsonp({
-                action: 'addMasterSantri',
-                id, nama, kelas, guru
-            });
-
-            if (result?.status !== 'success') {
-                throw new Error(result?.message || 'Gagal menambah santri.');
-            }
-
-            ['masterNewId','masterNewNama','masterNewKelas','masterNewGuru'].forEach(idEl => {
-                const el = document.getElementById(idEl);
-                if (el) el.value = '';
-            });
-
-            deletedMasterIds.delete(String(result?.data?.id || id).trim());
-            Toast.fire({ icon: 'success', title: 'Santri berhasil ditambahkan' });
-            await fetchHistoryFromSheets(false);
-            renderDataSantriMaster();
-            populateClassDropdowns();
-        } catch (err) {
-            Toast.fire({ icon: 'error', title: 'Gagal menambah santri', text: String(err?.message || err) });
-        }
-    }
-
-    function hapusDataSantriMaster(id, event) {
-        if (event) event.stopPropagation();
-        const targetId = String(id || '').trim();
-        if (!targetId) return;
-
-        const santri = masterDataSantri.find(s => String(s.id || '').trim() === targetId);
-        Swal.fire({
-            title: 'Hapus Data Santri?',
-            text: santri?.nama ? `Yakin ingin menghapus ${santri.nama} secara permanen dari Google Sheet?` : 'Data akan dihapus permanen dari Google Sheet.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
-        }).then(async (result) => {
-            if (!result.isConfirmed) return;
-            try {
-                const response = await requestGoogleJsonp({
-                    action: 'deleteMasterSantri',
-                    id: targetId
-                });
-                if (response?.status !== 'success') {
-                    throw new Error(response?.message || 'Data santri tidak ditemukan.');
-                }
-                deletedMasterIds.add(targetId);
-                masterDataSantri = masterDataSantri.filter(s => String(s.id || '').trim() !== targetId);
-                populateClassDropdowns();
-                renderDataSantriMaster();
-                Toast.fire({ icon: 'success', title: 'Santri berhasil dihapus' });
-                setTimeout(() => fetchHistoryFromSheets(false), 250);
-            } catch (err) {
-                Toast.fire({ icon: 'error', title: 'Gagal menghapus santri', text: String(err?.message || err) });
-            }
-        });
-    }
-
-    function manualSync() {
-        const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
-        Toast.fire({ icon: 'info', title: 'Menarik data terbaru...' });
-        fetchHistoryFromSheets(true);
-    }
-    let syncRequestInFlight = false;
-    let syncRequestedAfterFlight = false;
-    // Semua penulisan presensi dijalankan berurutan agar dua scan cepat tidak saling menimpa snapshot.
-    let attendanceWriteQueue = Promise.resolve();
-    // Penanda perubahan lokal. Setiap proses simpan/hapus menaikkan nomor ini.
-    // Respons sync yang dimulai sebelum perubahan tidak boleh menimpa data terbaru.
-    let historyRevision = 0;
-    let pendingHistoryWrites = new Map();
-
-    function markHistoryWritePending(record) {
-        historyRevision++;
-        if (record && record.key) pendingHistoryWrites.set(String(record.key), record);
-        return historyRevision;
-    }
-
-    function markHistoryWriteComplete(key) {
-        if (key) pendingHistoryWrites.delete(String(key));
-        historyRevision++;
-        return historyRevision;
-    }
-
-    function mergeServerHistory(serverHistory, requestRevision) {
-        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
-        const byKey = new Map();
-        const current = Array.isArray(presensiHistory) ? presensiHistory : [];
-        // Server adalah sumber utama, tetapi data lokal yang belum selesai ditulis
-        // dan data yang sudah ada di layar tidak boleh hilang akibat snapshot parsial.
-        current.forEach(item => {
-            if (!item || !item.key) return;
-            const k = String(item.key);
-            if (!deletedKeys.has(k)) byKey.set(k, item);
-        });
-        incoming.forEach(item => {
-            if (!item || !item.key) return;
-            const k = String(item.key);
-            if (!deletedKeys.has(k)) byKey.set(k, item);
-        });
-        pendingHistoryWrites.forEach((item, k) => {
-            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
-        });
-        presensiHistory = Array.from(byKey.values());
-        renderRiwayatTable();
-    }
-
-    function fetchHistoryFromSheets(isManual = false) {
-        if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
-        syncRequestInFlight = true;
-        const requestRevision = historyRevision;
-        if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
-            const syncText = document.getElementById('syncStatusText');
-            if(syncText) syncText.innerText = "URL BELUM DIATUR";
-            return;
-        }
-        const syncText = document.getElementById('syncStatusText'), syncPing = document.getElementById('syncStatusPing'), syncDot = document.getElementById('syncStatusDot'), btnIcon = document.getElementById('iconSyncManual');
-        if(syncText) syncText.innerText = "SYNCING...";
-        if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
-        if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-        
-        fetchGoogleJsonp(function(data) {
-            syncRequestInFlight = false;
-            const offlineAlert = document.getElementById('offlineAlert'); if(offlineAlert) offlineAlert.classList.add('hidden');
-            if(syncText) syncText.innerText = "CONNECTED";
-            if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
-            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-            if(btnIcon) btnIcon.classList.remove('fa-spin');
-            
-            if(data && (data.status === 'online' || data.status === 'success')) {
-                if(Array.isArray(data.santri)) {
-                    // Google Sheet aktif adalah sumber data master tunggal.
-                    // Jangan gabungkan dengan MASTER_DATA_SANTRI_EMBEDDED lama,
-                    // agar nama santri dari database lama tidak sempat muncul.
-                    const serverRows = normalizeMasterSantriRows(data.santri);
-                    masterDataSantri = serverRows.filter(s => {
-                        const sid = String(s?.id || '').trim();
-                        return sid && !deletedMasterIds.has(sid);
-                    });
-                    serverMasterLoaded = true;
-                    window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
-                    populateClassDropdowns();
-                    renderManualStudents();
-                    if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
-                }
-                if(Array.isArray(data.history)) {
-                    mergeServerHistory(data.history, requestRevision);
-                }
-                if(data.acuan && typeof data.acuan === 'object') {
-                    acuanKehadiranData = Object.assign({}, data.acuan);
-                    try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
-                    if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
-                }
-                if(isManual) Toast.fire({ icon: 'success', title: 'Sinkronisasi Berhasil' });
-            }
-            if (syncRequestedAfterFlight) {
-                syncRequestedAfterFlight = false;
-                setTimeout(() => fetchHistoryFromSheets(false), 50);
-            }
-        }, function(err) {
-            syncRequestInFlight = false;
-            if (syncRequestedAfterFlight) {
-                syncRequestedAfterFlight = false;
-                setTimeout(() => fetchHistoryFromSheets(false), 50);
-            }
-            const offlineAlert = document.getElementById('offlineAlert');
-            if(offlineAlert) offlineAlert.classList.remove('hidden');
-            if(syncText) syncText.innerText = "DISCONNECTED";
-            if(syncPing) syncPing.className = "hidden";
-            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
-            if(btnIcon) btnIcon.classList.remove('fa-spin');
-        }, { action: 'getData' });
-    }
+    function updateAudioModeFromSelect(val) { audioMode = val; localStorage.setItem('audioMode', audioMode); updateAudioUI(); }
+    function updateSfxType(val) { sfxType = val; localStorage.setItem('sfxType', sfxType); playSynthSound(sfxType); updateAudioUI(); }
 
     window.onload = function() {
         loadDarkMode();
         applyLogo();
         updateAudioUI();
         setDateInputsDefault();
-        populateClassDropdowns();
-        renderManualStudents();
-        renderDataSantriMaster();
-        fetchHistoryFromSheets();
+        
+        // Initial Fetch
+        fetchHistoryFromSheets(false);
+        
+        // Polling background every 6 seconds to keep multi-devices synced automatically
         if (syncInterval) clearInterval(syncInterval);
-        syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+        syncInterval = setInterval(() => fetchHistoryFromSheets(false), 6000);
+        
         if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
     }
   </script>
 </body>
 </html>
-
