@@ -1335,12 +1335,37 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i> Menghubungkan Kamera...';
             btn.className = "flex-grow py-4 bg-gray-400 text-white rounded-xl font-extrabold flex justify-center items-center gap-2 text-xs md:text-sm";
             try {
+                if(!window.Html5Qrcode) throw new Error('Modul pemindai QR belum termuat. Periksa koneksi internet lalu muat ulang halaman.');
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                await html5QrCode.start(
-                   { facingMode: currentFacingMode },
-                   { fps: 25, qrbox: (w, h) => { const minEdge = Math.min(w, h); return { width: Math.floor(minEdge * 0.85), height: Math.floor(minEdge * 0.85) }; } },
-                   (decodedText) => { processScanResult(decodedText); }
-                );
+
+                const scannerConfig = {
+                    fps: 20,
+                    qrbox: (w, h) => {
+                        const minEdge = Math.min(w, h);
+                        const box = Math.max(220, Math.floor(minEdge * 0.78));
+                        return { width: Math.min(box, minEdge), height: Math.min(box, minEdge) };
+                    },
+                    aspectRatio: 1.0,
+                    disableFlip: false
+                };
+                const onQrSuccess = (decodedText) => processScanResult(decodedText);
+
+                // HP: coba kamera belakang terlebih dahulu. Jika browser menolak
+                // facingMode, ambil daftar kamera dan pilih kamera belakang dari label.
+                try {
+                    await html5QrCode.start({ facingMode: currentFacingMode }, scannerConfig, onQrSuccess);
+                } catch (firstErr) {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if(!cameras || cameras.length === 0) throw firstErr;
+                    let selected = cameras[0];
+                    const backCam = cameras.find(c => /back|rear|environment|belakang/i.test(c.label || ''));
+                    if(currentFacingMode === 'environment' && backCam) selected = backCam;
+                    else if(currentFacingMode === 'user') {
+                        const frontCam = cameras.find(c => /front|user|face|depan/i.test(c.label || ''));
+                        if(frontCam) selected = frontCam;
+                    }
+                    await html5QrCode.start(selected.id, scannerConfig, onQrSuccess);
+                }
                 isCameraOn = true;
                 btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera';
                 btn.className = "flex-grow py-4 bg-red-500 text-white rounded-xl font-extrabold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
@@ -1387,19 +1412,59 @@
         };
     }
 
+    function extractSantriIdFromQr(decodedText) {
+       const raw = String(decodedText || '').trim();
+       if(!raw) return '';
+
+       // 1) QR berisi ID langsung.
+       if(masterDataSantri.some(s => String(s.id).trim() === raw)) return raw;
+
+       // 2) QR berisi JSON, misalnya {"id":"IDSRQ001"}.
+       try {
+          const obj = JSON.parse(raw);
+          const candidates = [obj.idSantri, obj.id, obj.ID, obj.kode, obj.nis];
+          for(const c of candidates) {
+             const id = String(c || '').trim();
+             if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id;
+          }
+       } catch(e) {}
+
+       // 3) QR berisi URL dengan parameter id/idSantri/kode.
+       try {
+          const u = new URL(raw);
+          for(const key of ['idSantri','id','kode','nis']) {
+             const id = String(u.searchParams.get(key) || '').trim();
+             if(id && masterDataSantri.some(s => String(s.id).trim() === id)) return id;
+          }
+          const lastPart = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '');
+          if(lastPart && masterDataSantri.some(s => String(s.id).trim() === lastPart)) return lastPart;
+       } catch(e) {}
+
+       // 4) Ambil token yang cocok dengan salah satu ID santri.
+       const tokens = raw.split(/[\s,;|:/?=&]+/).filter(Boolean);
+       const match = tokens.find(token => masterDataSantri.some(s => String(s.id).trim() === token));
+       return match || raw;
+    }
+
     function processScanResult(decodedText) {
-       const now = Date.now(); const trimmedId = decodedText.trim();
-       if (trimmedId === lastScannedId && (now - lastScanTime) < 1500) return;
+       const now = Date.now();
+       const qrId = extractSantriIdFromQr(decodedText);
+       if (!qrId) return;
+       if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
        if (isProcessing) return;
-       lastScannedId = trimmedId; lastScanTime = now;
+       lastScannedId = qrId; lastScanTime = now;
        triggerCameraFlash();
 
-       const santri = masterDataSantri.find(s => s.id === trimmedId);
+       const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
+       if(!santri) {
+          playAudioFeedback('error', null);
+          Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` });
+          return;
+       }
+
        playAudioFeedback('ok', santri);
-       
        const cTime = getCustomDateForSubmission(true);
-       if (santri) postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
-       else postDataToGoogle(trimmedId, "Santri Tidak Dikenal", "-", "-", "Hadir", cTime);
+       postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
     }
 
     function renderManualStudents() {
@@ -1490,9 +1555,11 @@
             const santriId = checkedCbs[i].value;
             const santri = masterDataSantri.find(s => s.id === santriId);
             if(santri) {
-                await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime);
-                successCount++;
-                checkedCbs[i].checked = false; // uncheck after process
+                const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime);
+                if(!result.error) {
+                    successCount++;
+                    checkedCbs[i].checked = false; // uncheck setelah benar-benar tersimpan
+                }
             }
         }
         
@@ -1517,7 +1584,7 @@
         return base + separator + params.toString();
     }
 
-    function fetchGoogleJsonp(onSuccess, onError) {
+    function fetchGoogleJsonp(onSuccess, onError, extraParams = {}) {
         if (!SCRIPT_URL || !SCRIPT_URL.includes('script.google.com/macros/s/')) {
             if (typeof onError === 'function') onError(new Error('URL Google Apps Script tidak valid.'));
             return;
@@ -1545,7 +1612,7 @@
             if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.'));
         };
 
-        script.src = makeScriptUrl({ callback: callbackName, _: Date.now() });
+        script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() }));
         script.async = true;
         document.head.appendChild(script);
 
@@ -1565,6 +1632,35 @@
         });
     }
 
+    // Penyimpanan utama dari GitHub Pages memakai GET + JSONP agar hasil
+    // berhasil/gagal dapat diketahui browser dan data benar-benar tersimpan.
+    function requestGoogleJsonp(payload) {
+        return new Promise((resolve, reject) => {
+            fetchGoogleJsonp(
+                data => {
+                    if (data && (data.status === 'success' || data.status === 'online' || data.status === 'warning')) resolve(data);
+                    else reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.'));
+                },
+                reject,
+                payload || {}
+            );
+        });
+    }
+
+    function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
+        return requestGoogleJsonp({
+            action: 'saveAttendance',
+            idSantri: idSantri || 'MANUAL',
+            namaSantri: namaSantri || 'Santri',
+            kelas: kelas || '-',
+            guru: guru || '-',
+            status: status || 'Hadir',
+            key: key || '',
+            waktu: timeObj?.waktu || '',
+            hari: timeObj?.hari || ''
+        });
+    }
+
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
        return new Promise((resolve) => {
            const unikey = "temp_" + Math.random().toString(36).substr(2,9);
@@ -1575,14 +1671,16 @@
            presensiHistory.unshift(tempRecord);
            renderHistoryTable();
 
-           postToGoogleNoCors({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
-           .then(() => {
+           simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
+           .then((serverResult) => {
                setTimeout(() => {
                    fetchHistoryFromSheets();
-                   resolve({ status: 'sent', data: { key: unikey } });
-               }, 900);
+                   resolve({ status: 'sent', data: serverResult.data || { key: unikey } });
+               }, 300);
            })
            .catch(err => {
+               isProcessing = false;
+               Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err.message || err) });
                fetchHistoryFromSheets();
                resolve({ error: true, message: String(err) });
            });
@@ -1602,15 +1700,17 @@
        renderHistoryTable();
        Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
 
-       postToGoogleNoCors({ idSantri, namaSantri, kelas, guru, status, key: unikey, waktu: timeObj.waktu, hari: timeObj.hari })
+       simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
        .then(() => {
+           Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
            setTimeout(() => {
                isProcessing = false;
                fetchHistoryFromSheets();
-           }, 900);
+           }, 300);
        })
        .catch(err => {
            isProcessing = false;
+           Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err.message || err) });
            fetchHistoryFromSheets();
        });
     }
@@ -1627,12 +1727,13 @@
                 presensiHistory = presensiHistory.filter(item => item.key !== key && !(nama && waktu && item.namaSantri === nama && item.waktu === waktu));
                 renderHistoryTable();
                 
-                postToGoogleNoCors({ action: 'delete', key: key || '', idSantri: idSantri || '', namaSantri: nama || '', waktu: waktu || '' })
+                requestGoogleJsonp({ action: 'delete', key: key || '', idSantri: idSantri || '', namaSantri: nama || '', waktu: waktu || '' })
                 .then(() => {
                     Toast.fire({ icon: 'success', title: 'Presensi dibatalkan!' });
-                    setTimeout(() => fetchHistoryFromSheets(), 900);
+                    setTimeout(() => fetchHistoryFromSheets(), 300);
                 })
                 .catch(err => {
+                    Toast.fire({ icon: 'error', title: 'Gagal menghapus dari Google Sheet', text: String(err.message || err) });
                     fetchHistoryFromSheets();
                 });
             }
@@ -1968,8 +2069,7 @@
 
         empty.classList.add('hidden');
         result.classList.remove('hidden');
-        const acuanKartu = getAcuanKelas(santri.kelas);
-        const pct = acuanKartu > 0 ? Math.min(100, Math.round((hadir / acuanKartu) * 100)) : 0;
+        const pct = details.length ? Math.round((hadir / details.length) * 100) : 0;
         const header = document.getElementById('laporanSantriHeader');
         if(header) header.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"><div><div class="text-xl sm:text-2xl font-black text-gray-800">${escapeHtmlLaporan(santri.nama)}</div><div class="text-sm font-bold text-emerald-700 mt-1">Kelas ${escapeHtmlLaporan(santri.kelas || '-')}</div></div><div class="inline-flex items-center gap-2 self-start rounded-xl bg-white border border-emerald-100 px-3 py-2"><i class="fas fa-user-graduate text-emerald-600"></i><span class="text-xs font-black text-gray-600">${escapeHtmlLaporan(santri.id || '-')}</span></div></div>`;
         document.getElementById('laporanHadir').innerText = hadir;
@@ -2395,7 +2495,17 @@
       const acuan = setAcuanKelas(kelas, input.value);
       input.value = acuan;
 
-      postToGoogleNoCors({ action: 'saveAcuan', kelas: kelas, acuan: acuan });
+      requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
+        .then(() => {
+          const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas));
+          if(status) status.textContent = 'Tersimpan & sinkron';
+          setTimeout(() => fetchHistoryFromSheets(false), 300);
+        })
+        .catch(err => {
+          const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas));
+          if(status) { status.textContent = 'Gagal tersimpan ke server'; status.className = 'text-[10px] font-bold text-red-600 mt-1'; }
+          Toast.fire({ icon: 'error', title: 'Acuan gagal disimpan ke Google Sheet', text: String(err.message || err) });
+        });
 
       if(typeof prepareAcuanKehadiran === 'function') prepareAcuanKehadiran();
       const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas));
@@ -2551,7 +2661,7 @@
         `🅰️ Alfa : *${stats.alfa}×*\n\n` +
         `🎯 *Persentase Kehadiran: ${persen}%*\n` +
         `📌 Acuan ${acuan}× hadir = 100%\n\n` +
-        `${getWaWaliPraise(persen, stats.hadir, acuan)}\n\n` +
+        `💬 *Apresiasi:*\n${getWaWaliPraise(persen, stats.hadir, acuan)}\n\n` +
         `Semoga Allah senantiasa memberikan kemudahan, kesehatan, dan keberkahan dalam setiap langkah menuntut ilmu. Aamiin 🤲`;
     }
 
