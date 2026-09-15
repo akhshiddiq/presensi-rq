@@ -403,6 +403,9 @@
       <button onclick="switchTab('progressSantri')" id="tab-progressSantri" class="nav-menu-item student-report-menu">
         <i class="fas fa-chart-line"></i> <span>Progress Kehadiran</span>
       </button>
+      <button onclick="switchTab('acuanKehadiran')" id="tab-acuanKehadiran" class="nav-menu-item student-report-menu">
+        <i class="fas fa-bullseye"></i> <span>Acuan Kehadiran 100%</span>
+      </button>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
@@ -785,6 +788,46 @@
       </div>
     </div>
 
+    <!-- ================= TAB: ACUAN KEHADIRAN 100% ================= -->
+    <div id="view-acuanKehadiran" class="hidden animate-fade-in space-y-5">
+      <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+        <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-bullseye"></i></div>
+            <div>
+              <h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">🎯 Acuan Kehadiran 100%</h2>
+              <p class="text-sm text-emerald-700/70 mt-1">Tentukan jumlah kehadiran yang menjadi patokan 100% untuk setiap kelas. Acuan ini menjadi patokan bersama seluruh laporan.</p>
+            </div>
+          </div>
+          <button onclick="manualSync(); prepareAcuanKehadiran();" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui Data</button>
+        </div>
+
+        <div class="p-4 sm:p-6 bg-white">
+          <div class="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 mb-5">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i class="fas fa-info-circle"></i></div>
+              <div>
+                <p class="font-extrabold text-amber-900 text-sm">Patokan utama sistem</p>
+                <p class="text-xs text-amber-800/80 mt-1 leading-relaxed">Contoh: jika Abdurrahman diisi <b>12</b>, maka 12 kali hadir = 100%. Angka ini otomatis digunakan oleh <b>Kartu Absen, Progress Kehadiran, dan laporan WA</b>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
+            <div class="hidden sm:grid grid-cols-[70px_1fr_220px_120px] bg-emerald-50 text-emerald-900 text-xs font-extrabold uppercase tracking-wide">
+              <div class="p-4 text-center">No</div>
+              <div class="p-4">Nama Kelas</div>
+              <div class="p-4">Acuan 100%</div>
+              <div class="p-4 text-center">Aksi</div>
+            </div>
+            <div id="acuanKehadiranList" class="divide-y divide-gray-100 bg-white">
+              <div class="p-8 text-center text-gray-400 text-sm font-medium">Memuat daftar kelas...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= TAB 7: PROGRESS KEHADIRAN ================= -->
     <div id="view-progressSantri" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
@@ -800,7 +843,7 @@
         </div>
         <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label><select id="progressKelasSelect" onchange="onProgressKelasChange()" class="modern-input bg-white font-bold text-brand-green py-2.5"><option value="">-- Pilih Kelas --</option></select></div>
-          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Acuan 100% Kehadiran</label><div class="flex gap-2"><input id="progressAcuanInput" type="number" min="1" step="1" value="12" onchange="simpanAcuanProgress()" class="modern-input bg-white font-bold text-brand-green py-2.5" placeholder="Contoh: 12"><span class="flex items-center px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-bold text-emerald-700">× hadir</span></div></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Patokan Acuan 100%</label><div class="flex gap-2"><div id="progressAcuanDisplay" class="modern-input bg-emerald-50 border-emerald-100 font-extrabold text-emerald-700 py-2.5 flex items-center">Pilih kelas</div><span class="flex items-center px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-bold text-emerald-700">× hadir</span></div><p class="text-[10px] text-gray-400 mt-1.5">Acuan diatur dari menu <b>Acuan Kehadiran 100%</b>.</p></div>
           <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Bulan</label><select id="progressBulanSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option></select></div>
           <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tahun</label><select id="progressTahunSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"></select></div>
         </div>
@@ -824,6 +867,7 @@
     <button onclick="switchTab('riwayat')" id="mob-riwayat" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none text-violet-600"><i class="fas fa-history text-sm mb-0.5"></i> Riwayat</button>
     <button onclick="switchTab('laporanSantri')" id="mob-laporanSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-id-card text-sm mb-0.5"></i> Kartu Absen</button>
     <button onclick="switchTab('progressSantri')" id="mob-progressSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-line text-sm mb-0.5"></i> Progress</button>
+    <button onclick="switchTab('acuanKehadiran')" id="mob-acuanKehadiran" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-bullseye text-sm mb-0.5"></i> Acuan</button>
   </nav>
 
   <!-- Modal Pengaturan -->
@@ -1027,6 +1071,7 @@
     let currentFacingMode = 'environment';
     
     let presensiHistory = []; 
+    let acuanKehadiranData = {};
     let deletedKeys = new Set();
     let newlyAddedKeysMap = new Map();
     let syncInterval;
@@ -1250,10 +1295,11 @@
       'riwayat': { label: 'Riwayat', icon: 'fas fa-history' },
       'laporanSantri': { label: 'Kartu Absen', icon: 'fas fa-id-card' },
       'progressSantri': { label: 'Progress Kehadiran', icon: 'fas fa-chart-line' },
+      'acuanKehadiran': { label: 'Acuan Kehadiran 100%', icon: 'fas fa-bullseye' }
     };
 
     function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri'].forEach(id => {
+      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri', 'acuanKehadiran'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
          if(dBtn) dBtn.classList.remove('active');
@@ -1271,6 +1317,7 @@
       if(tabId === 'riwayat') prepareRiwayatOptions();
       if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
       if(tabId === 'progressSantri') prepareProgressOptions();
+      if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
     }
 
     async function toggleCamera() {
@@ -1626,6 +1673,15 @@
                     renderHistoryTable();
                 }
                 if(Array.isArray(data.santri) && data.santri.length > 0) syncMasterSantriList(data.santri);
+                if(data.acuan && typeof data.acuan === 'object') {
+                    let localAcuan = {};
+                    try { localAcuan = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); } catch(e) {}
+                    // Server menjadi sumber utama; nilai lokal lama hanya dipakai untuk migrasi/fallback.
+                    acuanKehadiranData = Object.assign({}, localAcuan, data.acuan);
+                    localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData));
+                    const acuanView = document.getElementById('view-acuanKehadiran');
+                    if(acuanView && !acuanView.classList.contains('hidden')) prepareAcuanKehadiran();
+                }
                 const kalenderView = document.getElementById('view-kalender');
                 if(kalenderView && !kalenderView.classList.contains('hidden')) renderClassCalendar();
                 const progressView = document.getElementById('view-progressSantri');
@@ -2291,13 +2347,23 @@
   </script>
 
 <script>
-    // Acuan kehadiran 100% disimpan per kelas dan dipakai bersama oleh
-    // Progress Kehadiran serta laporan WA Kalender Kelas.
+    // ============================================================
+    // ACUAN KEHADIRAN 100% - SUMBER PATOKAN UTAMA SISTEM
+    // Data disimpan ke Google Sheet agar sinkron antar laptop/perangkat.
+    // localStorage hanya menjadi cache/fallback saat server belum terbaca.
+    // ============================================================
     const PROGRESS_ACUAN_STORAGE_KEY = 'presensiAcuanKehadiranPerKelas';
+
+    function getUniqueClassNames() {
+      return [...new Set(masterDataSantri.map(s => String(s.kelas || '').trim()).filter(Boolean))]
+        .sort((a,b) => a.localeCompare(b, 'id'));
+    }
 
     function getAcuanKelas(namaKelas) {
       const kelas = String(namaKelas || '').trim();
       if(!kelas) return 12;
+      const serverValue = Number(acuanKehadiranData && acuanKehadiranData[kelas]);
+      if(Number.isFinite(serverValue) && serverValue >= 1) return Math.round(serverValue);
       try {
         const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}');
         const value = Number(saved[kelas]);
@@ -2310,26 +2376,56 @@
     function setAcuanKelas(namaKelas, value) {
       const kelas = String(namaKelas || '').trim();
       const acuan = Math.max(1, Math.round(Number(value) || 12));
+      if(!kelas) return acuan;
+      acuanKehadiranData[kelas] = acuan;
       try {
-        const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}');
-        saved[kelas] = acuan;
-        localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(saved));
+        localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData));
       } catch(e) {}
       return acuan;
     }
 
-    function onProgressKelasChange() {
-      const kelas = document.getElementById('progressKelasSelect');
-      const acuan = document.getElementById('progressAcuanInput');
-      if(acuan) acuan.value = getAcuanKelas(kelas ? kelas.value : '');
+    function simpanAcuanKelas(kelas) {
+      const input = document.getElementById('acuanInput_' + encodeURIComponent(kelas));
+      if(!input) return;
+      const acuan = setAcuanKelas(kelas, input.value);
+      input.value = acuan;
+
+      postToGoogleNoCors({ action: 'saveAcuan', kelas: kelas, acuan: acuan });
+
+      if(typeof prepareAcuanKehadiran === 'function') prepareAcuanKehadiran();
+      const status = document.getElementById('acuanStatus_' + encodeURIComponent(kelas));
+      if(status) {
+        status.textContent = 'Tersimpan & sinkron';
+        status.className = 'text-[10px] font-bold text-emerald-600 mt-1';
+      }
+
       renderProgressSantri();
+      if(typeof renderLaporanSantri === 'function') renderLaporanSantri();
+      Toast.fire({ icon: 'success', title: `Acuan ${kelas}: ${acuan}× hadir = 100%` });
+
+      // Ambil kembali dari server untuk memastikan semua perangkat mendapat nilai terbaru.
+      setTimeout(() => fetchHistoryFromSheets(false), 700);
     }
 
-    function simpanAcuanProgress() {
+    function prepareAcuanKehadiran() {
+      const container = document.getElementById('acuanKehadiranList');
+      if(!container) return;
+      const classes = getUniqueClassNames();
+      if(classes.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas.</div>';
+        return;
+      }
+      container.innerHTML = classes.map((kelas, index) => {
+        const safeId = encodeURIComponent(kelas);
+        const acuan = getAcuanKelas(kelas);
+        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" onclick="simpanAcuanKelas(${JSON.stringify(kelas)})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
+      }).join('');
+    }
+
+    function onProgressKelasChange() {
       const kelas = document.getElementById('progressKelasSelect');
-      const acuan = document.getElementById('progressAcuanInput');
-      if(!kelas || !acuan || !kelas.value) return;
-      acuan.value = setAcuanKelas(kelas.value, acuan.value);
+      const display = document.getElementById('progressAcuanDisplay');
+      if(display) display.textContent = kelas && kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
       renderProgressSantri();
     }
 
@@ -2337,15 +2433,15 @@
       const kelas = document.getElementById('progressKelasSelect');
       const tahun = document.getElementById('progressTahunSelect');
       const bulan = document.getElementById('progressBulanSelect');
-      const acuan = document.getElementById('progressAcuanInput');
+      const display = document.getElementById('progressAcuanDisplay');
       if(!kelas || !tahun || !bulan) return;
       const oldKelas = kelas.value;
       kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-      [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).forEach(c => {
+      getUniqueClassNames().forEach(c => {
         kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`;
       });
       if(oldKelas) kelas.value = oldKelas;
-      if(acuan) acuan.value = getAcuanKelas(kelas.value);
+      if(display) display.textContent = kelas.value ? `${getAcuanKelas(kelas.value)}× hadir = 100%` : 'Pilih kelas';
       if(tahun.options.length === 0) {
         const y = new Date().getFullYear();
         for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`;
@@ -2371,15 +2467,15 @@
       const kelas = document.getElementById('progressKelasSelect');
       const bulan = document.getElementById('progressBulanSelect');
       const tahun = document.getElementById('progressTahunSelect');
-      const acuanInput = document.getElementById('progressAcuanInput');
+      const acuanDisplay = document.getElementById('progressAcuanDisplay');
       const empty = document.getElementById('progressEmpty');
       const result = document.getElementById('progressResult');
       const list = document.getElementById('progressStudentList');
       const summary = document.getElementById('progressClassSummary');
       if(!kelas || !bulan || !tahun || !empty || !result || !list || !summary) return;
-      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); if(acuanInput) acuanInput.value = 12; return; }
+      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); if(acuanDisplay) acuanDisplay.textContent = 'Pilih kelas'; return; }
       const acuan = getAcuanKelas(kelas.value);
-      if(acuanInput) acuanInput.value = acuan;
+      if(acuanDisplay) acuanDisplay.textContent = `${acuan}× hadir = 100%`;
       const students = masterDataSantri.filter(s => s.kelas === kelas.value);
       const monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan.value)];
       const data = students.map((s,i)=>({s, hadir:getProgressHadirCount(s.id, bulan.value, tahun.value), no:i+1})).sort((a,b)=>b.hadir-a.hadir || a.s.nama.localeCompare(b.s.nama));
