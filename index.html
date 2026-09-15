@@ -433,8 +433,8 @@
     try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
-    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMO093QexTQS39xJgWc9GXzdEd8P74zOUgVPFFB77-3a06QNKzVnHULrMsllGu0WoV/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v8-url-baru';
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmV2oTOc8wj0U3QQGY2oazW422-p4lJzmGxZFwEUPAF4704184nvp1mPRmLPVct3Eeow/exec';
+    const SCRIPT_URL_VERSION = '2026-09-15-v9-database-baru';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -1312,7 +1312,7 @@
             if(syncPing) syncPing.className = "hidden";
             if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
             if(btnIcon) btnIcon.classList.remove('fa-spin');
-        });
+        }, { action: 'getData' });
     }
 
     window.onload = function() {
