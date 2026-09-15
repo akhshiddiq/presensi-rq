@@ -434,7 +434,7 @@
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmV2oTOc8wj0U3QQGY2oazW422-p4lJzmGxZFwEUPAF4704184nvp1mPRmLPVct3Eeow/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v9-database-baru';
+    const SCRIPT_URL_VERSION = '2026-09-15-v11-stable-v2';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -643,7 +643,7 @@
     function processScanResult(decodedText) {
        const now = Date.now(), qrId = extractSantriIdFromQr(decodedText); if (!qrId) return;
        if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
-       if (isProcessing) return;
+       // Scan berbeda tetap boleh masuk antrean; duplikasi ID ditahan oleh cooldown.
        lastScannedId = qrId; lastScanTime = now; triggerCameraFlash();
        const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
        if(!santri) { playAudioFeedback('error', null); Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
@@ -696,23 +696,39 @@
     }
 
     function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
-       if (isProcessing) return; isProcessing = true;
-       const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now(); newlyAddedKeysMap.set(unikey, nowTime);
+       // Setiap pemindaian dibuat sebagai antrean tersendiri. Jangan buang scan kedua
+       // hanya karena scan pertama masih menunggu respons server.
+       const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
+       newlyAddedKeysMap.set(unikey, nowTime);
        const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
-       
-       if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderHistoryTable(); Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
-
+       if(!Array.isArray(presensiHistory)) presensiHistory = [];
+       presensiHistory.unshift(tempRecord);
+       renderRiwayatTable();
+       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
        markHistoryWritePending(tempRecord);
+
        simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
        .then((result) => {
            if (!result || result.status !== 'success' || result.verified !== true) throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
            markHistoryWriteComplete(unikey);
+           newlyAddedKeysMap.delete(unikey);
+           // Server mengembalikan snapshot setelah write + flush + verifikasi.
+           // Gunakan snapshot itu, tetapi jangan pernah menghapus write lain yang masih pending.
+           if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
+           else {
+               const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
+               if (idx >= 0) presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {sync:'saved'});
+               renderRiwayatTable();
+           }
            Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-           // Beri waktu callback write selesai, lalu minta snapshot terbaru.
-           setTimeout(() => { isProcessing = false; fetchHistoryFromSheets(true); }, 500);
+           isProcessing = false;
        }).catch(err => {
            pendingHistoryWrites.delete(unikey);
-           isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') }); fetchHistoryFromSheets();
+           newlyAddedKeysMap.delete(unikey);
+           presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+           renderRiwayatTable();
+           isProcessing = false;
+           Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
        });
     }
 
@@ -1307,27 +1323,23 @@
 
     function mergeServerHistory(serverHistory, requestRevision) {
         const incoming = Array.isArray(serverHistory) ? serverHistory : [];
-        // Jika ada write lokal setelah request sync dimulai, jangan mengganti seluruh array
-        // dengan snapshot lama. Gabungkan snapshot server dengan data lokal yang masih pending.
         const byKey = new Map();
+        const current = Array.isArray(presensiHistory) ? presensiHistory : [];
+        // Server adalah sumber utama, tetapi data lokal yang belum selesai ditulis
+        // dan data yang sudah ada di layar tidak boleh hilang akibat snapshot parsial.
+        current.forEach(item => {
+            if (!item || !item.key) return;
+            const k = String(item.key);
+            if (!deletedKeys.has(k)) byKey.set(k, item);
+        });
         incoming.forEach(item => {
             if (!item || !item.key) return;
             const k = String(item.key);
             if (!deletedKeys.has(k)) byKey.set(k, item);
         });
-
-        const current = Array.isArray(presensiHistory) ? presensiHistory : [];
-        if (requestRevision !== historyRevision) {
-            current.forEach(item => {
-                if (!item || !item.key) return;
-                const k = String(item.key);
-                if (pendingHistoryWrites.has(k) && !deletedKeys.has(k)) byKey.set(k, item);
-            });
-        }
         pendingHistoryWrites.forEach((item, k) => {
-            if (!deletedKeys.has(k)) byKey.set(k, item);
+            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
         });
-
         presensiHistory = Array.from(byKey.values());
         renderRiwayatTable();
     }
