@@ -433,8 +433,8 @@
     try { cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]'); if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = []; } catch(e) { cachedMasterClasses = []; }
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
-    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmV2oTOc8wj0U3QQGY2oazW422-p4lJzmGxZFwEUPAF4704184nvp1mPRmLPVct3Eeow/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v11-stable-v2';
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQkZPiNBCcI58kWexHTn6lbtx21fvqqhHc4-xNBb-2zDJzalsIQRoet99fC_LttYMTXg/exec';
+    const SCRIPT_URL_VERSION = '2026-09-15-v12-backend-current';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
@@ -447,6 +447,7 @@
     let presensiHistory = []; 
     let acuanKehadiranData = {};
     let deletedKeys = new Set();
+    let deletedMasterIds = new Set();
     let newlyAddedKeysMap = new Map();
     let syncInterval;
     let html5QrCode = null;
@@ -696,8 +697,7 @@
     }
 
     function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
-       // Setiap pemindaian dibuat sebagai antrean tersendiri. Jangan buang scan kedua
-       // hanya karena scan pertama masih menunggu respons server.
+       // Tampilkan langsung di layar, tetapi kirim ke server melalui antrean berurutan.
        const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
        newlyAddedKeysMap.set(unikey, nowTime);
        const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
@@ -707,29 +707,30 @@
        Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
        markHistoryWritePending(tempRecord);
 
-       simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
-       .then((result) => {
-           if (!result || result.status !== 'success' || result.verified !== true) throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
-           markHistoryWriteComplete(unikey);
-           newlyAddedKeysMap.delete(unikey);
-           // Server mengembalikan snapshot setelah write + flush + verifikasi.
-           // Gunakan snapshot itu, tetapi jangan pernah menghapus write lain yang masih pending.
-           if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
-           else {
-               const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
-               if (idx >= 0) presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {sync:'saved'});
-               renderRiwayatTable();
-           }
-           Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-           isProcessing = false;
-       }).catch(err => {
-           pendingHistoryWrites.delete(unikey);
-           newlyAddedKeysMap.delete(unikey);
-           presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
-           renderRiwayatTable();
-           isProcessing = false;
-           Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
-       });
+       attendanceWriteQueue = attendanceWriteQueue
+         .catch(() => {})
+         .then(() => simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey))
+         .then((result) => {
+             if (!result || result.status !== 'success' || result.verified !== true) {
+                 throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
+             }
+             markHistoryWriteComplete(unikey);
+             newlyAddedKeysMap.delete(unikey);
+             if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
+             else {
+                 const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
+                 if (idx >= 0) presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {sync:'saved'});
+                 renderRiwayatTable();
+             }
+             Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
+         })
+         .catch(err => {
+             pendingHistoryWrites.delete(unikey);
+             newlyAddedKeysMap.delete(unikey);
+             presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+             renderRiwayatTable();
+             Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
+         });
     }
 
     async function hapusData(key, event) {
@@ -1253,6 +1254,7 @@
                 if (el) el.value = '';
             });
 
+            deletedMasterIds.delete(String(result?.data?.id || id).trim());
             Toast.fire({ icon: 'success', title: 'Santri berhasil ditambahkan' });
             await fetchHistoryFromSheets(false);
             renderDataSantriMaster();
@@ -1287,6 +1289,7 @@
                 if (response?.status !== 'success') {
                     throw new Error(response?.message || 'Data santri tidak ditemukan.');
                 }
+                deletedMasterIds.add(targetId);
                 masterDataSantri = masterDataSantri.filter(s => String(s.id || '').trim() !== targetId);
                 populateClassDropdowns();
                 renderDataSantriMaster();
@@ -1304,6 +1307,9 @@
         fetchHistoryFromSheets(true);
     }
     let syncRequestInFlight = false;
+    let syncRequestedAfterFlight = false;
+    // Semua penulisan presensi dijalankan berurutan agar dua scan cepat tidak saling menimpa snapshot.
+    let attendanceWriteQueue = Promise.resolve();
     // Penanda perubahan lokal. Setiap proses simpan/hapus menaikkan nomor ini.
     // Respons sync yang dimulai sebelum perubahan tidak boleh menimpa data terbaru.
     let historyRevision = 0;
@@ -1345,7 +1351,7 @@
     }
 
     function fetchHistoryFromSheets(isManual = false) {
-        if (syncRequestInFlight) return;
+        if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
         syncRequestInFlight = true;
         const requestRevision = historyRevision;
         if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
@@ -1368,7 +1374,14 @@
             
             if(data && (data.status === 'online' || data.status === 'success')) {
                 if(Array.isArray(data.santri)) {
-                    masterDataSantri = normalizeMasterSantriRows(data.santri);
+                    // Database baru bisa hanya berisi santri yang baru ditambahkan.
+                    // Gabungkan dengan data yang sudah ada di aplikasi agar daftar/QR tidak hilang.
+                    const mergedMaster = new Map();
+                    [...(Array.isArray(masterDataSantri) ? masterDataSantri : []), ...normalizeMasterSantriRows(data.santri)].forEach(s => {
+                        const sid = String(s?.id || '').trim();
+                        if (sid && !deletedMasterIds.has(sid)) mergedMaster.set(sid, s);
+                    });
+                    masterDataSantri = Array.from(mergedMaster.values());
                     window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
                     populateClassDropdowns();
                     if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
@@ -1383,8 +1396,16 @@
                 }
                 if(isManual) Toast.fire({ icon: 'success', title: 'Sinkronisasi Berhasil' });
             }
+            if (syncRequestedAfterFlight) {
+                syncRequestedAfterFlight = false;
+                setTimeout(() => fetchHistoryFromSheets(false), 50);
+            }
         }, function(err) {
             syncRequestInFlight = false;
+            if (syncRequestedAfterFlight) {
+                syncRequestedAfterFlight = false;
+                setTimeout(() => fetchHistoryFromSheets(false), 50);
+            }
             const offlineAlert = document.getElementById('offlineAlert');
             if(offlineAlert) offlineAlert.classList.remove('hidden');
             if(syncText) syncText.innerText = "DISCONNECTED";
@@ -1408,3 +1429,4 @@
   </script>
 </body>
 </html>
+
