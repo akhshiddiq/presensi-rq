@@ -406,6 +406,9 @@
       <button onclick="switchTab('acuanKehadiran')" id="tab-acuanKehadiran" class="nav-menu-item student-report-menu">
         <i class="fas fa-bullseye"></i> <span>Acuan Kehadiran 100%</span>
       </button>
+      <button onclick="switchTab('dataSantri')" id="tab-dataSantri" class="nav-menu-item student-report-menu">
+        <i class="fas fa-user-graduate"></i> <span>Data Nama Santri</span>
+      </button>
     </div>
 
     <!-- Alert / Notifikasi Error Internet -->
@@ -788,6 +791,55 @@
       </div>
     </div>
 
+    <!-- ================= TAB: DATA NAMA SANTRI ================= -->
+    <div id="view-dataSantri" class="hidden animate-fade-in space-y-5">
+      <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
+        <div class="p-5 sm:p-6 bg-emerald-50 border-b border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-user-graduate"></i></div>
+            <div>
+              <h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">👨‍🎓 Data Nama Santri</h2>
+              <p class="text-sm text-emerald-700/70 mt-1">Sumber utama: Google Sheet <b>Data Master Absensi</b>. Perubahan di Sheet otomatis dipakai oleh semua menu presensi.</p>
+            </div>
+          </div>
+          <button onclick="manualSync(); renderDataSantriMaster();" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Sinkronkan</button>
+        </div>
+
+        <div class="p-4 sm:p-6 border-b border-gray-100 bg-white">
+          <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 mb-5">
+            <p class="font-extrabold text-emerald-900 text-sm">Satu sumber data untuk seluruh sistem</p>
+            <p class="text-xs text-emerald-800/80 mt-1 leading-relaxed">Tambah/hapus langsung di Google Sheet akan tersinkron ke web. Anda juga dapat menambah santri dari form di bawah; data akan ditulis ke Sheet lalu otomatis muncul di semua menu.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input id="masterNewId" class="modern-input" placeholder="ID Santri (contoh: IDSRQ090)">
+            <input id="masterNewNama" class="modern-input" placeholder="Nama Santri">
+            <input id="masterNewKelas" class="modern-input" placeholder="Kelas">
+            <input id="masterNewGuru" class="modern-input" placeholder="Guru / Ustadz">
+          </div>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button onclick="tambahDataSantriMaster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-user-plus"></i> Tambah Santri</button>
+            <button onclick="renderDataSantriMaster();" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-list"></i> Tampilkan Data</button>
+          </div>
+        </div>
+
+        <div class="p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row gap-3 justify-between mb-4">
+            <input id="searchDataSantriMaster" oninput="renderDataSantriMaster()" class="modern-input sm:max-w-md" placeholder="Cari ID / nama / kelas / guru...">
+            <div id="dataSantriMasterCount" class="text-sm font-extrabold text-emerald-700 flex items-center">0 santri</div>
+          </div>
+          <div class="overflow-x-auto rounded-2xl border border-gray-200">
+            <table class="w-full text-sm">
+              <thead class="bg-emerald-50 text-emerald-900 font-extrabold">
+                <tr><th class="p-3 text-center">No</th><th class="p-3 text-left">ID</th><th class="p-3 text-left">Nama Santri</th><th class="p-3 text-left">Kelas</th><th class="p-3 text-left">Guru / Ustadz</th><th class="p-3 text-center">Aksi</th></tr>
+              </thead>
+              <tbody id="dataSantriMasterBody" class="divide-y divide-gray-100 bg-white"></tbody>
+            </table>
+          </div>
+          <div id="dataSantriMasterEmpty" class="hidden p-8 text-center text-gray-400 font-medium">Belum ada data santri dari Google Sheet.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= TAB: ACUAN KEHADIRAN 100% ================= -->
     <div id="view-acuanKehadiran" class="hidden animate-fade-in space-y-5">
       <div class="bg-white rounded-2xl shadow-soft-xl border border-gray-100 overflow-hidden">
@@ -868,6 +920,7 @@
     <button onclick="switchTab('laporanSantri')" id="mob-laporanSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-id-card text-sm mb-0.5"></i> Kartu Absen</button>
     <button onclick="switchTab('progressSantri')" id="mob-progressSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-chart-line text-sm mb-0.5"></i> Progress</button>
     <button onclick="switchTab('acuanKehadiran')" id="mob-acuanKehadiran" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-bullseye text-sm mb-0.5"></i> Acuan</button>
+    <button onclick="switchTab('dataSantri')" id="mob-dataSantri" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-user-graduate text-sm mb-0.5"></i> Data Santri</button>
   </nav>
 
   <!-- Modal Pengaturan -->
@@ -950,95 +1003,9 @@
   </div>
 
   <script>
-    let masterDataSantri = [
-      { id: "IDSRQ001", nama: "Alfatih Ahmad Badawi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ002", nama: "Atthar Raffasya Alghifari", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ003", nama: "Muhammad Atthaya Azka", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ004", nama: "Muhammad Rasyidd Albarr", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ005", nama: "Muhammad Tristan Arka Santosa", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ006", nama: "Khanza Almira", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ007", nama: "Keenan Arkana Ramadhan Setiawan", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ008", nama: "Defrand Augustav Muttaqin", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ009", nama: "Naufal Giebran Jayadi", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ010", nama: "Sabran Nur Awal", kelas: "Abdurrahman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ011", nama: "R. Tsabit Arsakha Mahdan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ012", nama: "Farid Nahra Rafihi Dayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ013", nama: "Muhammad Bilal Faherzi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ014", nama: "Satrio Abdul Jalil", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ015", nama: "Muhamad Zaid Khairul Ihsan", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ016", nama: "Riski Agung Zaki Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ017", nama: "Sulthan Hutama", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ018", nama: "Arsya Altan Mutaqi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ019", nama: "Muhammad Irsyad Dirgantara", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ020", nama: "Ahmad Khalafi Aulia", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ021", nama: "Abdurrahman Malik Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ022", nama: "Muhammad Syafiq Ibrahim", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ023", nama: "Nabila Azalia Putri Aquilla", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ024", nama: "Marsha Adeeva Mezaluna", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ025", nama: "Haura Hanindya", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ026", nama: "Riska Zakiyah Hidayat", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ027", nama: "Zarina Azzakia Putri Siwi", kelas: "Abu Ubaidah", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ028", nama: "Alesha Assyabiya", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ029", nama: "Yumna Kamidia Rinjani", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ030", nama: "Almira Azzalea", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ031", nama: "Calista Naura Salsabila", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ032", nama: "Ufaira Nur Afifa Gumelar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ033", nama: "Alya Zahirah", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ034", nama: "Quinsha Izzati Siregar", kelas: "Zubair", guru: "Ustadz Sidik", gender: "P" },
-      { id: "IDSRQ035", nama: "Muhammad Auris Hilmi Ilham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ036", nama: "Muhamad Yudanta Irham", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ037", nama: "Ahsan Ruzain Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ038", nama: "Ihsan Hamizan Ramadhan", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ039", nama: "Ahmad Rumi Ibrahim Khidr H", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ040", nama: "Anggun Ramania Martin", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ041", nama: "Arsenio Yusuf Wijaya", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ042", nama: "Athar Salim Agni Elmansyah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ043", nama: "Haizam Irawan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ044", nama: "Jovita Shaqueena Nismara", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ045", nama: "Rayya Fakhra Falisha", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ046", nama: "Reyna Fazilatun Nisa", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ047", nama: "Rimba Maulana", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ048", nama: "Yasmin Naura Jamila", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ049", nama: "Yodha Achmad Ramadhan", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ050", nama: "Zafran Malik Abdullah", kelas: "Abu Bakar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ051", nama: "Afiqa Misha Shafan", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ052", nama: "Alifiandra Ahmad Hudaya", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ053", nama: "Aqilah Rizky Hardiyansyah", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ054", nama: "Dilara Adrena Ramadhani", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ055", nama: "Hanif Rafisqi Arfadhia", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ056", nama: "Kahfi Ibadurrahman", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ057", nama: "Lujayn Syua Izora", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ058", nama: "Muhammad Ibrohim Syahreza", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ059", nama: "Muhammad Zein Izz", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ060", nama: "Rafka Wijdan Guntoro", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ061", nama: "Syahda Nur Maulida", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ062", nama: "Yumna Azkadina", kelas: "Bilal", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ063", nama: "Zaid Aflahul Mubarok", kelas: "Bilal", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ064", nama: "Anindya Rahmadina Putri Siwi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ065", nama: "Arkhan Salman Al-Farisi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ066", nama: "Fathan Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ067", nama: "Kenziko San Andrelie", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ068", nama: "Muhammad Dzaky Halim", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ069", nama: "Novia Alika Juventia", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ070", nama: "Radhiya Muhammad Rafaizan", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ071", nama: "Rianti Khairina Sheza", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ072", nama: "Sakura Nadia Zuhastasi", kelas: "Hamzah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ073", nama: "Elmira Davina Ariesty", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ074", nama: "Hevanika Zhafira Adrinof", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ075", nama: "Iffa Astila Rahma", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ076", nama: "Nurhalimah", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ077", nama: "Salsabila Azzahra", kelas: "Fatimah", guru: "Ustadzah Mega", gender: "P" },
-      { id: "IDSRQ078", nama: "Althaffatan Amsyar", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ079", nama: "Argantara Tsaqib Rabbani S", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ080", nama: "M. Fauzan", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ081", nama: "Yasif Abqory", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ082", nama: "Yura Laksamana Semeru", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ083", nama: "Zidan Dirga Pratama Alamsyah", kelas: "Umar", guru: "Ustadzah Mega", gender: "L" },
-      { id: "IDSRQ084", nama: "Alzam Irawan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ085", nama: "Fathir Santosa", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ086", nama: "Qianno Kenzie Hamizan", kelas: "Utsman", guru: "Ustadz Sidik", gender: "L" },
-      { id: "IDSRQ087", nama: "Muhammad Yusuf Wiranatanagara", kelas: "Ali", guru: "Ustadz Sidik", gender: "L" }
-    ];
+    // DATA MASTER SANTRI DIAMBIL DARI GOOGLE SHEET (GID 0 / Data Master Absensi).
+    // Tidak ada lagi daftar nama statis di HTML.
+    let masterDataSantri = [];
 
     const classSchedules = {
       "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu",
@@ -1057,7 +1024,7 @@
     
     // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v1';
+    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v2';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
@@ -1318,6 +1285,8 @@
         prepareProgressOptions();
       } else if (activeId === 'acuanKehadiran') {
         prepareAcuanKehadiran();
+      } else if (activeId === 'dataSantri') {
+        renderDataSantriMaster();
       }
     }
 
@@ -1333,11 +1302,12 @@
       'riwayat': { label: 'Riwayat', icon: 'fas fa-history' },
       'laporanSantri': { label: 'Kartu Absen', icon: 'fas fa-id-card' },
       'progressSantri': { label: 'Progress Kehadiran', icon: 'fas fa-chart-line' },
-      'acuanKehadiran': { label: 'Acuan Kehadiran 100%', icon: 'fas fa-bullseye' }
+      'acuanKehadiran': { label: 'Acuan Kehadiran 100%', icon: 'fas fa-bullseye' },
+      'dataSantri': { label: 'Data Nama Santri', icon: 'fas fa-user-graduate' }
     };
 
     function switchTab(tabId) {
-      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri', 'acuanKehadiran'].forEach(id => {
+      ['live', 'manual', 'kalender', 'persiswa', 'riwayat', 'laporanSantri', 'progressSantri', 'acuanKehadiran', 'dataSantri'].forEach(id => {
          document.getElementById(`view-${id}`)?.classList.add('hidden');
          let dBtn = document.getElementById(`tab-${id}`), mBtn = document.getElementById(`mob-${id}`);
          if(dBtn) dBtn.classList.remove('active');
@@ -1356,6 +1326,7 @@
       if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
       if(tabId === 'progressSantri') prepareProgressOptions();
       if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
+      if(tabId === 'dataSantri') renderDataSantriMaster();
     }
 
     async function toggleCamera() {
@@ -1718,7 +1689,7 @@
            })
            .catch(err => {
                isProcessing = false;
-               Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err.message || err) });
+               Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
                fetchHistoryFromSheets();
                resolve({ error: true, message: String(err) });
            });
@@ -1748,7 +1719,7 @@
        })
        .catch(err => {
            isProcessing = false;
-           Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err.message || err) });
+           Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
            fetchHistoryFromSheets();
        });
     }
@@ -1778,6 +1749,80 @@
         });
     }
 
+    function escapeHtmlMaster(value) {
+        return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function renderDataSantriMaster() {
+        const body = document.getElementById('dataSantriMasterBody');
+        const empty = document.getElementById('dataSantriMasterEmpty');
+        const count = document.getElementById('dataSantriMasterCount');
+        const search = String(document.getElementById('searchDataSantriMaster')?.value || '').trim().toLowerCase();
+        if (!body) return;
+        const rows = (Array.isArray(masterDataSantri) ? masterDataSantri : []).filter(s => {
+            const hay = [s.id, s.nama, s.kelas, s.guru].map(v => String(v || '').toLowerCase()).join(' ');
+            return !search || hay.includes(search);
+        });
+        if (count) count.textContent = `${rows.length} santri${search ? ` (dari ${masterDataSantri.length})` : ''}`;
+        if (!rows.length) {
+            body.innerHTML = '';
+            empty?.classList.remove('hidden');
+            return;
+        }
+        empty?.classList.add('hidden');
+        body.innerHTML = rows.map((s, i) => `
+          <tr class="hover:bg-emerald-50/50">
+            <td class="p-3 text-center font-bold text-gray-500">${i + 1}</td>
+            <td class="p-3 font-mono text-xs font-bold text-gray-600">${escapeHtmlMaster(s.id)}</td>
+            <td class="p-3 font-extrabold text-gray-800">${escapeHtmlMaster(s.nama)}</td>
+            <td class="p-3 font-bold text-gray-700">${escapeHtmlMaster(s.kelas)}</td>
+            <td class="p-3 text-gray-700">${escapeHtmlMaster(s.guru)}</td>
+            <td class="p-3 text-center"><button onclick="hapusDataSantriMaster(${JSON.stringify(String(s.id || ''))})" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-bold text-xs"><i class="fas fa-trash"></i> Hapus</button></td>
+          </tr>`).join('');
+    }
+
+    async function tambahDataSantriMaster() {
+        const id = String(document.getElementById('masterNewId')?.value || '').trim();
+        const nama = String(document.getElementById('masterNewNama')?.value || '').trim();
+        const kelas = String(document.getElementById('masterNewKelas')?.value || '').trim();
+        const guru = String(document.getElementById('masterNewGuru')?.value || '').trim();
+        if (!nama || !kelas) {
+            Toast.fire({ icon: 'warning', title: 'Nama dan kelas wajib diisi.' });
+            return;
+        }
+        if (id && masterDataSantri.some(s => String(s.id).trim().toLowerCase() === id.toLowerCase())) {
+            Toast.fire({ icon: 'warning', title: 'ID santri sudah ada.' });
+            return;
+        }
+        const generatedId = id || ('IDSRQ' + String(Date.now()).slice(-6));
+        try {
+            Toast.fire({ icon: 'info', title: 'Menyimpan santri ke Google Sheet...' });
+            await requestGoogleJsonp({ action: 'addMasterSantri', id: generatedId, nama, kelas, guru });
+            ['masterNewId','masterNewNama','masterNewKelas','masterNewGuru'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+            await new Promise(resolve => fetchHistoryFromSheets(false, resolve));
+            renderDataSantriMaster();
+            Toast.fire({ icon: 'success', title: 'Santri ditambahkan & tersinkron.' });
+        } catch (err) {
+            Toast.fire({ icon: 'error', title: 'Gagal menambah santri', text: String(err?.message || err) });
+        }
+    }
+
+    async function hapusDataSantriMaster(id) {
+        const santri = masterDataSantri.find(s => String(s.id) === String(id));
+        if (!santri) return;
+        const result = await Swal.fire({ title: 'Hapus santri?', html: `<b>${escapeHtmlMaster(santri.nama)}</b><br><small>${escapeHtmlMaster(santri.kelas)}</small>`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, hapus' });
+        if (!result.isConfirmed) return;
+        try {
+            Toast.fire({ icon: 'info', title: 'Menghapus dari Google Sheet...' });
+            await requestGoogleJsonp({ action: 'deleteMasterSantri', id: santri.id });
+            await new Promise(resolve => fetchHistoryFromSheets(false, resolve));
+            renderDataSantriMaster();
+            Toast.fire({ icon: 'success', title: 'Santri dihapus & semua menu disinkronkan.' });
+        } catch (err) {
+            Toast.fire({ icon: 'error', title: 'Gagal menghapus santri', text: String(err?.message || err) });
+        }
+    }
+
     function manualSync() {
         const btnIcon = document.getElementById('iconSyncManual');
         if(btnIcon) btnIcon.classList.add('fa-spin');
@@ -1785,7 +1830,7 @@
         fetchHistoryFromSheets(true);
     }
 
-    function fetchHistoryFromSheets(isManual = false) {
+    function fetchHistoryFromSheets(isManual = false, doneCallback = null) {
         if(!SCRIPT_URL.includes("macros/s/")) return;
         const syncText = document.getElementById('syncStatusText'), syncPing = document.getElementById('syncStatusPing'), syncDot = document.getElementById('syncStatusDot'), btnIcon = document.getElementById('iconSyncManual');
 
@@ -1811,7 +1856,7 @@
                     });
                     renderHistoryTable();
                 }
-                if(Array.isArray(data.santri) && data.santri.length > 0) syncMasterSantriList(data.santri);
+                if(Array.isArray(data.santri)) syncMasterSantriList(data.santri);
                 if(data.acuan && typeof data.acuan === 'object') {
                     let localAcuan = {};
                     try { localAcuan = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); } catch(e) {}
@@ -1826,6 +1871,7 @@
                 const progressView = document.getElementById('view-progressSantri');
                 if(progressView && !progressView.classList.contains('hidden')) { prepareProgressOptions(); renderProgressSantri(); }
                 if(isManual) Toast.fire({ icon: 'success', title: 'Data Mutakhir' });
+                if (typeof doneCallback === 'function') doneCallback(true);
             } else {
                 throw new Error('Respons Google Apps Script tidak valid.');
             }
@@ -1834,12 +1880,13 @@
             if(offlineAlert) {
                 offlineAlert.classList.remove('hidden');
                 const msg = offlineAlert.querySelector('p');
-                if(msg) msg.textContent = 'Belum terhubung ke Google Sheet. Pastikan Web App Apps Script sudah di-deploy sebagai versi terbaru dan aksesnya Anyone.';
+                if(msg) msg.textContent = 'Belum terhubung ke Google Sheet. Pastikan GS versi terbaru sudah di-deploy, akses Web App = Anyone, dan URL /exec yang dipakai sudah benar.';
             }
             if(syncText) syncText.innerText = "DISCONNECTED";
             if(syncPing) syncPing.className = "hidden";
             if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
             if(btnIcon) btnIcon.classList.remove('fa-spin');
+            if (typeof doneCallback === 'function') doneCallback(false);
         });
     }
 
