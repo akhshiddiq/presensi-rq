@@ -590,7 +590,7 @@
               </div>
           </div>
 
-          <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                  <div>
                     <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label>
                     <select id="kalenderKelasSelect" onchange="renderClassCalendar()" class="modern-input bg-white font-bold text-brand-green py-2.5"></select>
@@ -806,13 +806,14 @@
             <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shadow-sm"><i class="fas fa-chart-line"></i></div>
             <div>
               <h2 class="font-extrabold text-emerald-900 text-2xl sm:text-3xl">📈 Progress Kehadiran</h2>
-              <p class="text-sm text-emerald-700/70 mt-1">Pantau progres kehadiran santri per kelas. Target 12× hadir = 100%. Boleh lebih dari 12× hadir; persentase tetap bertambah sesuai jumlah kehadiran.</p>
+              <p class="text-sm text-emerald-700/70 mt-1">Pantau progres kehadiran santri per kelas. Acuan 100% dapat diatur berbeda untuk setiap kelas dan otomatis digunakan pada laporan terkait.</p>
             </div>
           </div>
           <button onclick="manualSync(); renderProgressSantri()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"><i class="fas fa-sync-alt"></i> Perbarui</button>
         </div>
         <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label><select id="progressKelasSelect" onchange="renderProgressSantri()" class="modern-input bg-white font-bold text-brand-green py-2.5"><option value="">-- Pilih Kelas --</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Pilih Kelas</label><select id="progressKelasSelect" onchange="onProgressKelasChange()" class="modern-input bg-white font-bold text-brand-green py-2.5"><option value="">-- Pilih Kelas --</option></select></div>
+          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Acuan 100% Kehadiran</label><div class="flex gap-2"><input id="progressAcuanInput" type="number" min="1" step="1" value="12" onchange="simpanAcuanProgress()" class="modern-input bg-white font-bold text-brand-green py-2.5" placeholder="Contoh: 12"><span class="flex items-center px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-bold text-emerald-700">× hadir</span></div></div>
           <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Bulan</label><select id="progressBulanSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option></select></div>
           <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tahun</label><select id="progressTahunSelect" onchange="renderProgressSantri()" class="modern-input bg-white py-2.5"></select></div>
         </div>
@@ -1845,7 +1846,8 @@
                    `📅 *Bulan:* ${monthName} ${selTahun}\n\n` +
                    `*Rekap Kehadiran Harian (Tanggal 1-${daysInMonth}):*\n\n`;
 
-        text += `🎯 *Acuan Kehadiran:* 12× hadir = 100%\n_Keaktifan boleh lebih dari 12× dan persentase akan terus bertambah._\n\n`;
+        const acuanKelas = getAcuanKelas(selKelas);
+        text += `🎯 *Acuan Kehadiran:* ${acuanKelas}× hadir = 100%\n_Keaktifan boleh lebih dari ${acuanKelas}× dan persentase akan terus bertambah._\n\n`;
 
         studentsInClass.forEach((santri, index) => {
             let daysEmojiLine = '';
@@ -1875,12 +1877,12 @@
             // Jika kosong melompong (belum ada absen sama sekali) berikan tanda strip
             if (daysEmojiLine === '') daysEmojiLine = '-';
 
-            const persen = Math.round((jumlahHadir / 12) * 100);
+            const persen = Math.round((jumlahHadir / acuanKelas) * 100);
             let progresNote = '';
-            if (jumlahHadir >= 12) {
+            if (jumlahHadir >= acuanKelas) {
                 progresNote = jumlahHadir === 12
-                    ? '🌟 *SANTRI RAJIN* — Target 12× tercapai! MasyaAllah, sangat rajin!'
-                    : `🌟 *SANTRI RAJIN* — ${jumlahHadir}× hadir, luar biasa! Melebihi target 12×.`;
+                    ? `🌟 *SANTRI RAJIN* — Target ${acuanKelas}× tercapai! MasyaAllah, sangat rajin!`
+                    : `🌟 *SANTRI RAJIN* — ${jumlahHadir}× hadir, luar biasa! Melebihi target ${acuanKelas}×.`;
             } else if (jumlahHadir > 0) {
                 progresNote = `📈 *Progres Kehadiran :* ${persen}%`;
             } else {
@@ -1895,7 +1897,7 @@
                 `💊 = Sakit\n` +
                 `ℹ️ = Izin\n` +
                 `🅰️ = Alfa\n\n` +
-                `- _Admin RQ Al-Khansa_`;
+                ``;
 
         document.getElementById('waPreviewText').innerText = text;
         document.getElementById('waModal').classList.remove('hidden');
@@ -2015,7 +2017,7 @@
             text += `${emote} *${data.santri.nama}*\n   ✅ Hadir: ${data.hadir} | 💊 Sakit: ${data.sakit} | ℹ️ Izin: ${data.izin} | 🅰️ Alfa: ${data.alfa}\n\n`;
         });
 
-        text += `Terima kasih atas semangat belajarnya. Semoga Allah mudahkan langkah kita dalam menuntut ilmu. Aamiin.\n- _Admin RQ Al-Khansa_`;
+        text += `Terima kasih atas semangat belajarnya. Semoga Allah mudahkan langkah kita dalam menuntut ilmu. Aamiin.`;
 
         document.getElementById('waPreviewText').innerText = text;
         document.getElementById('waModal').classList.remove('hidden');
@@ -2112,10 +2114,53 @@
   </script>
 
 <script>
+    // Acuan kehadiran 100% disimpan per kelas dan dipakai bersama oleh
+    // Progress Kehadiran serta laporan WA Kalender Kelas.
+    const PROGRESS_ACUAN_STORAGE_KEY = 'presensiAcuanKehadiranPerKelas';
+
+    function getAcuanKelas(namaKelas) {
+      const kelas = String(namaKelas || '').trim();
+      if(!kelas) return 12;
+      try {
+        const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}');
+        const value = Number(saved[kelas]);
+        return Number.isFinite(value) && value >= 1 ? Math.round(value) : 12;
+      } catch(e) {
+        return 12;
+      }
+    }
+
+    function setAcuanKelas(namaKelas, value) {
+      const kelas = String(namaKelas || '').trim();
+      const acuan = Math.max(1, Math.round(Number(value) || 12));
+      try {
+        const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}');
+        saved[kelas] = acuan;
+        localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(saved));
+      } catch(e) {}
+      return acuan;
+    }
+
+    function onProgressKelasChange() {
+      const kelas = document.getElementById('progressKelasSelect');
+      const acuan = document.getElementById('progressAcuanInput');
+      if(acuan) acuan.value = getAcuanKelas(kelas ? kelas.value : '');
+      renderProgressSantri();
+    }
+
+    function simpanAcuanProgress() {
+      const kelas = document.getElementById('progressKelasSelect');
+      const acuan = document.getElementById('progressAcuanInput');
+      if(!kelas || !acuan || !kelas.value) return;
+      acuan.value = setAcuanKelas(kelas.value, acuan.value);
+      renderProgressSantri();
+    }
+
     function prepareProgressOptions() {
       const kelas = document.getElementById('progressKelasSelect');
       const tahun = document.getElementById('progressTahunSelect');
       const bulan = document.getElementById('progressBulanSelect');
+      const acuan = document.getElementById('progressAcuanInput');
       if(!kelas || !tahun || !bulan) return;
       const oldKelas = kelas.value;
       kelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
@@ -2123,6 +2168,7 @@
         kelas.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`;
       });
       if(oldKelas) kelas.value = oldKelas;
+      if(acuan) acuan.value = getAcuanKelas(kelas.value);
       if(tahun.options.length === 0) {
         const y = new Date().getFullYear();
         for(let i=y-1;i<=y+2;i++) tahun.innerHTML += `<option value="${i}">${i}</option>`;
@@ -2148,21 +2194,24 @@
       const kelas = document.getElementById('progressKelasSelect');
       const bulan = document.getElementById('progressBulanSelect');
       const tahun = document.getElementById('progressTahunSelect');
+      const acuanInput = document.getElementById('progressAcuanInput');
       const empty = document.getElementById('progressEmpty');
       const result = document.getElementById('progressResult');
       const list = document.getElementById('progressStudentList');
       const summary = document.getElementById('progressClassSummary');
       if(!kelas || !bulan || !tahun || !empty || !result || !list || !summary) return;
-      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); return; }
+      if(!kelas.value) { empty.classList.remove('hidden'); result.classList.add('hidden'); if(acuanInput) acuanInput.value = 12; return; }
+      const acuan = getAcuanKelas(kelas.value);
+      if(acuanInput) acuanInput.value = acuan;
       const students = masterDataSantri.filter(s => s.kelas === kelas.value);
       const monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan.value)];
       const data = students.map((s,i)=>({s, hadir:getProgressHadirCount(s.id, bulan.value, tahun.value), no:i+1})).sort((a,b)=>b.hadir-a.hadir || a.s.nama.localeCompare(b.s.nama));
-      const rajin = data.filter(x=>x.hadir>=12).length;
-      summary.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="text-lg font-black text-gray-800">Kelas ${escapeHtmlLaporan(kelas.value)}</div><div class="text-sm font-semibold text-emerald-700">${monthName} ${tahun.value} · ${data.length} santri · Acuan 12× = 100%</div></div><div class="text-sm font-extrabold text-amber-700">🏆 ${rajin} Santri Rajin</div></div>`;
+      const rajin = data.filter(x=>x.hadir>=acuan).length;
+      summary.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="text-lg font-black text-gray-800">Kelas ${escapeHtmlLaporan(kelas.value)}</div><div class="text-sm font-semibold text-emerald-700">${monthName} ${tahun.value} · ${data.length} santri · Acuan ${acuan}× = 100%</div></div><div class="text-sm font-extrabold text-amber-700">🏆 ${rajin} Santri Rajin</div></div>`;
       list.innerHTML = data.map(x=>{
-        const pct=Math.round(x.hadir/12*100);
-        const rajin=x.hadir>=12;
-        return `<div class="rounded-2xl border ${rajin?'border-amber-200 bg-amber-50':'border-gray-200 bg-white'} p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-extrabold text-gray-800 truncate">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div><div class="text-xs text-gray-500 mt-0.5">${escapeHtmlLaporan(x.s.kelas||'-')}</div></div><div class="text-right shrink-0"><div class="text-xl font-black ${rajin?'text-amber-600':'text-emerald-600'}">${pct}%</div><div class="text-[11px] font-bold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'🏆🌟 SANTRI RAJIN':x.hadir+' / 12 hadir'}</div></div></div><div class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner"><div class="h-full rounded-full transition-all duration-700 ease-out" style="width:${pct}%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div><div class="mt-2 text-xs font-semibold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?(x.hadir===12?'100% — target 12× sudah tercapai':'Lebih dari 12× hadir — sangat baik!'):'Sedang progres menuju 12 kali hadir'}</div></div>`;
+        const pct=Math.round(x.hadir/acuan*100);
+        const rajin=x.hadir>=acuan;
+        return `<div class="rounded-2xl border ${rajin?'border-amber-200 bg-amber-50':'border-gray-200 bg-white'} p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-extrabold text-gray-800 truncate">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div><div class="text-xs text-gray-500 mt-0.5">${escapeHtmlLaporan(x.s.kelas||'-')}</div></div><div class="text-right shrink-0"><div class="text-xl font-black ${rajin?'text-amber-600':'text-emerald-600'}">${pct}%</div><div class="text-[11px] font-bold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?'🏆🌟 SANTRI RAJIN':x.hadir+' / '+acuan+' hadir'}</div></div></div><div class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner"><div class="h-full rounded-full transition-all duration-700 ease-out" style="width:${Math.min(100,pct)}%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div><div class="mt-2 text-xs font-semibold ${rajin?'text-amber-700':'text-gray-500'}">${rajin?(x.hadir===acuan?'100% — target '+acuan+'× sudah tercapai':'Lebih dari '+acuan+'× hadir — sangat baik!'):'Sedang progres menuju '+acuan+' kali hadir'}</div></div>`;
       }).join('');
       empty.classList.add('hidden'); result.classList.remove('hidden');
     }
