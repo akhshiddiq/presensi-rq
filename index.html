@@ -1005,7 +1005,13 @@
   <script>
     // DATA MASTER SANTRI DIAMBIL DARI GOOGLE SHEET (GID 0 / Data Master Absensi).
     // Tidak ada lagi daftar nama statis di HTML.
+    const MASTER_KELAS_TETAP = ['Abdurrahman','Abu Ubaidah','Zubair','Ali','Abu Bakar','Bilal','Hamzah','Fatimah','Umar','Utsman'];
     let masterDataSantri = [];
+    let cachedMasterClasses = [];
+    try {
+      cachedMasterClasses = JSON.parse(localStorage.getItem('masterKelasList') || '[]');
+      if (!Array.isArray(cachedMasterClasses)) cachedMasterClasses = [];
+    } catch(e) { cachedMasterClasses = []; }
 
     const classSchedules = {
       "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu",
@@ -1024,7 +1030,7 @@
     
     // URL GOOGLE APPS SCRIPT TERHUBUNG OTOMATIS
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX9_gs_ucfmHQzpYG5TFuJp6nU9__hZWL02FapoAh3be3nXHOovBrJzNwiLSTSIkoG/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v3';
+    const SCRIPT_URL_VERSION = '2026-09-15-master-sheet-sync-v4-kelas10';
     const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
     if (storedScriptVersion !== SCRIPT_URL_VERSION) {
         localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL);
@@ -1218,7 +1224,16 @@
     function handleLogoError(imgEl) { imgEl.classList.add('hidden'); document.getElementById('defaultLogoIcon')?.classList.remove('hidden'); }
 
     function populateClassDropdowns() {
-      const uniqueClasses = [...new Set([...(Array.isArray(window.__serverMasterClasses) ? window.__serverMasterClasses : []), ...masterDataSantri.map(s => s.kelas)])].filter(Boolean).sort((a,b) => String(a).localeCompare(String(b), 'id'));
+      // Daftar kelas tidak boleh hilang hanya karena koneksi/sinkronisasi server bermasalah.
+      // Tetap gunakan 10 kelas master yang sudah ditetapkan, lalu gabungkan dengan data Sheet/cache.
+      const sumberKelas = [
+        ...MASTER_KELAS_TETAP,
+        ...(Array.isArray(cachedMasterClasses) ? cachedMasterClasses : []),
+        ...(Array.isArray(window.__serverMasterClasses) ? window.__serverMasterClasses : []),
+        ...masterDataSantri.map(s => s.kelas)
+      ];
+      const uniqueClasses = [...new Set(sumberKelas.map(c => String(c || '').trim()).filter(Boolean))]
+        .sort((a,b) => String(a).localeCompare(String(b), 'id'));
       const createOptions = (elId) => {
           const el = document.getElementById(elId);
           if(!el) return;
@@ -1231,6 +1246,9 @@
       createOptions('kalenderKelasSelect');
       createOptions('persiswaKelasSelect');
     }
+
+    // Isi dropdown kelas sejak awal, sebelum sinkronisasi server selesai.
+    populateClassDropdowns();
 
     // MASTER SANTRI: Google Sheet GID 0 menjadi sumber data utama.
     // Jika ada santri ditambah DI SHEET -> muncul di web.
@@ -1261,8 +1279,14 @@
         return classCmp !== 0 ? classCmp : a.nama.localeCompare(b.nama, 'id');
       });
 
-      // Selalu ganti seluruh daftar dengan isi server, termasuk saat kosong.
+      // Data santri tetap mengikuti server. Daftar kelas dipertahankan dari master tetap/cache
+      // sehingga dropdown tidak menghilang ketika respons server kosong/gagal.
       masterDataSantri = formatted;
+      const kelasDariServer = formatted.map(item => item.kelas).filter(Boolean);
+      if (kelasDariServer.length) {
+        cachedMasterClasses = [...new Set([...cachedMasterClasses, ...kelasDariServer])];
+        try { localStorage.setItem('masterKelasList', JSON.stringify(cachedMasterClasses)); } catch(e) {}
+      }
       populateClassDropdowns();
 
       // Perbarui tampilan yang sedang terbuka agar perubahan master langsung terlihat.
