@@ -808,20 +808,47 @@
 
     function renderManualStudents() {
         const kelas = document.getElementById('manualKelasSelect').value, listContainer = document.getElementById('manualStudentList'), checkAll = document.getElementById('checkAllManual');
-        checkAll.checked = false; document.getElementById('selectedCountText').innerText = "0 dipilih"; document.getElementById('searchManualStudent').value = "";
-        if(!kelas) { listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu untuk melihat daftar santri.</p>'; document.getElementById('countTampilSantri').innerText = "0"; return; }
+
+        // Simpan pilihan yang sedang dicentang agar sinkronisasi otomatis tidak menghilangkannya.
+        // renderManualStudents() dipanggil setiap sinkronisasi ±4 detik.
+        const renderedClass = listContainer.dataset.manualRenderedClass || '';
+        const sameClass = renderedClass === kelas;
+        const selectedIds = sameClass
+            ? new Set(Array.from(listContainer.querySelectorAll('.manual-student-cb:checked')).map(cb => String(cb.value)))
+            : new Set();
+
+        if(!kelas) {
+            checkAll.checked = false;
+            document.getElementById('selectedCountText').innerText = "0 dipilih";
+            document.getElementById('searchManualStudent').value = "";
+            listContainer.dataset.manualRenderedClass = '';
+            listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu untuk melihat daftar santri.</p>';
+            document.getElementById('countTampilSantri').innerText = "0";
+            return;
+        }
         if(!serverMasterLoaded) {
             listContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-6 font-semibold"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data santri dari Google Sheet...</p>';
             document.getElementById('countTampilSantri').innerText = "0";
             return;
         }
-        const santris = masterDataSantri.filter(s => s.kelas === kelas); document.getElementById('countTampilSantri').innerText = santris.length;
+        const santris = masterDataSantri.filter(s => s.kelas === kelas);
+        document.getElementById('countTampilSantri').innerText = santris.length;
         listContainer.innerHTML = santris.map(s => `
               <label class="student-item flex items-center gap-4 p-3 rounded-lg border border-gray-200 bg-white cursor-pointer hover:bg-emerald-50 transition-colors shadow-sm">
                   <input type="checkbox" class="manual-student-cb w-5 h-5 rounded border-gray-300 bg-white accent-emerald-600 cursor-pointer" value="${escapeHtmlLaporan(s.id)}">
                   <div class="flex-grow"><p class="font-bold text-sm text-gray-800">${escapeHtmlLaporan(s.nama)}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${escapeHtmlLaporan(s.id)}</p></div>
               </label>`).join('');
-        document.querySelectorAll('.manual-student-cb').forEach(cb => cb.addEventListener('change', () => document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`));
+
+        // Kembalikan centang yang sudah dipilih sebelum daftar dibangun ulang.
+        document.querySelectorAll('.manual-student-cb').forEach(cb => {
+            if(selectedIds.has(String(cb.value))) cb.checked = true;
+            cb.addEventListener('change', () => document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`);
+        });
+
+        const selectedCount = document.querySelectorAll('.manual-student-cb:checked').length;
+        document.getElementById('selectedCountText').innerText = `${selectedCount} dipilih`;
+        checkAll.checked = santris.length > 0 && selectedCount === santris.length;
+        listContainer.dataset.manualRenderedClass = kelas;
     }
     function filterManualStudents() {
         const query = document.getElementById('searchManualStudent').value.toLowerCase();
