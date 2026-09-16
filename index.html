@@ -23,6 +23,35 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Fallback pemindai QR: jika CDN utama gagal dimuat, coba CDN lain otomatis. -->
+  <script>
+    window.__html5QrReady = (async function () {
+      if (window.Html5Qrcode) return true;
+
+      const sources = [
+        'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'
+      ];
+
+      for (const src of sources) {
+        try {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+          if (window.Html5Qrcode) return true;
+        } catch (e) {
+          console.warn('CDN pemindai QR gagal dimuat:', src, e);
+        }
+      }
+
+      return false;
+    })();
+  </script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -455,7 +484,10 @@
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let audioMode = localStorage.getItem('audioMode') || 'ai';
     let sfxType = localStorage.getItem('sfxType') || 'blup';
-    let currentFacingMode = 'environment';
+    // Deklarasi variabel state kamera
+    let isCameraOn = false;
+    let html5QrCode = null;
+    let currentFacingMode = 'environment'; // 'environment' = kamera belakang, 'user' = depan
     
     let presensiHistory = []; 
     let acuanKehadiranData = {};
@@ -463,9 +495,7 @@
     let deletedMasterIds = new Set();
     let newlyAddedKeysMap = new Map();
     let syncInterval;
-    let html5QrCode = null;
     let isProcessing = false;
-    let isCameraOn = false;
     let lastScannedId = "";
     let lastScanTime = 0;
     let audioCtx = null;
@@ -598,38 +628,156 @@
       if(tabId === 'dataSantri') renderDataSantriMaster();
     }
     async function toggleCamera() {
-        const btn = document.getElementById('btnToggleCam'), camContainer = document.getElementById('reader-container');
-        getAudioContext();
-        if(isCameraOn) {
-            try { if(html5QrCode) await html5QrCode.stop(); isCameraOn = false; camContainer.classList.add('hidden'); btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera'; btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm"; } catch(e) {}
-        } else {
-            camContainer.classList.remove('hidden'); btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i> Menghubungkan Kamera...'; btn.className = "flex-grow py-4 bg-gray-400 text-white rounded-xl font-extrabold flex justify-center items-center gap-2 text-xs md:text-sm";
+        const btn = document.getElementById('btnToggleCam');
+        const camContainer = document.getElementById('reader-container');
+
+        // 1. Cek apakah library qr scanner sudah termuat di HTML
+        if (!window.Html5Qrcode) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Modul Gagal Dimuat',
+                text: 'Library pemindai QR belum termuat. Periksa koneksi internet lalu muat ulang halaman.',
+                confirmButtonColor: '#065f46'
+            });
+            return; // Hentikan fungsi jika library tidak ada
+        }
+
+        if (isCameraOn) {
+            // === PROSES MEMATIKAN KAMERA ===
             try {
-                if(!window.Html5Qrcode) throw new Error('Modul pemindai QR belum termuat. Periksa koneksi internet lalu muat ulang halaman.');
-                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                const scannerConfig = { fps: 20, qrbox: (w, h) => { const minEdge = Math.min(w, h); const box = Math.max(220, Math.floor(minEdge * 0.78)); return { width: Math.min(box, minEdge), height: Math.min(box, minEdge) }; }, aspectRatio: 1.0, disableFlip: false };
-                const onQrSuccess = (decodedText) => processScanResult(decodedText);
-                try { await html5QrCode.start({ facingMode: currentFacingMode }, scannerConfig, onQrSuccess); } catch (firstErr) {
-                    const cameras = await Html5Qrcode.getCameras(); if(!cameras || cameras.length === 0) throw firstErr;
-                    let selected = cameras[0]; const backCam = cameras.find(c => /back|rear|environment|belakang/i.test(c.label || ''));
-                    if(currentFacingMode === 'environment' && backCam) selected = backCam; else if(currentFacingMode === 'user') { const frontCam = cameras.find(c => /front|user|face|depan/i.test(c.label || '')); if(frontCam) selected = frontCam; }
+                if (html5QrCode) {
+                    await html5QrCode.stop();
+                    html5QrCode.clear(); // Bersihkan sisa tampilan canvas
+                }
+
+                isCameraOn = false;
+                camContainer.classList.add('hidden');
+
+                btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
+                btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+            } catch(e) {
+                console.error("Gagal mematikan kamera:", e);
+            }
+        } else {
+            // === PROSES MENYALAKAN KAMERA ===
+            camContainer.classList.remove('hidden');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i> Menghubungkan Kamera...';
+            btn.className = "flex-grow py-4 bg-gray-400 text-white rounded-xl font-extrabold flex justify-center items-center gap-2 text-xs md:text-sm";
+
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader"); // Pastikan ada div id="reader" di HTML
+                }
+
+                const scannerConfig = {
+                    fps: 20,
+                    qrbox: (w, h) => {
+                        const minEdge = Math.min(w, h);
+                        const box = Math.max(220, Math.floor(minEdge * 0.78));
+                        return {
+                            width: Math.min(box, minEdge),
+                            height: Math.min(box, minEdge)
+                        };
+                    },
+                    aspectRatio: 1.0,
+                    disableFlip: false
+                };
+
+                // Fungsi saat barcode berhasil terbaca
+                const onQrSuccess = (decodedText) => {
+                    if (typeof processScanResult === 'function') {
+                        processScanResult(decodedText);
+                    } else {
+                        console.log("Berhasil scan:", decodedText);
+                    }
+                };
+
+                try {
+                    // Coba buka menggunakan konfigurasi standar (Depan/Belakang)
+                    await html5QrCode.start(
+                        { facingMode: currentFacingMode },
+                        scannerConfig,
+                        onQrSuccess
+                    );
+                } catch (firstErr) {
+                    console.warn("Mencoba fallback pencarian kamera manual...", firstErr);
+
+                    // Fallback: Jika mode di atas ditolak (sering terjadi di beberapa HP), cari kamera manual
+                    const cameras = await Html5Qrcode.getCameras();
+
+                    if (!cameras || cameras.length === 0) {
+                        throw new Error("Tidak ada kamera yang terdeteksi.");
+                    }
+
+                    let selected = cameras[0];
+                    const backCam = cameras.find(c => /back|rear|environment|belakang/i.test(c.label || ''));
+                    const frontCam = cameras.find(c => /front|user|face|depan/i.test(c.label || ''));
+
+                    if (currentFacingMode === 'environment' && backCam) {
+                        selected = backCam;
+                    } else if (currentFacingMode === 'user' && frontCam) {
+                        selected = frontCam;
+                    }
+
                     await html5QrCode.start(selected.id, scannerConfig, onQrSuccess);
                 }
-                isCameraOn = true; btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera'; btn.className = "flex-grow py-4 bg-red-500 text-white rounded-xl font-extrabold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+
+                // Sukses menyala
+                isCameraOn = true;
+                btn.innerHTML = '<i class="fas fa-video-slash text-sm"></i> Matikan Kamera';
+                btn.className = "flex-grow py-4 bg-red-500 text-white rounded-xl font-extrabold transition-all shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:bg-red-600 active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm";
+
             } catch (err) {
-                camContainer.classList.add('hidden'); isCameraOn = false; btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera'; btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
-                Swal.fire({ icon: 'warning', title: 'Akses Kamera Terbatas', text: 'Gunakan tab Input Manual jika kamera dibatasi perangkat.', confirmButtonColor: '#065f46' });
+                // === ERROR HANDLING (Izin ditolak, modul error, dll) ===
+                console.error("Detail Error Kamera (Cek alasan spesifiknya di sini):", err);
+
+                camContainer.classList.add('hidden');
+                isCameraOn = false;
+
+                btn.innerHTML = '<i class="fas fa-video text-sm"></i> Nyalakan Kamera';
+                btn.className = "flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float flex justify-center items-center gap-2 text-xs md:text-sm";
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Akses Kamera Terbatas',
+                    text: 'Pastikan izin kamera sudah diberikan atau gunakan tab Input Manual.',
+                    confirmButtonColor: '#065f46'
+                });
             }
         }
     }
+
     async function switchCameraDirection() {
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-        Toast.fire({ icon: 'info', title: `Kamera dialihkan ke ${currentFacingMode === 'environment' ? 'Belakang' : 'Depan'}` });
-        if (isCameraOn && html5QrCode) { try { await html5QrCode.stop(); isCameraOn = false; await toggleCamera(); } catch (e) { } }
+
+        // Menampilkan pesan ke pengguna (pastikan objek Toast dari Sweetalert ada)
+        if (typeof Toast !== 'undefined') {
+            Toast.fire({
+                icon: 'info',
+                title: `Kamera dialihkan ke ${currentFacingMode === 'environment' ? 'Belakang' : 'Depan'}`
+            });
+        }
+
+        // Jika sedang merekam, matikan lalu nyalakan lagi dengan arah baru
+        if (isCameraOn && html5QrCode) {
+            try {
+                await html5QrCode.stop();
+                isCameraOn = false;
+                await toggleCamera();
+            } catch (e) {
+                console.error("Gagal mengalihkan arah kamera:", e);
+            }
+        }
     }
+
     function triggerCameraFlash() {
-        const flashEl = document.getElementById('scanFlash'); if (!flashEl) return;
-        flashEl.classList.remove('animate-camera-flash'); void flashEl.offsetWidth; flashEl.classList.add('animate-camera-flash');
+        const flashEl = document.getElementById('scanFlash');
+        if (!flashEl) return;
+
+        flashEl.classList.remove('animate-camera-flash');
+        void flashEl.offsetWidth; // Memicu reflow halaman agar animasi CSS ter-reset
+        flashEl.classList.add('animate-camera-flash');
     }
     function extractSantriIdFromQr(decodedText) {
        const raw = String(decodedText || '').trim(); if(!raw) return '';
