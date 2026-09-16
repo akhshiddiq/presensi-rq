@@ -1058,139 +1058,101 @@
       const kelas = String(namaKelas || '').trim(), acuan = Math.max(1, Math.round(Number(value) || 12)); if(!kelas) return acuan;
       acuanKehadiranData[kelas] = acuan; try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {} return acuan;
     }
+
     function simpanAcuanKelas(kelas) {
       // FIX ID PEMBACAAN HTML MENGGUNAKAN STANDAR AMAN (BUKAN URI ENCODE)
       const safeId = String(kelas).replace(/[^a-zA-Z0-9]/g, '_');
       const input = document.getElementById('acuanInput_' + safeId);
       const button = document.getElementById('acuanSaveBtn_' + safeId);
       const status = document.getElementById('acuanStatus_' + safeId);
-
+      
       if (!input || !button) return;
-
       const nilaiInput = Number(input.value);
       if (!Number.isFinite(nilaiInput) || nilaiInput < 1) {
-        Toast.fire({ icon: 'warning', title: 'Acuan harus berupa angka minimal 1' });
-        input.focus();
-        return;
+        Toast.fire({ icon: 'warning', title: 'Acuan harus berupa angka minimal 1' }); input.focus(); return;
       }
-
+      
       const acuan = Math.max(1, Math.round(nilaiInput));
-      input.value = acuan;
-      input.disabled = true;
-      button.disabled = true;
+      input.value = acuan; input.disabled = true; button.disabled = true;
       button.classList.add('opacity-75', 'cursor-wait');
       button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
-
-      if (status) {
-        status.className = 'text-[10px] font-bold text-amber-600 mt-1';
-        status.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim data ke Google Sheet...';
-      }
-
-      // Retry khusus untuk fitur Acuan. Fitur lain tidak disentuh.
+      if (status) { status.className = 'text-[10px] font-bold text-amber-600 mt-1'; status.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim data ke Google Sheet...'; }
+      
       const MAX_RETRY = 5;
       const RETRY_DELAY = [3000, 7000, 15000, 30000];
       let attempt = 0;
 
-      const tunggu = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-      const kirimAcuan = async () => {
+      const kirimAcuan = () => {
         attempt++;
 
         if (status) {
           status.className = 'text-[10px] font-bold text-amber-600 mt-1';
-          status.innerHTML = `<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim data ke Google Sheet... (Percobaan ${attempt}/${MAX_RETRY})`;
+          status.innerHTML = `<i class="fas fa-sync-alt fa-spin mr-1"></i> Mengirim ke Google Sheet... (percobaan ${attempt}/${MAX_RETRY})`;
         }
 
-        try {
-          const result = await requestGoogleJsonp({
-            action: 'saveAcuan',
-            kelas: kelas,
-            acuan: acuan
-          });
+        return requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
+          .then((result) => {
+            if (!result || result.status !== 'success' || result.verified === false) {
+              throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi penyimpanan.');
+            }
+            return result;
+          })
+          .catch((err) => {
+            if (attempt >= MAX_RETRY) throw err;
 
-          if (!result || result.status !== 'success' || result.verified !== true) {
-            throw new Error(
-              (result && result.message) ||
-              'Google Sheet belum mengonfirmasi penyimpanan.'
-            );
-          }
-
-          // Sukses: nilai yang sama disimpan di cache lokal perangkat ini.
-          setAcuanKelas(kelas, acuan);
-
-          if (status) {
-            status.className = 'text-[10px] font-bold text-emerald-600 mt-1';
-            status.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Data masuk ke Google Sheet ✓';
-          }
-
-          button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
-          button.classList.remove('opacity-75', 'cursor-wait');
-          button.classList.add('bg-emerald-700');
-
-          Toast.fire({
-            icon: 'success',
-            title: 'Data masuk ke Google Sheet',
-            text: `${kelas}: ${acuan}× hadir = 100%`
-          });
-
-          fetchHistoryFromSheets(true);
-          renderProgressSantri();
-          if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
-
-          return true;
-
-        } catch (err) {
-
-          if (attempt < MAX_RETRY) {
             const delay = RETRY_DELAY[attempt - 1] || 30000;
 
             if (status) {
               status.className = 'text-[10px] font-bold text-amber-600 mt-1';
-              status.innerHTML = `<i class="fas fa-clock mr-1"></i> Koneksi belum berhasil. Mencoba lagi dalam ${Math.round(delay / 1000)} detik...`;
+              status.innerHTML = `<i class="fas fa-clock mr-1"></i> Koneksi belum selesai. Mencoba lagi dalam ${Math.round(delay / 1000)} detik...`;
             }
 
-            await tunggu(delay);
-            return kirimAcuan();
-          }
-
-          if (status) {
-            status.className = 'text-[10px] font-bold text-red-600 mt-1';
-            status.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Gagal masuk ke Google Sheet setelah beberapa percobaan';
-          }
-
-          Toast.fire({
-            icon: 'error',
-            title: 'Acuan gagal disimpan',
-            text: String(err?.message || err)
+            return new Promise(resolve => setTimeout(resolve, delay)).then(kirimAcuan);
           });
-
-          return false;
-        }
       };
 
-      kirimAcuan().finally(() => {
-        input.disabled = false;
-        button.disabled = false;
-        button.classList.remove('opacity-75', 'cursor-wait');
-
-        if (status && status.className.includes('text-red-600')) {
-          button.innerHTML = '<i class="fas fa-save"></i> <span>Coba Lagi</span>';
-          button.classList.remove('bg-emerald-700');
-        }
-      });
+      kirimAcuan()
+        .then((result) => {
+          setAcuanKelas(kelas, acuan);
+          input.dataset.acuanDirty = '0';
+          if (status) { status.className = 'text-[10px] font-bold text-emerald-600 mt-1'; status.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Data masuk ke Google Sheet ✓'; }
+          button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
+          button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
+          Toast.fire({ icon: 'success', title: 'Data masuk ke Google Sheet', text: `${kelas}: ${acuan}× hadir = 100%` });
+          fetchHistoryFromSheets(true); renderProgressSantri(); if (typeof renderLaporanSantri === 'function') renderLaporanSantri();
+        })
+        .catch((err) => {
+          if (status) { status.className = 'text-[10px] font-bold text-red-600 mt-1'; status.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Gagal masuk ke Google Sheet'; }
+          Toast.fire({ icon: 'error', title: 'Acuan gagal disimpan', text: String(err?.message || err) });
+        })
+        .finally(() => {
+          input.disabled = false; button.disabled = false; button.classList.remove('opacity-75', 'cursor-wait');
+          if (status && status.className.includes('text-red-600')) { button.innerHTML = '<i class="fas fa-save"></i> <span>Coba Lagi</span>'; button.classList.remove('bg-emerald-700'); }
+        });
     }
-
+    
     function prepareAcuanKehadiran() {
       const container = document.getElementById('acuanKehadiranList'); if(!container) return;
       const classes = getUniqueClassNames();
       if(classes.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas.</div>'; return; }
+
+      // JANGAN MENIMPA INPUT YANG SEDANG DIEDIT SAAT SINKRONISASI OTOMATIS.
+      // Nilai draft dipertahankan sampai pengguna menekan Simpan / Input.
+      const draftValues = {};
+      container.querySelectorAll('input[id^="acuanInput_"]').forEach(el => {
+        if (el.dataset.acuanDirty === '1') {
+          draftValues[el.id] = el.value;
+        }
+      });
       
       container.innerHTML = classes.map((kelas, index) => {
         // MENGUBAH SPASI DAN KARAKTER ANEH MENJADI UNDERSCORE AGAR ID HTML AMAN
         const safeId = String(kelas).replace(/[^a-zA-Z0-9]/g, '_');
-        const acuan = getAcuanKelas(kelas);
+        const inputId = 'acuanInput_' + safeId;
+        const hasDraft = Object.prototype.hasOwnProperty.call(draftValues, inputId);
+        const acuan = hasDraft ? draftValues[inputId] : getAcuanKelas(kelas);
         
-        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" id="acuanSaveBtn_${safeId}" onclick="simpanAcuanKelas('${String(kelas).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
+        return `<div class="p-4 hover:bg-emerald-50/40 transition-colors">\n          <div class="grid grid-cols-1 sm:grid-cols-[70px_1fr_220px_120px] gap-3 sm:items-center">\n            <div class="hidden sm:block text-center font-extrabold text-gray-500">${index + 1}</div>\n            <div class="min-w-0">\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden mb-1">Nama Kelas</div>\n              <div class="font-extrabold text-gray-800 text-base">${escapeHtmlLaporan(kelas)}</div>\n              <div class="text-[10px] text-gray-400 mt-0.5">Patokan 100% untuk seluruh laporan kelas ini</div>\n            </div>\n            <div>\n              <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide sm:hidden">Acuan 100%</div>\n              <div class="flex items-center gap-2">\n                <input id="acuanInput_${safeId}" type="number" min="1" step="1" value="${acuan}" data-acuan-dirty="${hasDraft ? '1' : '0'}" oninput="this.dataset.acuanDirty='1'" class="modern-input bg-white font-extrabold text-emerald-700 py-2.5 w-full" aria-label="Acuan ${escapeHtmlLaporan(kelas)}">\n                <span class="shrink-0 text-xs font-extrabold text-emerald-700">× hadir</span>\n              </div>\n              <div id="acuanStatus_${safeId}" class="text-[10px] font-bold text-gray-400 mt-1">Saat ini: ${acuan}× = 100%</div>\n            </div>\n            <div>\n              <button type="button" id="acuanSaveBtn_${safeId}" onclick="simpanAcuanKelas('${String(kelas).replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">\n                <i class="fas fa-save"></i> Simpan / Input\n              </button>\n            </div>\n          </div>\n        </div>`;
       }).join('');
     }
 
