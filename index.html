@@ -123,7 +123,7 @@
     </div>
     
     <div class="flex items-center gap-2 self-end sm:self-auto">
-      <a href="https://docs.google.com/spreadsheets/d/1iBn4kM63rVdsc2v-uPsfGDrn8w7BQhWmQLIZH7-pKhU/edit?gid=1160146646#gid=1160146646" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
+      <a href="https://docs.google.com/spreadsheets/d/1ZHSSeZ2l65phUsf7RVCpX5uffuHRSs-v56wXaDMhVjU/edit?gid=1199045037#gid=1199045037" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
       <button onclick="manualSync()" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-blue-600/80 hover:bg-blue-500 backdrop-blur-md rounded-lg transition-all shadow-sm border border-blue-400/30 text-[11px] font-bold" title="Tarik Data Terbaru Sekarang"><i id="iconSyncManual" class="fas fa-sync-alt text-blue-200"></i> <span class="hidden sm:inline">Sinkron</span></button>
       <button onclick="cycleAudioMode()" id="btnHeaderAudio" class="flex items-center gap-1.5 px-2.5 py-1.5 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[11px] font-medium" title="Ubah Mode Suara"><i id="audioIcon" class="fas fa-robot text-brand-gold text-[12px]"></i><span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span></button>
       <button onclick="toggleDarkMode()" id="btnDarkMode" class="flex items-center justify-center w-9 h-8 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[12px]" title="Ganti Mode Malam / Siang"><i id="darkModeIcon" class="fas fa-moon"></i></button>
@@ -448,6 +448,8 @@
     
     let presensiHistory = []; 
     let acuanKehadiranData = {};
+    // Revisi per kelas mencegah hasil polling lama menimpa hasil simpan terbaru.
+    let acuanRevisionByClass = new Map();
     let deletedKeys = new Set();
     let deletedMasterIds = new Set();
     let newlyAddedKeysMap = new Map();
@@ -1051,8 +1053,14 @@
     function getUniqueClassNames() { return [...new Set(masterDataSantri.map(s => String(s.kelas || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'id')); }
     function getAcuanKelas(namaKelas) {
       const kelas = String(namaKelas || '').trim(); if(!kelas) return 12;
-      const serverValue = Number(acuanKehadiranData && acuanKehadiranData[kelas]); if(Number.isFinite(serverValue) && serverValue >= 1) return Math.round(serverValue);
-      try { const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); const value = Number(saved[kelas]); return Number.isFinite(value) && value >= 1 ? Math.round(value) : 12; } catch(e) { return 12; }
+      const target = kelas.toLowerCase().replace(/\s+/g, ' ');
+      let serverValue = Number(acuanKehadiranData && acuanKehadiranData[kelas]);
+      if(!Number.isFinite(serverValue) || serverValue < 1) {
+        const serverKey = Object.keys(acuanKehadiranData || {}).find(k => String(k).trim().toLowerCase().replace(/\s+/g, ' ') === target);
+        if(serverKey) serverValue = Number(acuanKehadiranData[serverKey]);
+      }
+      if(Number.isFinite(serverValue) && serverValue >= 1) return Math.round(serverValue);
+      try { const saved = JSON.parse(localStorage.getItem(PROGRESS_ACUAN_STORAGE_KEY) || '{}'); const savedKey = Object.keys(saved || {}).find(k => String(k).trim().toLowerCase().replace(/\s+/g, ' ') === target); const value = Number(savedKey ? saved[savedKey] : saved[kelas]); return Number.isFinite(value) && value >= 1 ? Math.round(value) : 12; } catch(e) { return 12; }
     }
     function setAcuanKelas(namaKelas, value) {
       const kelas = String(namaKelas || '').trim(), acuan = Math.max(1, Math.round(Number(value) || 12)); if(!kelas) return acuan;
@@ -1072,6 +1080,8 @@
       }
       
       const acuan = Math.max(1, Math.round(nilaiInput));
+      const acuanRevision = (acuanRevisionByClass.get(kelas) || 0) + 1;
+      acuanRevisionByClass.set(kelas, acuanRevision);
       input.value = acuan; input.disabled = true; button.disabled = true;
       button.classList.add('opacity-75', 'cursor-wait');
       button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
@@ -1080,7 +1090,14 @@
       requestGoogleJsonp({ action: 'saveAcuan', kelas: kelas, acuan: acuan })
         .then((result) => {
           if (!result || result.status !== 'success' || result.verified === false) throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi penyimpanan.');
-          setAcuanKelas(kelas, acuan);
+          if (result.acuanData && typeof result.acuanData === 'object') {
+            acuanKehadiranData = Object.assign({}, result.acuanData);
+            try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
+          } else {
+            setAcuanKelas(kelas, acuan);
+          }
+          const latestServerValue = getAcuanKelas(kelas);
+          if (input) input.value = latestServerValue;
           if (status) { status.className = 'text-[10px] font-bold text-emerald-600 mt-1'; status.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Data masuk ke Google Sheet ✓'; }
           button.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tersimpan</span>';
           button.classList.remove('opacity-75', 'cursor-wait'); button.classList.add('bg-emerald-700');
@@ -1337,6 +1354,7 @@
         if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
         syncRequestInFlight = true;
         const requestRevision = historyRevision;
+        const requestAcuanRevisions = new Map(acuanRevisionByClass);
         if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
             const syncText = document.getElementById('syncStatusText');
             if(syncText) syncText.innerText = "URL BELUM DIATUR";
@@ -1372,7 +1390,17 @@
                     mergeServerHistory(data.history, requestRevision);
                 }
                 if(data.acuan && typeof data.acuan === 'object') {
-                    acuanKehadiranData = Object.assign({}, data.acuan);
+                    const mergedAcuan = Object.assign({}, acuanKehadiranData);
+                    Object.keys(data.acuan).forEach(serverKelas => {
+                        const normalizedServerKelas = String(serverKelas).trim().toLowerCase().replace(/\s+/g, ' ');
+                        let localKelas = serverKelas;
+                        const knownClass = Object.keys(acuanKehadiranData || {}).find(k => String(k).trim().toLowerCase().replace(/\s+/g, ' ') === normalizedServerKelas);
+                        if(knownClass) localKelas = knownClass;
+                        const requestedRev = requestAcuanRevisions.get(localKelas) || 0;
+                        const currentRev = acuanRevisionByClass.get(localKelas) || 0;
+                        if(currentRev <= requestedRev) mergedAcuan[localKelas] = data.acuan[serverKelas];
+                    });
+                    acuanKehadiranData = mergedAcuan;
                     try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
                     if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
                 }
