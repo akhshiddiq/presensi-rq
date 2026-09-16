@@ -90,27 +90,6 @@
     .nav-menu-large .nav-menu-item i { font-size: 20px; }
     .nav-menu-large .history-menu { font-size: 18px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 20px; font-weight: 900; }
     @media (max-width: 767px) { .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; } }
-
-    /* Menu bawah HP: semua menu tetap tersedia dan dapat digeser horizontal */
-    @media (max-width: 767px) {
-      .mobile-bottom-nav {
-        display: flex !important;
-        justify-content: flex-start !important;
-        align-items: stretch;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
-        overscroll-behavior-x: contain;
-        scrollbar-width: thin;
-        white-space: nowrap;
-      }
-      .mobile-bottom-nav .nav-btn {
-        flex: 0 0 88px !important;
-        width: 88px !important;
-        min-width: 88px;
-      }
-    }
     
     #view-riwayat .riwayat-table-head { font-size: 16px; } #view-riwayat .riwayat-table-body { font-size: 17px; }
     #view-riwayat .riwayat-table-body td { padding: 15px 14px; } #view-riwayat .riwayat-date { font-size: 17px; font-weight: 800; white-space: nowrap; }
@@ -330,12 +309,23 @@
                 <div id="kartuAbsenPeriodeBadge" class="self-start sm:self-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-xs font-extrabold"></div>
               </div>
               <div id="laporanSantriHeader" class="mt-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-white border border-emerald-100 p-4 sm:p-5"></div>
-              <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-3 mt-4">
-                <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 sm:p-4 text-center"><div class="text-[10px] font-black text-emerald-600 uppercase">Hadir</div><div id="laporanHadir" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">0</div></div>
-                <div class="rounded-2xl border border-blue-100 bg-blue-50 p-3 sm:p-4 text-center"><div class="text-[10px] font-black text-blue-600 uppercase">Sakit</div><div id="laporanSakit" class="text-2xl sm:text-3xl font-black text-blue-700 mt-1">0</div></div>
-                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-3 sm:p-4 text-center"><div class="text-[10px] font-black text-amber-600 uppercase">Izin</div><div id="laporanIzin" class="text-2xl sm:text-3xl font-black text-amber-700 mt-1">0</div></div>
-                <div class="rounded-2xl border border-red-100 bg-red-50 p-3 sm:p-4 text-center"><div class="text-[10px] font-black text-red-600 uppercase">Alfa</div><div id="laporanAlfa" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0</div></div>
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4 text-center col-span-2 md:col-span-1"><div class="text-[10px] font-black text-slate-600 uppercase">Pertemuan</div><div id="laporanTotalPertemuan" class="text-2xl sm:text-3xl font-black text-slate-700 mt-1">0</div></div>
+              <div class="mt-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-white p-4 sm:p-5 shadow-sm">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="text-[11px] font-black uppercase tracking-wide text-emerald-600">Kehadiran</div>
+                    <div class="text-sm font-bold text-gray-500 mt-0.5">Jumlah hadir pada periode ini</div>
+                  </div>
+                  <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div id="laporanHadir" class="text-5xl sm:text-6xl leading-none font-black text-emerald-700 tracking-tight">0</div>
+                    <div class="text-xs sm:text-sm font-extrabold text-emerald-700">Hadir</div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                  <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-3 py-2 flex items-center justify-between gap-2"><span class="text-[10px] font-black text-blue-600 uppercase">Sakit</span><span id="laporanSakit" class="text-lg font-black text-blue-700">0</span></div>
+                  <div class="rounded-xl border border-amber-100 bg-amber-50/80 px-3 py-2 flex items-center justify-between gap-2"><span class="text-[10px] font-black text-amber-600 uppercase">Izin</span><span id="laporanIzin" class="text-lg font-black text-amber-700">0</span></div>
+                  <div class="rounded-xl border border-red-100 bg-red-50/80 px-3 py-2 flex items-center justify-between gap-2"><span class="text-[10px] font-black text-red-600 uppercase">Alfa</span><span id="laporanAlfa" class="text-lg font-black text-red-700">0</span></div>
+                  <div class="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 flex items-center justify-between gap-2"><span class="text-[10px] font-black text-slate-600 uppercase">Pertemuan</span><span id="laporanTotalPertemuan" class="text-lg font-black text-slate-700">0</span></div>
+                </div>
               </div>
               <div id="kartuAbsenProgressWrap" class="mt-4 rounded-2xl border border-emerald-100 bg-white p-4"><div class="flex items-center justify-between gap-3 mb-2"><span class="text-xs font-extrabold text-gray-600">Persentase Hadir</span><span id="kartuAbsenPercent" class="text-sm font-black text-emerald-700">0%</span></div><div class="h-3 bg-gray-100 rounded-full overflow-hidden"><div id="kartuAbsenProgress" class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width:0%"></div></div></div>
               <div id="laporanApresiasi" class="hidden mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 shadow-sm"></div>
@@ -410,7 +400,7 @@
     </div>
   </main>
 
-  <nav class="mobile-bottom-nav md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
+  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
     <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
     <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
