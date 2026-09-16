@@ -90,6 +90,27 @@
     .nav-menu-large .nav-menu-item i { font-size: 20px; }
     .nav-menu-large .history-menu { font-size: 18px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 20px; font-weight: 900; }
     @media (max-width: 767px) { .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; } }
+
+    /* Menu bawah HP: semua menu tetap tersedia dan dapat digeser horizontal */
+    @media (max-width: 767px) {
+      .mobile-bottom-nav {
+        display: flex !important;
+        justify-content: flex-start !important;
+        align-items: stretch;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+        white-space: nowrap;
+      }
+      .mobile-bottom-nav .nav-btn {
+        flex: 0 0 88px !important;
+        width: 88px !important;
+        min-width: 88px;
+      }
+    }
     
     #view-riwayat .riwayat-table-head { font-size: 16px; } #view-riwayat .riwayat-table-body { font-size: 17px; }
     #view-riwayat .riwayat-table-body td { padding: 15px 14px; } #view-riwayat .riwayat-date { font-size: 17px; font-weight: 800; white-space: nowrap; }
@@ -318,6 +339,10 @@
               </div>
               <div id="kartuAbsenProgressWrap" class="mt-4 rounded-2xl border border-emerald-100 bg-white p-4"><div class="flex items-center justify-between gap-3 mb-2"><span class="text-xs font-extrabold text-gray-600">Persentase Hadir</span><span id="kartuAbsenPercent" class="text-sm font-black text-emerald-700">0%</span></div><div class="h-3 bg-gray-100 rounded-full overflow-hidden"><div id="kartuAbsenProgress" class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width:0%"></div></div></div>
               <div id="laporanApresiasi" class="hidden mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 shadow-sm"></div>
+              <div class="mt-5 rounded-2xl border border-gray-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-gray-200 font-extrabold text-gray-700"><i class="fas fa-calendar-check text-emerald-600 mr-2"></i> Detail Kehadiran</div>
+                <div class="overflow-x-auto"><table class="w-full min-w-[520px] text-sm"><thead class="bg-emerald-50 text-emerald-800 font-extrabold"><tr><th class="p-3 text-center w-16">No</th><th class="p-3 text-left">Tanggal</th><th class="p-3 text-left">Hari</th><th class="p-3 text-left">Status</th></tr></thead><tbody id="laporanSantriDetailBody" class="divide-y divide-gray-100"></tbody></table></div>
+              </div>
               <div class="mt-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-green-50 overflow-hidden shadow-sm">
                 <div class="p-4 sm:p-5 border-b border-emerald-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-sm"><i class="fab fa-whatsapp text-xl"></i></div><div><div class="font-black text-emerald-900 text-base sm:text-lg">Laporan WA ke Wali Santri</div><div class="text-xs text-emerald-700/70 mt-0.5">Pesan laporan otomatis berdasarkan kartu dan periode yang dipilih.</div></div></div><span class="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-200 px-3 py-1.5 text-[10px] font-extrabold text-emerald-700"><i class="fas fa-paper-plane"></i> Siap dikirim</span></div>
                 <div class="p-4 sm:p-5">
@@ -325,10 +350,6 @@
                   <label class="block text-[11px] font-extrabold text-gray-500 uppercase tracking-wide mb-1.5">Isi Laporan WhatsApp</label><textarea id="kartuAbsenWAText" readonly rows="12" class="w-full rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-relaxed text-gray-700 font-medium resize-y focus:outline-none focus:ring-2 focus:ring-emerald-200"></textarea>
                   <div class="mt-3 flex flex-col sm:flex-row gap-2"><button type="button" onclick="salinKartuAbsenWALaporan()" class="flex-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-extrabold transition-all active:scale-95 flex items-center justify-center gap-2"><i class="fas fa-copy"></i> Salin Laporan</button><button type="button" onclick="kirimKartuAbsenWAWali()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"><i class="fab fa-whatsapp"></i> Kirim ke WhatsApp</button></div>
                 </div>
-              </div>
-              <div class="mt-5 rounded-2xl border border-gray-200 overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-gray-200 font-extrabold text-gray-700"><i class="fas fa-calendar-check text-emerald-600 mr-2"></i> Detail Kehadiran</div>
-                <div class="overflow-x-auto"><table class="w-full min-w-[520px] text-sm"><thead class="bg-emerald-50 text-emerald-800 font-extrabold"><tr><th class="p-3 text-center w-16">No</th><th class="p-3 text-left">Tanggal</th><th class="p-3 text-left">Hari</th><th class="p-3 text-left">Status</th></tr></thead><tbody id="laporanSantriDetailBody" class="divide-y divide-gray-100"></tbody></table></div>
               </div>
             </div>
           </div>
@@ -389,7 +410,7 @@
     </div>
   </main>
 
-  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
+  <nav class="mobile-bottom-nav md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
     <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
     <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
@@ -1247,7 +1268,7 @@
     }
     function buildWaWaliText(santri, stats, bulan, tahun) {
       const acuan = getAcuanKelas(santri.kelas), persen = Math.round((stats.hadir / acuan) * 100), monthName = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][Number(bulan)];
-      return `📚 *LAPORAN KEHADIRAN SANTRI* 📚\n\nAssalamu'alaikum Ayah/Bunda/Wali Santri 🙏\n\n👤 *Nama:* ${santri.nama}\n🏫 *Kelas:* ${santri.kelas || '-'}\n📅 *Periode:* ${monthName} ${tahun}\n\n📊 *REKAP KEHADIRAN*\n✅ Hadir : *${stats.hadir}×*\n💊 Sakit : *${stats.sakit}×*\nℹ️ Izin : *${stats.izin}×*\n🅰️ Alfa : *${stats.alfa}×*\n\n🎯 *Persentase Kehadiran: ${persen}%*\n📌 Acuan ${acuan}× hadir = 100%\n\n💬 *Apresiasi:*\n${getWaWaliPraise(persen, stats.hadir, acuan)}\n\nSemoga Allah senantiasa memberikan kemudahan, kesehatan, dan keberkahan dalam setiap langkah menuntut ilmu. Aamiin 🤲`;
+      return `📚 *LAPORAN KEHADIRAN SANTRI* 📚\n\nAssalamu'alaikum Ayah/Bunda/Wali Santri 🙏\n\n👤 *Nama:* ${santri.nama}\n🏫 *Kelas:* ${santri.kelas || '-'}\n📅 *Periode:* ${monthName} ${tahun}\n\n📊 *REKAP KEHADIRAN*\n✅ Hadir : *${stats.hadir}×*\n💊 Sakit : *${stats.sakit}×*\nℹ️ Izin : *${stats.izin}×*\n🅰️ Alfa : *${stats.alfa}×*\n\n🎯 *Persentase Kehadiran: ${persen}%*\n📌 Acuan ${acuan}× hadir = 100%\n\n${getWaWaliPraise(persen, stats.hadir, acuan)}\n\nSemoga Allah senantiasa memberikan kemudahan, kesehatan, dan keberkahan dalam setiap langkah menuntut ilmu. Aamiin 🤲`;
     }
 
     function normalizeMasterSantriRows(list) {
