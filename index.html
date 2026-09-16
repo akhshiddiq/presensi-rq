@@ -484,6 +484,7 @@
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     let audioMode = localStorage.getItem('audioMode') || 'ai';
     let sfxType = localStorage.getItem('sfxType') || 'blup';
+    
     // Deklarasi variabel state kamera
     let isCameraOn = false;
     let html5QrCode = null;
@@ -627,6 +628,7 @@
       if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
       if(tabId === 'dataSantri') renderDataSantriMaster();
     }
+
     async function toggleCamera() {
         const btn = document.getElementById('btnToggleCam');
         const camContainer = document.getElementById('reader-container');
@@ -751,7 +753,7 @@
     async function switchCameraDirection() {
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
 
-        // Menampilkan pesan ke pengguna (pastikan objek Toast dari Sweetalert ada)
+        // Menampilkan pesan ke pengguna
         if (typeof Toast !== 'undefined') {
             Toast.fire({
                 icon: 'info',
@@ -930,6 +932,7 @@
             }
         });
     }
+
     function renderRiwayatTable() {
         const tbody = document.getElementById('riwayatTableBody'), empty = document.getElementById('emptyRiwayat'), count = document.getElementById('riwayatCount');
         if(!tbody) return;
@@ -968,8 +971,6 @@
     function renderManualStudents() {
         const kelas = document.getElementById('manualKelasSelect').value, listContainer = document.getElementById('manualStudentList'), checkAll = document.getElementById('checkAllManual');
 
-        // Simpan pilihan yang sedang dicentang agar sinkronisasi otomatis tidak menghilangkannya.
-        // renderManualStudents() dipanggil setiap sinkronisasi ±4 detik.
         const renderedClass = listContainer.dataset.manualRenderedClass || '';
         const sameClass = renderedClass === kelas;
         const selectedIds = sameClass
@@ -998,7 +999,6 @@
                   <div class="flex-grow"><p class="font-bold text-sm text-gray-800">${escapeHtmlLaporan(s.nama)}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${escapeHtmlLaporan(s.id)}</p></div>
               </label>`).join('');
 
-        // Kembalikan centang yang sudah dipilih sebelum daftar dibangun ulang.
         document.querySelectorAll('.manual-student-cb').forEach(cb => {
             if(selectedIds.has(String(cb.value))) cb.checked = true;
             cb.addEventListener('change', () => document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`);
@@ -1032,6 +1032,7 @@
         playAudioFeedback('ok', null); Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
         fetchHistoryFromSheets();
     }
+
     function prepareLaporanSantriOptions() {
         const selKelas = document.getElementById('laporanSantriKelasSelect'), selTahun = document.getElementById('laporanSantriTahunSelect'), search = document.getElementById('laporanSantriSearch'), logo = document.getElementById('kartuAbsenLogo');
         if(!selKelas || !selTahun) return;
@@ -1127,6 +1128,7 @@
         if(!details.length) { detailBody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data presensi untuk santri ini pada bulan tersebut.</td></tr>'; } 
         else { detailBody.innerHTML = details.map((d,i) => `<tr class="hover:bg-emerald-50/50"><td class="p-3 text-center font-bold text-gray-500">${i+1}</td><td class="p-3 font-bold text-gray-800">${escapeHtmlLaporan(d.tanggal)}</td><td class="p-3 font-semibold text-gray-600">${escapeHtmlLaporan(d.hari)}</td><td class="p-3">${getLaporanStatusBadge(d.status)}</td></tr>`).join(''); }
     }
+
     function prepareKalenderOptions() {
         populateClassDropdowns();
         const selTahun = document.getElementById('kalenderTahunSelect');
@@ -1206,6 +1208,7 @@
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         Toast.fire({ icon: 'success', title: 'Kalender diunduh!' });
     }
+
     function salinTeksWA() {
         const text = document.getElementById('waPreviewText').innerText;
         navigator.clipboard.writeText(text).then(() => { Toast.fire({ icon: 'success', title: 'Teks berhasil disalin!' }); })
@@ -1246,7 +1249,6 @@
     }
 
     function simpanAcuanKelas(kelas) {
-      // FIX ID PEMBACAAN HTML MENGGUNAKAN STANDAR AMAN (BUKAN URI ENCODE)
       const safeId = String(kelas).replace(/[^a-zA-Z0-9]/g, '_');
       const input = document.getElementById('acuanInput_' + safeId);
       const button = document.getElementById('acuanSaveBtn_' + safeId);
@@ -1322,8 +1324,6 @@
       const classes = getUniqueClassNames();
       if(classes.length === 0) { container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-medium">Belum ada data kelas.</div>'; return; }
 
-      // JANGAN MENIMPA INPUT YANG SEDANG DIEDIT SAAT SINKRONISASI OTOMATIS.
-      // Nilai draft dipertahankan sampai pengguna menekan Simpan / Input.
       const draftValues = {};
       container.querySelectorAll('input[id^="acuanInput_"]').forEach(el => {
         if (el.dataset.acuanDirty === '1') {
@@ -1332,7 +1332,6 @@
       });
       
       container.innerHTML = classes.map((kelas, index) => {
-        // MENGUBAH SPASI DAN KARAKTER ANEH MENJADI UNDERSCORE AGAR ID HTML AMAN
         const safeId = String(kelas).replace(/[^a-zA-Z0-9]/g, '_');
         const inputId = 'acuanInput_' + safeId;
         const hasDraft = Object.prototype.hasOwnProperty.call(draftValues, inputId);
@@ -1524,6 +1523,7 @@
             }
         });
     }
+    
     function manualSync() {
         const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
         Toast.fire({ icon: 'info', title: 'Menarik data terbaru...' });
@@ -1564,6 +1564,7 @@
         presensiHistory = Array.from(byKey.values());
         renderRiwayatTable();
     }
+
     function fetchHistoryFromSheets(isManual = false) {
         if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
         syncRequestInFlight = true;
@@ -1627,6 +1628,7 @@
             if(btnIcon) btnIcon.classList.remove('fa-spin');
         }, { action: 'getData' });
     }
+    
     window.onload = function() {
         loadDarkMode();
         applyLogo();
