@@ -60,6 +60,8 @@
       doc,
       setDoc,
       getDoc,
+      getDocs,
+      writeBatch,
       serverTimestamp,
       onSnapshot,
       collection
@@ -147,6 +149,56 @@
           }
           console.log("[Firebase] Presensi BERHASIL disimpan & diverifikasi:", safeKey, verification.data());
           return safeKey;
+        };
+
+        // Ambil seluruh data aplikasi dari Firebase. Google Sheet tidak menjadi sumber tampilan.
+        window.firebaseLoadAllData = async function () {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser) throw new Error("Firebase belum siap.");
+          const [santriSnap, presensiSnap, acuanSnap] = await Promise.all([
+            getDocs(collection(window.firebaseDb, "santri")),
+            getDocs(collection(window.firebaseDb, "presensi")),
+            getDocs(collection(window.firebaseDb, "acuanKehadiran"))
+          ]);
+          return {
+            santri: santriSnap.docs.map(d => ({ id: String(d.data()?.id || d.id), nama: String(d.data()?.nama || d.data()?.namaSantri || ""), kelas: String(d.data()?.kelas || ""), guru: String(d.data()?.guru || "") })),
+            history: presensiSnap.docs.map(d => ({ key: String(d.data()?.key || d.id), idSantri: String(d.data()?.idSantri || ""), namaSantri: String(d.data()?.namaSantri || ""), kelas: String(d.data()?.kelas || ""), guru: String(d.data()?.guru || ""), waktu: String(d.data()?.waktu || ""), hari: String(d.data()?.hari || ""), status: String(d.data()?.status || "Hadir") })),
+            acuan: Object.fromEntries(acuanSnap.docs.map(d => { const x=d.data()||{}; return [String(x.kelas || d.id), Number(x.acuan100 || 0)]; }).filter(([k,v]) => k && Number.isFinite(v) && v > 0))
+          };
+        };
+
+        // Perbaikan data lama: hanya memasukkan data yang belum ada di Firebase.
+        // Ini dijalankan sebagai backfill/migrasi, bukan sebagai sumber tampilan.
+        window.firebaseBackfillMissingFromSheet = async function () {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser) throw new Error("Firebase belum siap.");
+          if (typeof window.requestGoogleJsonp !== 'function') return { santri: 0, history: 0, acuan: 0 };
+          const sheet = await window.requestGoogleJsonp({ action: 'getData' });
+          if (!sheet || !Array.isArray(sheet.santri) || !Array.isArray(sheet.history)) return { santri: 0, history: 0, acuan: 0 };
+          const [santriSnap, presensiSnap, acuanSnap] = await Promise.all([
+            getDocs(collection(window.firebaseDb, 'santri')),
+            getDocs(collection(window.firebaseDb, 'presensi')),
+            getDocs(collection(window.firebaseDb, 'acuanKehadiran'))
+          ]);
+          const existingSantri = new Set(santriSnap.docs.map(d => String(d.id)));
+          const existingPresensi = new Set(presensiSnap.docs.map(d => String(d.id)));
+          const existingAcuan = new Set(acuanSnap.docs.map(d => String(d.id)));
+          let santriAdded=0, historyAdded=0, acuanAdded=0, batch=writeBatch(window.firebaseDb), count=0;
+          const commitIfNeeded = async () => { if (count >= 450) { await batch.commit(); batch=writeBatch(window.firebaseDb); count=0; } };
+          for (const raw of sheet.santri) {
+            const x = raw || {}; const id=String(x.id ?? x.ID ?? '').trim(); if(!id || existingSantri.has(id)) continue;
+            batch.set(doc(window.firebaseDb,'santri',id), { id, nama:String(x.nama ?? x.namaSantri ?? x['Nama Santri'] ?? '').trim(), kelas:String(x.kelas ?? x.Kelas ?? '').trim(), guru:String(x.guru ?? x['Guru / Ustadz'] ?? '').trim(), migratedAt:serverTimestamp() }, {merge:true});
+            existingSantri.add(id); santriAdded++; count++; await commitIfNeeded();
+          }
+          for (const raw of sheet.history) {
+            const x=raw||{}; const key=String(x.key ?? '').trim(); if(!key || existingPresensi.has(key)) continue;
+            const safeKey=key.replace(/[/\\]/g,'_');
+            if(existingPresensi.has(safeKey)) continue;
+            batch.set(doc(window.firebaseDb,'presensi',safeKey), { key:safeKey, idSantri:String(x.idSantri||'').trim(), namaSantri:String(x.namaSantri||'').trim(), kelas:String(x.kelas||'').trim(), guru:String(x.guru||'').trim(), status:String(x.status||'Hadir').trim(), waktu:String(x.waktu||'').trim(), hari:String(x.hari||'').trim(), migratedAt:serverTimestamp() }, {merge:true});
+            existingPresensi.add(safeKey); historyAdded++; count++; await commitIfNeeded();
+          }
+          const acuanObj=sheet.acuan && typeof sheet.acuan==='object' ? sheet.acuan : {};
+          for (const [kelas,val] of Object.entries(acuanObj)) { const k=String(kelas||'').trim(); const n=Number(val); if(!k || !Number.isFinite(n) || n<1) continue; const id=k.replace(/[/\\]/g,'_'); if(existingAcuan.has(id)) continue; batch.set(doc(window.firebaseDb,'acuanKehadiran',id), {kelas:k, acuan100:Math.round(n), terakhirDiubah:serverTimestamp(), migratedAt:serverTimestamp()}, {merge:true}); existingAcuan.add(id); acuanAdded++; count++; await commitIfNeeded(); }
+          if(count>0) await batch.commit();
+          return {santri:santriAdded, history:historyAdded, acuan:acuanAdded};
         };
 
         return true;
@@ -991,6 +1043,7 @@
             fetchGoogleJsonp(data => { if (data && (data.status === 'success' || data.status === 'online' || data.status === 'warning')) resolve(data); else reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.')); }, reject, payload || {});
         });
     }
+    window.requestGoogleJsonp = requestGoogleJsonp;
 
     function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return requestGoogleJsonp({ action: 'saveAttendance', idSantri: idSantri || 'MANUAL', namaSantri: namaSantri || 'Santri', kelas: kelas || '-', guru: guru || '-', status: status || 'Hadir', key: key || '', waktu: timeObj?.waktu || '', hari: timeObj?.hari || '' });
@@ -1297,7 +1350,7 @@
             return;
         }
         if(!serverMasterLoaded) {
-            listContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-6 font-semibold"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data santri dari Google Sheet...</p>';
+            listContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-6 font-semibold"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data santri dari Firebase...</p>';
             document.getElementById('countTampilSantri').innerText = "0";
             return;
         }
@@ -1741,7 +1794,7 @@
         });
         if (!serverMasterLoaded) {
             if (count) count.textContent = 'Memuat...';
-            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-amber-600 font-semibold"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data santri dari Google Sheet...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-amber-600 font-semibold"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data santri dari Firebase...</td></tr>';
             empty?.classList.add('hidden');
             return;
         }
@@ -1875,70 +1928,45 @@
         presensiHistory = Array.from(byKey.values());
         renderRiwayatTable();
     }
-    function fetchHistoryFromSheets(isManual = false) {
-        if (syncRequestInFlight) { syncRequestedAfterFlight = true; return; }
-        syncRequestInFlight = true;
-        const requestRevision = historyRevision;
-        if(!SCRIPT_URL || !SCRIPT_URL.includes("script.google.com/macros/s/")) {
-            const syncText = document.getElementById('syncStatusText');
-            if(syncText) syncText.innerText = "URL BELUM DIATUR";
-            return;
+    async function fetchHistoryFromSheets(isManual = false) {
+        // Nama fungsi dipertahankan agar seluruh fitur lama tetap memanggil fungsi yang sama.
+        // Namun sumber data tampilan sekarang 100% Firebase. Google Sheet hanya untuk backfill/sinkronisasi.
+        try {
+            const ready = await window.firebaseReadyPromise;
+            if (!ready || !window.firebaseReady || typeof window.firebaseLoadAllData !== 'function') {
+                throw new Error('Firebase belum siap.');
+            }
+            const data = await window.firebaseLoadAllData();
+            masterDataSantri = Array.isArray(data.santri) ? data.santri.filter(s => !deletedMasterIds.has(String(s.id||'').trim())) : [];
+            serverMasterLoaded = true;
+            window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
+            populateClassDropdowns();
+            renderManualStudents();
+            if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
+            if(Array.isArray(data.history)) mergeServerHistory(data.history, historyRevision);
+            if(data.acuan && typeof data.acuan === 'object') {
+                acuanKehadiranData = Object.assign({}, data.acuan);
+                try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
+                if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
+            }
+            const syncText=document.getElementById('syncStatusText'), syncPing=document.getElementById('syncStatusPing'), syncDot=document.getElementById('syncStatusDot'), btnIcon=document.getElementById('iconSyncManual');
+            if(syncText) syncText.innerText='FIREBASE';
+            if(syncPing) syncPing.className='animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+            if(syncDot) syncDot.className='relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+            if(btnIcon) btnIcon.classList.remove('fa-spin');
+            document.getElementById('offlineAlert')?.classList.add('hidden');
+            if(isManual) Toast.fire({icon:'success', title:'Data dimuat dari Firebase'});
+        } catch(err) {
+            console.error('[Firebase] Gagal memuat data utama:', err);
+            const syncText=document.getElementById('syncStatusText'); if(syncText) syncText.innerText='FIREBASE ERROR';
+            const syncDot=document.getElementById('syncStatusDot'); if(syncDot) syncDot.className='relative inline-flex rounded-full h-2 w-2 bg-red-500';
+            const syncPing=document.getElementById('syncStatusPing'); if(syncPing) syncPing.className='hidden';
+            const btnIcon=document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.remove('fa-spin');
+            document.getElementById('offlineAlert')?.classList.remove('hidden');
+            if(isManual) Toast.fire({icon:'error', title:'Firebase belum dapat dimuat', text:String(err?.message||err)});
         }
-        const syncText = document.getElementById('syncStatusText'), syncPing = document.getElementById('syncStatusPing'), syncDot = document.getElementById('syncStatusDot'), btnIcon = document.getElementById('iconSyncManual');
-        if(syncText) syncText.innerText = "SYNCING...";
-        if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
-        if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-        
-        fetchGoogleJsonp(function(data) {
-            syncRequestInFlight = false;
-            const offlineAlert = document.getElementById('offlineAlert'); if(offlineAlert) offlineAlert.classList.add('hidden');
-            if(syncText) syncText.innerText = "CONNECTED";
-            if(syncPing) syncPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
-            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-            if(btnIcon) btnIcon.classList.remove('fa-spin');
-            
-            if(data && (data.status === 'online' || data.status === 'success')) {
-                if(Array.isArray(data.santri)) {
-                    const serverRows = normalizeMasterSantriRows(data.santri);
-                    masterDataSantri = serverRows.filter(s => {
-                        const sid = String(s?.id || '').trim();
-                        return sid && !deletedMasterIds.has(sid);
-                    });
-                    serverMasterLoaded = true;
-                    window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
-                    populateClassDropdowns();
-                    renderManualStudents();
-                    if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
-                }
-                if(Array.isArray(data.history)) {
-                    mergeServerHistory(data.history, requestRevision);
-                }
-                if(data.acuan && typeof data.acuan === 'object') {
-                    acuanKehadiranData = Object.assign({}, data.acuan);
-                    try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
-                    if(!document.getElementById('view-acuanKehadiran').classList.contains('hidden')) prepareAcuanKehadiran();
-                }
-                if(isManual) Toast.fire({ icon: 'success', title: 'Sinkronisasi Berhasil' });
-            }
-            if (syncRequestedAfterFlight) {
-                syncRequestedAfterFlight = false;
-                setTimeout(() => fetchHistoryFromSheets(false), 50);
-            }
-        }, function(err) {
-            syncRequestInFlight = false;
-            if (syncRequestedAfterFlight) {
-                syncRequestedAfterFlight = false;
-                setTimeout(() => fetchHistoryFromSheets(false), 50);
-            }
-            const offlineAlert = document.getElementById('offlineAlert');
-            if(offlineAlert) offlineAlert.classList.remove('hidden');
-            if(syncText) syncText.innerText = "DISCONNECTED";
-            if(syncPing) syncPing.className = "hidden";
-            if(syncDot) syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
-            if(btnIcon) btnIcon.classList.remove('fa-spin');
-        }, { action: 'getData' });
     }
-    window.onload = function() {
+    window.onload = async function() {
         loadDarkMode();
         applyLogo();
         updateAudioUI();
@@ -1946,9 +1974,22 @@
         populateClassDropdowns();
         renderManualStudents();
         renderDataSantriMaster();
-        fetchHistoryFromSheets();
+
+        // Firebase menjadi sumber utama tampilan. Backfill Sheet hanya sekali untuk data lama
+        // yang belum masuk Firebase, lalu seluruh tampilan membaca Firebase.
+        try {
+            await window.firebaseReadyPromise;
+            if (typeof window.firebaseBackfillMissingFromSheet === 'function') {
+                const backfill = await window.firebaseBackfillMissingFromSheet();
+                console.log('[Firebase] Backfill data lama dari Google Sheet:', backfill);
+            }
+        } catch(e) {
+            console.warn('[Firebase] Backfill awal dilewati:', e);
+        }
+        await fetchHistoryFromSheets(false);
         if (syncInterval) clearInterval(syncInterval);
-        syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+        // Tidak lagi polling Google Sheet. Realtime Firebase menangani perubahan antar perangkat.
+        syncInterval = null;
         if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
     }
   </script>
@@ -2293,71 +2334,39 @@
 </script>
 
 <!-- =========================================================
-     FIREBASE REALTIME PRESENSI
-     Membuat HP/laptop lain menerima perubahan presensi Firebase
-     tanpa menunggu refresh Google Sheet.
+     FIREBASE REALTIME — SUMBER DATA UTAMA APLIKASI
 ========================================================= -->
 <script type="module">
-    (async function mulaiRealtimePresensiFirebase() {
+    (async function mulaiRealtimeFirebaseUtama() {
         try {
             const ready = await window.firebaseReadyPromise;
-            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
-                console.warn('[Firebase] Realtime presensi belum dimulai: Firebase belum siap.');
-                return;
-            }
+            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) throw new Error('Firebase belum siap.');
+            const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js');
 
-            const { collection, onSnapshot } = await import(
-                'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
-            );
+            onSnapshot(collection(window.firebaseDb, 'santri'), snapshot => {
+                masterDataSantri = snapshot.docs.map(d => { const x=d.data()||{}; return {id:String(x.id||d.id), nama:String(x.nama||x.namaSantri||''), kelas:String(x.kelas||''), guru:String(x.guru||'')}; }).filter(s => s.id && !deletedMasterIds.has(s.id));
+                serverMasterLoaded = true;
+                window.__serverMasterClasses=[...new Set(masterDataSantri.map(s=>s.kelas).filter(Boolean))];
+                populateClassDropdowns(); renderManualStudents();
+                if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
+            }, err => console.error('[Firebase] Realtime santri error:',err));
 
-            onSnapshot(
-                collection(window.firebaseDb, 'presensi'),
-                (snapshot) => {
-                    const incoming = [];
-                    snapshot.forEach((docSnap) => {
-                        const data = docSnap.data() || {};
-                        incoming.push({
-                            key: String(data.key || docSnap.id),
-                            idSantri: String(data.idSantri || ''),
-                            namaSantri: String(data.namaSantri || ''),
-                            kelas: String(data.kelas || ''),
-                            guru: String(data.guru || ''),
-                            waktu: String(data.waktu || ''),
-                            hari: String(data.hari || ''),
-                            status: String(data.status || 'Hadir'),
-                            sync: 'firebase'
-                        });
-                    });
+            onSnapshot(collection(window.firebaseDb, 'presensi'), snapshot => {
+                const incoming=snapshot.docs.map(d=>{const x=d.data()||{}; return {key:String(x.key||d.id),idSantri:String(x.idSantri||''),namaSantri:String(x.namaSantri||''),kelas:String(x.kelas||''),guru:String(x.guru||''),waktu:String(x.waktu||''),hari:String(x.hari||''),status:String(x.status||'Hadir'),sync:'firebase'};});
+                const byKey=new Map(incoming.filter(x=>!deletedKeys.has(x.key)).map(x=>[x.key,x]));
+                (Array.isArray(pendingHistoryWrites)?pendingHistoryWrites:new Map()).forEach((item,k)=>{if(!deletedKeys.has(String(k))) byKey.set(String(k),item);});
+                presensiHistory=Array.from(byKey.values());
+                renderRiwayatTable();
+            }, err => console.error('[Firebase] Realtime presensi error:',err));
 
-                    if (!incoming.length) return;
+            onSnapshot(collection(window.firebaseDb, 'acuanKehadiran'), snapshot => {
+                const obj={}; snapshot.docs.forEach(d=>{const x=d.data()||{}; const k=String(x.kelas||d.id); const n=Number(x.acuan100); if(k&&Number.isFinite(n)&&n>0)obj[k]=Math.round(n);});
+                acuanKehadiranData=obj; try{localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY,JSON.stringify(obj));}catch(e){}
+                if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
+            }, err => console.error('[Firebase] Realtime acuan error:',err));
 
-                    // Jangan menghapus riwayat yang hanya diketahui Google Sheet.
-                    // Firebase hanya memperbarui/menambahkan data yang sudah masuk Firebase.
-                    const byKey = new Map(
-                        (Array.isArray(presensiHistory) ? presensiHistory : [])
-                            .filter(item => item && item.key)
-                            .map(item => [String(item.key), item])
-                    );
-
-                    incoming.forEach(item => {
-                        if (!deletedKeys.has(String(item.key))) {
-                            const old = byKey.get(String(item.key));
-                            byKey.set(String(item.key), Object.assign({}, old || {}, item));
-                        }
-                    });
-
-                    presensiHistory = Array.from(byKey.values());
-                    renderRiwayatTable();
-                },
-                (error) => {
-                    console.error('[Firebase] Realtime presensi error:', error);
-                }
-            );
-
-            console.log('[Firebase] Realtime presensi aktif.');
-        } catch (error) {
-            console.error('[Firebase] Gagal mengaktifkan realtime presensi:', error);
-        }
+            console.log('[Firebase] Realtime santri + presensi + acuan aktif.');
+        } catch(e) { console.error('[Firebase] Gagal mengaktifkan realtime utama:',e); }
     })();
 </script>
 
