@@ -4,21 +4,183 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Presensi Santri RQ Al-Khansa</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             brand: {
-              green: '#059669', border: '#064e3b', light: '#f8fafc', accent: '#d97706', dark: '#022c22', gold: '#fbbf24', button: '#047857'
+              green: '#059669',
+              border: '#064e3b',
+              light: '#f8fafc',
+              accent: '#d97706',
+              dark: '#022c22',
+              gold: '#fbbf24',
+              button: '#047857'
             }
           },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          boxShadow: { 'soft-xl': '0 20px 40px -15px rgba(0,0,0,0.05)', 'float': '0 10px 25px -5px rgba(6, 95, 70, 0.15)', 'gold': '0 4px 14px 0 rgba(217, 119, 6, 0.39)' }
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          },
+          boxShadow: {
+            'soft-xl': '0 20px 40px -15px rgba(0,0,0,0.05)',
+            'float': '0 10px 25px -5px rgba(6, 95, 70, 0.15)',
+            'gold': '0 4px 14px 0 rgba(217, 119, 6, 0.39)'
+          }
         }
       }
     }
+  </script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+  <!-- =========================================================
+       FIREBASE
+       Backend baru — Google Sheet lama TETAP DIPERTAHANKAN
+       ========================================================= -->
+  <script type="module">
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+
+    import {
+      getAuth,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+    import {
+      getFirestore
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDk3zQJaiTj8tvgq9tpOESe8KATIjONZNc",
+      authDomain: "absensi-47a44.firebaseapp.com",
+      projectId: "absensi-47a44",
+      storageBucket: "absensi-47a44.firebasestorage.app",
+      messagingSenderId: "411927399305",
+      appId: "1:411927399305:web:56b4f0e8eab13edfe0af58",
+      measurementId: "G-FZZB0TZ115"
+    };
+
+
+    /*
+     * Firebase dibuat sebagai koneksi tambahan.
+     * Sistem Google Apps Script / Google Sheet lama
+     * tidak disentuh pada tahap ini.
+     */
+    window.firebaseReadyPromise = (async function () {
+
+      try {
+
+        const firebaseApp = initializeApp(firebaseConfig);
+
+        const firebaseAuth = getAuth(firebaseApp);
+
+        const firebaseDb = getFirestore(firebaseApp);
+
+
+        // Simpan object Firebase agar nanti
+        // dapat digunakan oleh sistem presensi.
+        window.firebaseApp = firebaseApp;
+        window.firebaseAuth = firebaseAuth;
+        window.firebaseDb = firebaseDb;
+
+
+        // Login anonim sesuai Authentication
+        // yang sudah diaktifkan di Firebase.
+        const userCredential =
+          await signInAnonymously(firebaseAuth);
+
+
+        window.firebaseUser = userCredential.user;
+
+        window.firebaseReady = true;
+
+
+        console.log("=================================");
+        console.log("FIREBASE BERHASIL TERHUBUNG");
+        console.log("Firebase User:", window.firebaseUser.uid);
+        console.log("Firestore siap digunakan");
+        console.log("Google Sheet tetap aktif");
+        console.log("=================================");
+
+
+        return true;
+
+      } catch (error) {
+
+        window.firebaseReady = false;
+
+        console.error(
+          "Firebase gagal terhubung:",
+          error
+        );
+
+        return false;
+      }
+
+    })();
+  </script>
+
+
+  <!-- =========================================================
+       FALLBACK PEMINDAI QR
+       KODE ASLI — TIDAK DIUBAH
+       ========================================================= -->
+  <script>
+    window.__html5QrReady = (async function () {
+
+      if (window.Html5Qrcode) return true;
+
+      const sources = [
+        'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'
+      ];
+
+      for (const src of sources) {
+
+        try {
+
+          await new Promise((resolve, reject) => {
+
+            const s = document.createElement('script');
+
+            s.src = src;
+
+            s.onload = resolve;
+
+            s.onerror = reject;
+
+            document.head.appendChild(s);
+
+          });
+
+          if (window.Html5Qrcode) return true;
+
+        } catch (e) {
+
+          console.warn(
+            'CDN pemindai QR gagal dimuat:',
+            src,
+            e
+          );
+
+        }
+
+      }
+
+      return false;
+
+    })();
+  </script>
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
