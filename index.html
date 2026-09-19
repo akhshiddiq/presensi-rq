@@ -195,7 +195,7 @@
           const raw = JSON.stringify({action, payload: payload || {}});
           let hash = 0; for (let i=0;i<raw.length;i++) hash=((hash<<5)-hash)+raw.charCodeAt(i)|0;
           const id = (String(action||'sync')+'_'+Math.abs(hash)+'_'+Date.now()).replace(/[^a-zA-Z0-9_-]/g,'_');
-          await setDoc(doc(window.firebaseDb,'sheetSyncQueue',id), { id, action:String(action||''), payload:payload||{}, createdAt:serverTimestamp(), updatedAt:serverTimestamp() }, {merge:true});
+          await setDoc(doc(window.firebaseDb,'sheetSyncQueue',id), { id, action:String(action||''), payload:payload||{}, createdAt:serverTimestamp(), updatedAt:serverTimestamp(), state:'queued', processingBy:'', leaseUntilMs:0 }, {merge:true});
           return id;
         };
         window.firebaseLoadSheetSyncQueue = async function () {
@@ -213,6 +213,45 @@
             const bnum = Number(String(b.id||'').match(/_(\d+)$/)?.[1] || 0);
             return anum - bnum;
           });
+        };
+        // Klaim pekerjaan sinkronisasi secara atomik agar 2-3 HP tidak
+        // mengerjakan job Google Sheet yang sama pada waktu bersamaan.
+        window.firebaseClaimSheetSync = async function (id) {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser || !id) return false;
+          const { runTransaction } = await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js');
+          const ref = doc(window.firebaseDb, 'sheetSyncQueue', String(id));
+          const owner = String(window.firebaseAuth.currentUser.uid || 'device');
+          const now = Date.now();
+          const leaseMs = 45000;
+          try {
+            return await runTransaction(window.firebaseDb, async tx => {
+              const snap = await tx.get(ref);
+              if (!snap.exists()) return false;
+              const data = snap.data() || {};
+              const leaseUntil = Number(data.leaseUntilMs || 0);
+              const state = String(data.state || 'queued');
+              if (state === 'processing' && leaseUntil > now) return false;
+              tx.update(ref, {
+                state: 'processing',
+                processingBy: owner,
+                processingAt: serverTimestamp(),
+                leaseUntilMs: now + leaseMs,
+                updatedAt: serverTimestamp()
+              });
+              return true;
+            });
+          } catch (e) {
+            console.warn('[Firebase] Job sinkronisasi gagal diklaim:', id, e);
+            return false;
+          }
+        };
+        window.firebaseReleaseSheetSync = async function (id) {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser || !id) return;
+          try {
+            await setDoc(doc(window.firebaseDb,'sheetSyncQueue',String(id)), {
+              state:'queued', processingBy:'', leaseUntilMs:0, updatedAt:serverTimestamp()
+            }, {merge:true});
+          } catch(e) { console.warn('[Firebase] Gagal melepas job sinkronisasi:',id,e); }
         };
         window.firebaseDeleteSheetSync = async function (id) {
           if (!window.firebaseDb || !window.firebaseAuth?.currentUser) return;
@@ -1267,7 +1306,10 @@
        let done=0, failed=0;
        let queue=[]; try { queue=await window.firebaseLoadSheetSyncQueue(); } catch(e) { return {done:0,failed:0}; }
        for (const job of queue) {
+          let claimed = false;
           try {
+             claimed = await window.firebaseClaimSheetSync(job.id);
+             if (!claimed) continue; // HP lain sedang mengerjakan job ini.
              const result=await requestGoogleJsonp(Object.assign({action:job.action}, job.payload||{}));
              const verified = result && result.status==='success' && result.verified!==false;
              if(!verified) throw new Error(result?.message||'Google Sheet belum terverifikasi.');
@@ -1275,7 +1317,19 @@
                 try { await window.firebaseMarkSheetSync(job.payload.key, 'synced'); } catch (markErr) { console.warn('[Firebase] Status Sheet belum diperbarui:', markErr); }
              }
              await window.firebaseDeleteSheetSync(job.id); done++;
-          } catch(e) { failed++; console.warn('[Google Sheet] Antrian belum tersinkron:',job.action,e); }
+          } catch(e) {
+             failed++;
+             if (claimed) {
+                try { await window.firebaseReleaseSheetSync(job.id); } catch(_) {}
+                if (!sheetSyncRetryTimer) {
+                    sheetSyncRetryTimer = setTimeout(async () => {
+                        sheetSyncRetryTimer = null;
+                        try { await flushPendingSheetSync(); } catch(_) {}
+                    }, 15000);
+                }
+             }
+             console.warn('[Google Sheet] Antrian belum tersinkron:',job.action,e);
+          }
        }
        return {done,failed};
     }
@@ -2006,6 +2060,7 @@
     let syncRequestInFlight = false;
     let syncRequestedAfterFlight = false;
     let attendanceWriteQueue = Promise.resolve();
+    let sheetSyncRetryTimer = null;
     let historyRevision = 0;
     let pendingHistoryWrites = new Map();
     function markHistoryWritePending(record) {
@@ -2466,9 +2521,30 @@
             }, err => console.error('[Firebase] Realtime santri error:',err));
 
             onSnapshot(collection(window.firebaseDb, 'presensi'), snapshot => {
-                const incoming=snapshot.docs.map(d=>{const x=d.data()||{}; return {key:String(x.key||d.id),idSantri:String(x.idSantri||''),namaSantri:String(x.namaSantri||''),kelas:String(x.kelas||''),guru:String(x.guru||''),waktu:String(x.waktu||''),hari:String(x.hari||''),status:String(x.status||'Hadir'),sync:'firebase'};});
+                const incoming=snapshot.docs.map(d=>{
+                    const x=d.data()||{};
+                    const firebaseSync = String(x.firebaseSync || 'saved').toLowerCase();
+                    // Data yang sudah berada di Firebase sebelum fitur status dibuat
+                    // dianggap sudah tersinkron ke Sheet. Data baru yang masih pending
+                    // tetap mengikuti field sheetSync yang disimpan di Firestore.
+                    const sheetSync = String(x.sheetSync || 'synced').toLowerCase();
+                    return {
+                        key:String(x.key||d.id), idSantri:String(x.idSantri||''),
+                        namaSantri:String(x.namaSantri||''), kelas:String(x.kelas||''),
+                        guru:String(x.guru||''), waktu:String(x.waktu||''), hari:String(x.hari||''),
+                        status:String(x.status||'Hadir'), sync:sheetSync==='synced'?'synced':'firebase',
+                        firebaseSync: firebaseSync==='saving' ? 'saving' : 'saved',
+                        sheetSync: sheetSync==='pending' ? 'pending' : 'synced',
+                        createdAt: x.createdAt || null, updatedAt: x.updatedAt || null
+                    };
+                });
                 const byKey=new Map(incoming.filter(x=>!deletedKeys.has(x.key)).map(x=>[x.key,x]));
-                (Array.isArray(pendingHistoryWrites)?pendingHistoryWrites:new Map()).forEach((item,k)=>{if(!deletedKeys.has(String(k))) byKey.set(String(k),item);});
+                pendingHistoryWrites.forEach((item,k)=>{
+                    if(!deletedKeys.has(String(k))) {
+                        const current=byKey.get(String(k));
+                        byKey.set(String(k), Object.assign({}, current||{}, item));
+                    }
+                });
                 presensiHistory=Array.from(byKey.values());
                 renderRiwayatTable();
             }, err => console.error('[Firebase] Realtime presensi error:',err));
@@ -2479,7 +2555,21 @@
                 if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
             }, err => console.error('[Firebase] Realtime acuan error:',err));
 
-            console.log('[Firebase] Realtime santri + presensi + acuan aktif.');
+            // Antrean Google Sheet juga dipantau realtime. Semua HP boleh menerima
+            // event yang sama, tetapi hanya satu HP yang dapat mengklaim job melalui
+            // transaksi Firestore. Ini mencegah tabrakan/duplikasi saat 2-3 HP aktif.
+            onSnapshot(collection(window.firebaseDb, 'sheetSyncQueue'), snapshot => {
+                const adaJobBaru = snapshot.docChanges().some(change => {
+                    if (change.type !== 'added') return false;
+                    const x = change.doc.data() || {};
+                    return String(x.state || 'queued') === 'queued';
+                });
+                if (adaJobBaru) {
+                    Promise.resolve().then(() => flushPendingSheetSync()).catch(e => console.warn('[Firebase] Flush realtime gagal:', e));
+                }
+            }, err => console.error('[Firebase] Realtime queue Google Sheet error:',err));
+
+            console.log('[Firebase] Realtime santri + presensi + acuan + antrean Sheet aktif.');
         } catch(e) { console.error('[Firebase] Gagal mengaktifkan realtime utama:',e); }
     })();
 </script>
