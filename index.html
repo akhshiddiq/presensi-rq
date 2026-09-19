@@ -877,54 +877,30 @@
     function playSynthSound(type) {
         try {
             const ctx = getAudioContext(); if (!ctx) return;
-            // Satu-satunya suara notifikasi presensi: efek tembakan berkali-kali selama 5 detik.
+            // Efek laser sci-fi ala Star Wars: tembakan cepat beruntun selama tepat 5 detik.
             const start = ctx.currentTime + 0.02;
             const duration = 5.0;
-            const shotCount = 15;
+            const shotCount = 40;
             const interval = duration / shotCount;
-
-            // Buffer noise pendek untuk karakter letupan setiap tembakan.
-            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.16), ctx.sampleRate);
-            const noiseData = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < noiseData.length; i++) {
-                noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseData.length);
-            }
 
             for (let i = 0; i < shotCount; i++) {
                 const t = start + i * interval;
-
-                // Letupan/noise singkat.
-                const noise = ctx.createBufferSource();
-                const noiseFilter = ctx.createBiquadFilter();
-                const noiseGain = ctx.createGain();
-                noise.buffer = noiseBuffer;
-                noiseFilter.type = 'bandpass';
-                noiseFilter.frequency.setValueAtTime(1500, t);
-                noiseFilter.Q.setValueAtTime(0.8, t);
-                noiseGain.gain.setValueAtTime(0.0001, t);
-                noiseGain.gain.exponentialRampToValueAtTime(0.75, t + 0.006);
-                noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
-                noise.connect(noiseFilter);
-                noiseFilter.connect(noiseGain);
-                noiseGain.connect(ctx.destination);
-                noise.start(t);
-                noise.stop(t + 0.16);
-
-                // Dentuman rendah yang sangat singkat untuk mempertegas tiap letupan.
                 const osc = ctx.createOscillator();
-                const oscGain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(125, t);
-                osc.frequency.exponentialRampToValueAtTime(48, t + 0.10);
-                oscGain.gain.setValueAtTime(0.0001, t);
-                oscGain.gain.exponentialRampToValueAtTime(0.7, t + 0.004);
-                oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-                osc.connect(oscGain);
-                oscGain.connect(ctx.destination);
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                const high = 1500 + ((i % 4) * 120);
+                const low = 180 + ((i % 3) * 35);
+                osc.frequency.setValueAtTime(high, t);
+                osc.frequency.exponentialRampToValueAtTime(low, t + 0.075);
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(0.32, t + 0.004);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.095);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
                 osc.start(t);
-                osc.stop(t + 0.13);
+                osc.stop(t + 0.10);
             }
-        } catch (e) { console.warn('Audio tembakan error:', e); }
+        } catch (e) { console.warn('Audio laser error:', e); }
     }
     function playAudioFeedback(type, santri) {
         if (type !== 'ok') return;
