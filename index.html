@@ -874,31 +874,38 @@
         if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
         return audioCtx;
     }
+    let laserSoundGeneration = 0;
     function playSynthSound(type) {
         try {
             const ctx = getAudioContext(); if (!ctx) return;
-            // Efek laser sci-fi ala Star Wars: tembakan cepat beruntun selama tepat 5 detik.
-            const start = ctx.currentTime + 0.02;
+            // Laser sci-fi/blaster yang lebih tajam dan keras, beruntun selama 5 detik.
+            const generation = ++laserSoundGeneration;
+            const start = ctx.currentTime + 0.015;
             const duration = 5.0;
-            const shotCount = 40;
+            const shotCount = 48;
             const interval = duration / shotCount;
 
             for (let i = 0; i < shotCount; i++) {
                 const t = start + i * interval;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                osc.type = 'sawtooth';
-                const high = 1500 + ((i % 4) * 120);
-                const low = 180 + ((i % 3) * 35);
+                const filter = ctx.createBiquadFilter();
+                osc.type = 'square';
+                const high = 2800 + ((i % 5) * 180);
+                const low = 260 + ((i % 4) * 45);
                 osc.frequency.setValueAtTime(high, t);
-                osc.frequency.exponentialRampToValueAtTime(low, t + 0.075);
+                osc.frequency.exponentialRampToValueAtTime(low, t + 0.055);
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(4200, t);
+                filter.frequency.exponentialRampToValueAtTime(1100, t + 0.065);
                 gain.gain.setValueAtTime(0.0001, t);
-                gain.gain.exponentialRampToValueAtTime(0.32, t + 0.004);
-                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.095);
-                osc.connect(gain);
+                gain.gain.exponentialRampToValueAtTime(0.78, t + 0.002);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+                osc.connect(filter);
+                filter.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(t);
-                osc.stop(t + 0.10);
+                osc.stop(t + 0.08);
             }
         } catch (e) { console.warn('Audio laser error:', e); }
     }
