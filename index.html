@@ -955,57 +955,6 @@
         });
     }
 
-    // =========================================================
-    // FIREBASE MIRROR PRESENSI — TAHAP 3
-    // Google Sheet tetap menjadi penyimpanan utama.
-    // Firebase hanya menerima salinan setelah Google Sheet sukses.
-    // Jika Firebase gagal, presensi Google Sheet tetap dianggap berhasil.
-    // =========================================================
-    async function mirrorPresensiKeFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
-        try {
-            const ready = await window.firebaseReadyPromise;
-            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
-                console.warn('[Firebase] Firebase belum siap, salinan presensi dilewati.');
-                return { status: 'skipped', reason: 'firebase-not-ready' };
-            }
-
-            const {
-                doc,
-                setDoc,
-                serverTimestamp
-            } = await import(
-                'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
-            );
-
-            const rawKey = String(key || '').trim();
-            const safeKey = (() => {
-                const bytes = new TextEncoder().encode(rawKey);
-                return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('') || ('auto_' + Date.now());
-            })();
-
-            const ref = doc(window.firebaseDb, 'presensi', safeKey);
-
-            await setDoc(ref, {
-                key: rawKey || safeKey,
-                idSantri: String(idSantri || 'MANUAL').trim(),
-                namaSantri: String(namaSantri || 'Santri').trim(),
-                kelas: String(kelas || '-').trim(),
-                guru: String(guru || '-').trim(),
-                status: String(status || 'Hadir').trim(),
-                waktu: String(timeObj?.waktu || '').trim(),
-                hari: String(timeObj?.hari || '').trim(),
-                mirroredAt: serverTimestamp()
-            }, { merge: true });
-
-            console.log('[Firebase] Salinan presensi berhasil:', rawKey || safeKey);
-            return { status: 'success' };
-        } catch (error) {
-            // Jangan membuat presensi gagal hanya karena Firebase bermasalah.
-            console.error('[Firebase] Salinan presensi gagal:', error);
-            return { status: 'error', error };
-        }
-    }
-
     function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return requestGoogleJsonp({ action: 'saveAttendance', idSantri: idSantri || 'MANUAL', namaSantri: namaSantri || 'Santri', kelas: kelas || '-', guru: guru || '-', status: status || 'Hadir', key: key || '', waktu: timeObj?.waktu || '', hari: timeObj?.hari || '' });
     }
@@ -1020,15 +969,6 @@
            .then((serverResult) => {
                if (!serverResult || serverResult.status !== 'success' || serverResult.verified !== true) throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
                markHistoryWriteComplete(unikey);
-               mirrorPresensiKeFirebase(
-                   idSantri,
-                   namaSantri,
-                   kelas,
-                   guru,
-                   status,
-                   timeObj,
-                   unikey
-               );
                setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 500);
            }).catch(err => {
                pendingHistoryWrites.delete(unikey);
@@ -1037,54 +977,151 @@
            });
        });
     }
+    // =========================================================
+    // FIREBASE-FIRST PRESENSI
+    // Firebase = penyimpanan utama agar simpan cepat & realtime.
+    // Google Sheet = sinkronisasi/laporan setelah Firebase sukses.
+    // =========================================================
+    async function simpanPresensiKeFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
+        const ready = await window.firebaseReadyPromise;
+        if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
+            throw new Error('Firebase belum siap.');
+        }
+
+        const { doc, setDoc, serverTimestamp } = await import(
+            'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
+        );
+
+        const safeKey = String(key || ('presensi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)))
+            .replace(/[/\\]/g, '_');
+
+        await setDoc(doc(window.firebaseDb, 'presensi', safeKey), {
+            key: safeKey,
+            idSantri: String(idSantri || 'MANUAL').trim(),
+            namaSantri: String(namaSantri || 'Santri').trim(),
+            kelas: String(kelas || '-').trim(),
+            guru: String(guru || '-').trim(),
+            status: String(status || 'Hadir').trim(),
+            waktu: String(timeObj?.waktu || '').trim(),
+            hari: String(timeObj?.hari || '').trim(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        return safeKey;
+    }
+
+    function tandaiPresensiTersimpanLokal(key, syncState = 'firebase') {
+        const idx = presensiHistory.findIndex(x => String(x.key) === String(key));
+        if (idx < 0) return;
+        presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {
+            sync: syncState
+        });
+        renderRiwayatTable();
+    }
+
+    function sinkronkanPresensiKeGoogleSetelahFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
+        return simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key)
+            .then((result) => {
+                if (!result || result.status !== 'success' || result.verified !== true) {
+                    throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi sinkronisasi.');
+                }
+                tandaiPresensiTersimpanLokal(key, 'synced');
+                if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
+                Toast.fire({ icon: 'success', title: 'Tersimpan di Firebase • Google Sheet tersinkron' });
+                return result;
+            })
+            .catch((err) => {
+                // Firebase tetap menjadi sumber utama. Jangan hapus data Firebase
+                // hanya karena Google Sheet sedang lambat/gagal.
+                tandaiPresensiTersimpanLokal(key, 'firebase');
+                console.error('[Google Sheet] Sinkronisasi tertunda:', err);
+                Toast.fire({
+                    icon: 'info',
+                    title: 'Presensi aman di Firebase',
+                    text: 'Google Sheet belum tersinkron. Sistem akan mencoba lagi saat sinkronisasi berikutnya.'
+                });
+                return { status: 'firebase-only', error: err };
+            });
+    }
+
     function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
        const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
        newlyAddedKeysMap.set(unikey, nowTime);
-       const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
+
+       const tempRecord = {
+           key: unikey, idSantri, namaSantri, kelas, guru,
+           waktu: timeObj.waktu, hari: timeObj.hari, status,
+           sync: 'saving-firebase', createdAt: nowTime
+       };
+
        if(!Array.isArray(presensiHistory)) presensiHistory = [];
        presensiHistory.unshift(tempRecord);
        renderRiwayatTable();
-       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})` });
+       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})`, text: 'Menyimpan ke Firebase...' });
        markHistoryWritePending(tempRecord);
+
+       // Antrean tetap dipertahankan agar beberapa scan cepat tidak saling bertabrakan.
        attendanceWriteQueue = attendanceWriteQueue
          .catch(() => {})
-         .then(() => simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey))
-         .then((result) => {
-             if (!result || result.status !== 'success' || result.verified !== true) {
-                 throw new Error((result && result.message) || 'Presensi belum terverifikasi di Google Sheet.');
-             }
-             markHistoryWriteComplete(unikey);
-             newlyAddedKeysMap.delete(unikey);
+         .then(async () => {
+             try {
+                 // 1) Firebase dulu.
+                 await simpanPresensiKeFirebase(
+                     idSantri, namaSantri, kelas, guru, status, timeObj, unikey
+                 );
 
-             // Google Sheet sudah terverifikasi sukses.
-             // Setelah itu, buat salinan yang sama ke Firebase.
-             // Kegagalan Firebase TIDAK membatalkan presensi di Google Sheet.
-             mirrorPresensiKeFirebase(
-                 idSantri,
-                 namaSantri,
-                 kelas,
-                 guru,
-                 status,
-                 timeObj,
-                 unikey
-             );
+                 markHistoryWriteComplete(unikey);
+                 tandaiPresensiTersimpanLokal(unikey, 'firebase');
+                 newlyAddedKeysMap.delete(unikey);
 
-             if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
-             else {
-                 const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
-                 if (idx >= 0) presensiHistory[idx] = Object.assign({}, presensiHistory[idx], {sync:'saved'});
+                 Toast.fire({
+                     icon: 'success',
+                     title: `${namaSantri} tersimpan`,
+                     text: 'Firebase berhasil • sinkron Google Sheet berjalan'
+                 });
+
+                 // 2) Google Sheet setelah Firebase sukses.
+                 // Tidak menghambat keberhasilan presensi Firebase.
+                 sinkronkanPresensiKeGoogleSetelahFirebase(
+                     idSantri, namaSantri, kelas, guru, status, timeObj, unikey
+                 );
+             } catch (err) {
+                 pendingHistoryWrites.delete(unikey);
+                 newlyAddedKeysMap.delete(unikey);
+                 presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                  renderRiwayatTable();
+
+                 Toast.fire({
+                     icon: 'error',
+                     title: 'Firebase gagal menyimpan',
+                     text: String(err?.message || err || 'Presensi belum tersimpan.')
+                 });
              }
-             Toast.fire({ icon: 'success', title: 'Tersimpan ke Google Sheet' });
-         })
-         .catch(err => {
-             pendingHistoryWrites.delete(unikey);
-             newlyAddedKeysMap.delete(unikey);
-             presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
-             renderRiwayatTable();
-             Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
          });
     }
+    async function hapusPresensiDariFirebase(key) {
+        try {
+            const ready = await window.firebaseReadyPromise;
+            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
+                console.warn('[Firebase] Firebase belum siap untuk penghapusan.');
+                return false;
+            }
+
+            const { doc, deleteDoc } = await import(
+                'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
+            );
+
+            const safeKey = String(key || '').replace(/[/\\]/g, '_');
+            await deleteDoc(doc(window.firebaseDb, 'presensi', safeKey));
+            console.log('[Firebase] Presensi dihapus:', safeKey);
+            return true;
+        } catch (error) {
+            console.error('[Firebase] Gagal menghapus presensi:', error);
+            return false;
+        }
+    }
+
     async function hapusData(key, event) {
         if(event) event.stopPropagation();
         const targetItem = presensiHistory.find(item => item.key === key) || {};
@@ -1116,6 +1153,14 @@
                     throw new Error((response && response.message) || 'Google Sheet belum mengonfirmasi penghapusan.');
                 }
                 const deletedKey = String(key);
+
+                // Setelah Google Sheet mengonfirmasi penghapusan,
+                // hapus juga salinan Firebase agar kedua sumber tetap konsisten.
+                const firebaseDeleted = await hapusPresensiDariFirebase(deletedKey);
+                if (!firebaseDeleted) {
+                    throw new Error('Google Sheet berhasil menghapus, tetapi Firebase belum berhasil menghapus salinannya.');
+                }
+
                 historyRevision++;
                 pendingHistoryWrites.delete(deletedKey);
                 deletedKeys.add(deletedKey);
@@ -2182,5 +2227,75 @@
 
     window.migrasiRiwayatAcuanKeFirebase = migrasiRiwayatAcuanKeFirebase;
 </script>
+
+<!-- =========================================================
+     FIREBASE REALTIME PRESENSI
+     Membuat HP/laptop lain menerima perubahan presensi Firebase
+     tanpa menunggu refresh Google Sheet.
+========================================================= -->
+<script type="module">
+    (async function mulaiRealtimePresensiFirebase() {
+        try {
+            const ready = await window.firebaseReadyPromise;
+            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
+                console.warn('[Firebase] Realtime presensi belum dimulai: Firebase belum siap.');
+                return;
+            }
+
+            const { collection, onSnapshot } = await import(
+                'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
+            );
+
+            onSnapshot(
+                collection(window.firebaseDb, 'presensi'),
+                (snapshot) => {
+                    const incoming = [];
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data() || {};
+                        incoming.push({
+                            key: String(data.key || docSnap.id),
+                            idSantri: String(data.idSantri || ''),
+                            namaSantri: String(data.namaSantri || ''),
+                            kelas: String(data.kelas || ''),
+                            guru: String(data.guru || ''),
+                            waktu: String(data.waktu || ''),
+                            hari: String(data.hari || ''),
+                            status: String(data.status || 'Hadir'),
+                            sync: 'firebase'
+                        });
+                    });
+
+                    if (!incoming.length) return;
+
+                    // Jangan menghapus riwayat yang hanya diketahui Google Sheet.
+                    // Firebase hanya memperbarui/menambahkan data yang sudah masuk Firebase.
+                    const byKey = new Map(
+                        (Array.isArray(presensiHistory) ? presensiHistory : [])
+                            .filter(item => item && item.key)
+                            .map(item => [String(item.key), item])
+                    );
+
+                    incoming.forEach(item => {
+                        if (!deletedKeys.has(String(item.key))) {
+                            const old = byKey.get(String(item.key));
+                            byKey.set(String(item.key), Object.assign({}, old || {}, item));
+                        }
+                    });
+
+                    presensiHistory = Array.from(byKey.values());
+                    renderRiwayatTable();
+                },
+                (error) => {
+                    console.error('[Firebase] Realtime presensi error:', error);
+                }
+            );
+
+            console.log('[Firebase] Realtime presensi aktif.');
+        } catch (error) {
+            console.error('[Firebase] Gagal mengaktifkan realtime presensi:', error);
+        }
+    })();
+</script>
+
 </body>
 </html>
