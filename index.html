@@ -280,7 +280,7 @@
     </div>
     
     <div class="flex items-center gap-2 self-end sm:self-auto">
-      <a href="https://docs.google.com/spreadsheets/d/1iBn4kM63rVdsc2v-uPsfGDrn8w7BQhWmQLIZH7-pKhU/edit?gid=1160146646#gid=1160146646" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
+      <a href="https://docs.google.com/spreadsheets/d/1ZHSSeZ2l65phUsf7RVCpX5uffuHRSs-v56wXaDMhVjU/edit?gid=1199045037#gid=1199045037" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-green-700/80 hover:bg-green-600 backdrop-blur-md rounded-lg transition-all shadow-sm border border-green-500/30 text-[11px] font-bold" title="Buka Database Google Sheet"><i class="fas fa-database text-green-300"></i> <span class="hidden sm:inline">Database</span></a>
       <button onclick="manualSync()" class="flex items-center gap-1.5 px-3 py-1.5 text-white bg-blue-600/80 hover:bg-blue-500 backdrop-blur-md rounded-lg transition-all shadow-sm border border-blue-400/30 text-[11px] font-bold" title="Tarik Data Terbaru Sekarang"><i id="iconSyncManual" class="fas fa-sync-alt text-blue-200"></i> <span class="hidden sm:inline">Sinkron</span></button>
       <button onclick="cycleAudioMode()" id="btnHeaderAudio" class="flex items-center gap-1.5 px-2.5 py-1.5 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[11px] font-medium" title="Ubah Mode Suara"><i id="audioIcon" class="fas fa-robot text-brand-gold text-[12px]"></i><span id="audioLabelHeader" class="hidden sm:inline font-semibold">Gemini AI Studio</span></button>
       <button onclick="toggleDarkMode()" id="btnDarkMode" class="flex items-center justify-center w-9 h-8 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[12px]" title="Ganti Mode Malam / Siang"><i id="darkModeIcon" class="fas fa-moon"></i></button>
@@ -513,7 +513,7 @@
         <div class="p-4 sm:p-6 border-b border-gray-100 bg-white">
           <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 mb-5"><p class="font-extrabold text-emerald-900 text-sm">Satu sumber data untuk seluruh sistem</p><p class="text-xs text-emerald-800/80 mt-1 leading-relaxed">Tambah/hapus langsung di Google Sheet akan tersinkron ke web. Anda juga dapat menambah santri dari form di bawah; data akan ditulis ke Sheet lalu otomatis muncul di semua menu.</p></div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3"><input id="masterNewId" class="modern-input" placeholder="ID Santri (contoh: IDSRQ090)"><input id="masterNewNama" class="modern-input" placeholder="Nama Santri"><input id="masterNewKelas" class="modern-input" placeholder="Kelas"><input id="masterNewGuru" class="modern-input" placeholder="Guru / Ustadz"></div>
-          <div class="flex flex-wrap gap-2 mt-3"><button onclick="tambahDataSantriMaster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-user-plus"></i> Tambah Santri</button><button onclick="renderDataSantriMaster();" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-list"></i> Tampilkan Data</button></div>
+          <div class="flex flex-wrap gap-2 mt-3"><button onclick="tambahDataSantriMaster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-user-plus"></i> Tambah Santri</button><button onclick="renderDataSantriMaster();" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2"><i class="fas fa-list"></i> Tampilkan Data</button><button onclick="migrasiDataSantriKeFirebase()" id="btnMigrasiFirebase" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2"><i class="fas fa-cloud-upload-alt"></i> Migrasikan ke Firebase</button></div>
         </div>
         <div class="p-4 sm:p-6">
           <div class="flex flex-col sm:flex-row gap-3 justify-between mb-4"><input id="searchDataSantriMaster" oninput="renderDataSantriMaster()" class="modern-input sm:max-w-md" placeholder="Cari ID / nama / kelas / guru..."><div id="dataSantriMasterCount" class="text-sm font-extrabold text-emerald-700 flex items-center">0 santri</div></div>
@@ -1769,5 +1769,196 @@
         if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
     }
   </script>
+<!-- =========================================================
+     MIGRASI DATA SANTRI GOOGLE SHEET → FIREBASE
+     Aman: Google Sheet / Apps Script lama TETAP dipertahankan.
+     Sumber data: Google Sheet aktif melalui action getData.
+========================================================= -->
+<script type="module">
+    async function migrasiDataSantriKeFirebase() {
+        const btn = document.getElementById('btnMigrasiFirebase');
+
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-60', 'cursor-not-allowed');
+            }
+
+            // Tunggu Firebase selesai terhubung dan Anonymous Auth selesai.
+            const firebaseReady = await window.firebaseReadyPromise;
+            if (!firebaseReady || !window.firebaseReady) {
+                throw new Error(
+                    'Firebase belum berhasil terhubung. Muat ulang halaman lalu coba lagi.'
+                );
+            }
+
+            const firebaseAuth = window.firebaseAuth;
+            const firebaseDb = window.firebaseDb;
+
+            if (!firebaseAuth || !firebaseDb || !firebaseAuth.currentUser) {
+                throw new Error('Koneksi Firebase / Anonymous Auth belum siap.');
+            }
+
+            Swal.fire({
+                title: 'Mengambil Data Santri',
+                html: 'Mengambil data terbaru dari Google Sheet...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            // Tetap memakai Apps Script yang sekarang dipakai website.
+            // Jadi Google Sheet lama tidak disentuh/dihapus.
+            const response = await requestGoogleJsonp({
+                action: 'getData'
+            });
+
+            if (!response || !Array.isArray(response.santri)) {
+                throw new Error(
+                    'Data santri dari Google Sheet tidak ditemukan.'
+                );
+            }
+
+            // Gunakan normalizer yang sudah ada di website.
+            const normalized = normalizeMasterSantriRows(response.santri);
+
+            // Hilangkan ID kosong dan ID duplikat.
+            const unique = new Map();
+
+            normalized.forEach(s => {
+                const id = String(s?.id || '').trim();
+                if (!id) return;
+
+                if (!unique.has(id)) {
+                    unique.set(id, {
+                        id: id,
+                        nama: String(s?.nama || '').trim(),
+                        kelas: String(s?.kelas || '').trim(),
+                        guru: String(s?.guru || '').trim()
+                    });
+                }
+            });
+
+            const santri = Array.from(unique.values());
+
+            if (!santri.length) {
+                throw new Error(
+                    'Tidak ada data santri dengan ID yang valid.'
+                );
+            }
+
+            // Firestore maksimal 500 operasi per batch.
+            // 450 dipakai agar tetap aman.
+            const CHUNK_SIZE = 450;
+            let berhasil = 0;
+
+            // Import hanya ketika tombol migrasi ditekan.
+            const {
+                collection,
+                doc,
+                writeBatch,
+                serverTimestamp
+            } = await import(
+                "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js"
+            );
+
+            const koleksiSantri = collection(
+                firebaseDb,
+                'santri'
+            );
+
+            for (
+                let mulai = 0;
+                mulai < santri.length;
+                mulai += CHUNK_SIZE
+            ) {
+                const chunk = santri.slice(
+                    mulai,
+                    mulai + CHUNK_SIZE
+                );
+
+                const batch = writeBatch(firebaseDb);
+
+                chunk.forEach(s => {
+                    const ref = doc(
+                        koleksiSantri,
+                        s.id
+                    );
+
+                    batch.set(ref, {
+                        id: s.id,
+                        nama: s.nama,
+                        kelas: s.kelas,
+                        guru: s.guru,
+                        migratedAt: serverTimestamp()
+                    }, {
+                        merge: true
+                    });
+                });
+
+                await batch.commit();
+
+                berhasil += chunk.length;
+
+                Swal.update({
+                    title: 'Memindahkan Data Santri',
+                    html:
+                        `<b>${berhasil}</b> dari ` +
+                        `<b>${santri.length}</b> santri sudah masuk Firebase...`
+                });
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Migrasi Berhasil',
+                html:
+                    `Alhamdulillah.<br><br>` +
+                    `<b>${berhasil} santri</b> berhasil dipindahkan ke ` +
+                    `<b>Firestore → santri</b>.<br><br>` +
+                    `Google Sheet tetap aman dan tidak dihapus.`
+            });
+
+            console.log(
+                '[Firebase] Migrasi santri berhasil:',
+                {
+                    total: berhasil,
+                    collection: 'santri'
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                '[Firebase] Migrasi santri gagal:',
+                error
+            );
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Migrasi Gagal',
+                text: String(
+                    error?.message ||
+                    error ||
+                    'Kesalahan tidak diketahui.'
+                )
+            });
+
+        } finally {
+
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove(
+                    'opacity-60',
+                    'cursor-not-allowed'
+                );
+            }
+        }
+    }
+
+    // Supaya tombol HTML onclick dapat memanggil fungsi module.
+    window.migrasiDataSantriKeFirebase =
+        migrasiDataSantriKeFirebase;
+</script>
 </body>
 </html>
