@@ -56,7 +56,13 @@
     } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     import {
-      getFirestore
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      serverTimestamp,
+      onSnapshot,
+      collection
     } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
@@ -112,6 +118,36 @@
         console.log("Google Sheet tetap aktif");
         console.log("=================================");
 
+        // Expose operasi Firestore ke script utama agar penyimpanan presensi
+        // tidak bergantung pada dynamic import yang bisa terlambat/terblokir.
+        window.firebaseSaveAttendance = async function (record) {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser) {
+            throw new Error("Firebase belum siap / pengguna anonim belum login.");
+          }
+          const safeKey = String(record?.key || ("presensi_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8)))
+            .replace(/[/\\]/g, "_");
+          const payload = {
+            key: safeKey,
+            idSantri: String(record?.idSantri || "MANUAL").trim(),
+            namaSantri: String(record?.namaSantri || "Santri").trim(),
+            kelas: String(record?.kelas || "-").trim(),
+            guru: String(record?.guru || "-").trim(),
+            status: String(record?.status || "Hadir").trim(),
+            waktu: String(record?.waktu || "").trim(),
+            hari: String(record?.hari || "").trim(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          console.log("[Firebase] Menyimpan presensi:", payload);
+          const targetRef = doc(window.firebaseDb, "presensi", safeKey);
+          await setDoc(targetRef, payload, { merge: true });
+          const verification = await getDoc(targetRef);
+          if (!verification.exists()) {
+            throw new Error("Firebase menerima penulisan tetapi dokumen belum dapat diverifikasi.");
+          }
+          console.log("[Firebase] Presensi BERHASIL disimpan & diverifikasi:", safeKey, verification.data());
+          return safeKey;
+        };
 
         return true;
 
@@ -933,6 +969,7 @@
        const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
        if(!santri) { playAudioFeedback('error', null); Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
        playAudioFeedback('ok', santri); const cTime = getCustomDateForSubmission(true);
+       console.log('[Presensi] Scan valid → mulai simpan Firebase:', santri.nama, santri.id);
        postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
     }
     function makeScriptUrl(extraParams = {}) {
@@ -1023,27 +1060,15 @@
         if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
             throw new Error('Firebase belum siap.');
         }
-
-        const { doc, setDoc, serverTimestamp } = await import(
-            'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
-        );
-
+        if (typeof window.firebaseSaveAttendance !== 'function') {
+            throw new Error('Modul penyimpanan Firebase belum siap.');
+        }
         const safeKey = String(key || ('presensi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)))
             .replace(/[/\\]/g, '_');
-
-        await setDoc(doc(window.firebaseDb, 'presensi', safeKey), {
-            key: safeKey,
-            idSantri: String(idSantri || 'MANUAL').trim(),
-            namaSantri: String(namaSantri || 'Santri').trim(),
-            kelas: String(kelas || '-').trim(),
-            guru: String(guru || '-').trim(),
-            status: String(status || 'Hadir').trim(),
-            waktu: String(timeObj?.waktu || '').trim(),
-            hari: String(timeObj?.hari || '').trim(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        }, { merge: true });
-
+        await window.firebaseSaveAttendance({
+            key: safeKey, idSantri, namaSantri, kelas, guru, status,
+            waktu: timeObj?.waktu || '', hari: timeObj?.hari || ''
+        });
         return safeKey;
     }
 
