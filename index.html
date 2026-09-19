@@ -960,20 +960,54 @@
     }
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
        return new Promise((resolve) => {
-           const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now(); newlyAddedKeysMap.set(unikey, nowTime);
-           const tempRecord = { key: unikey, idSantri, namaSantri, kelas, guru, waktu: timeObj.waktu, hari: timeObj.hari, status, sync: 'loading', createdAt: nowTime };
-           if(!Array.isArray(presensiHistory)) presensiHistory = []; presensiHistory.unshift(tempRecord); renderRiwayatTable();
-           
+           const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
+           newlyAddedKeysMap.set(unikey, nowTime);
+           const tempRecord = {
+               key: unikey, idSantri, namaSantri, kelas, guru,
+               waktu: timeObj.waktu, hari: timeObj.hari, status,
+               sync: 'saving-firebase', createdAt: nowTime
+           };
+           if(!Array.isArray(presensiHistory)) presensiHistory = [];
+           presensiHistory.unshift(tempRecord);
+           renderRiwayatTable();
            markHistoryWritePending(tempRecord);
-           simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
-           .then((serverResult) => {
-               if (!serverResult || serverResult.status !== 'success' || serverResult.verified !== true) throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
+
+           // Firebase adalah penyimpanan utama. Google Sheet hanya sinkronisasi setelah Firebase sukses.
+           simpanPresensiKeFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
+           .then(() => {
                markHistoryWriteComplete(unikey);
-               setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 500);
-           }).catch(err => {
+               tandaiPresensiTersimpanLokal(unikey, 'firebase');
+               newlyAddedKeysMap.delete(unikey);
+
+               Toast.fire({
+                   icon: 'success',
+                   title: `${namaSantri} tersimpan di Firebase`,
+                   text: 'Data sudah aman di Firebase. Menyinkronkan ke Google Sheet...'
+               });
+
+               // Tunggu hasil Google Sheet agar popup kedua hanya muncul setelah benar-benar terverifikasi.
+               return sinkronkanPresensiKeGoogleSetelahFirebase(
+                   idSantri, namaSantri, kelas, guru, status, timeObj, unikey
+               );
+           })
+           .then((sheetResult) => {
+               if (sheetResult?.status === 'firebase-only') {
+                   resolve({ status: 'firebase-only', data: { key: unikey }, sheetError: true });
+                   return;
+               }
+               resolve({ status: 'sent', data: sheetResult?.data || { key: unikey } });
+           })
+           .catch(err => {
                pendingHistoryWrites.delete(unikey);
-               isProcessing = false; Toast.fire({ icon: 'error', title: 'Gagal menyimpan ke Google Sheet', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
-               fetchHistoryFromSheets(); resolve({ error: true, message: String(err) });
+               newlyAddedKeysMap.delete(unikey);
+               presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+               renderRiwayatTable();
+               Toast.fire({
+                   icon: 'error',
+                   title: 'Firebase gagal menyimpan',
+                   text: String(err?.message || err || 'Presensi belum tersimpan.')
+               });
+               resolve({ error: true, message: String(err) });
            });
        });
     }
