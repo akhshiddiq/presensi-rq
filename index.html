@@ -979,10 +979,11 @@
                tandaiPresensiTersimpanLokal(unikey, 'firebase');
                newlyAddedKeysMap.delete(unikey);
 
+               if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                Toast.fire({
                    icon: 'success',
                    title: `${namaSantri} tersimpan di Firebase`,
-                   text: 'Data sudah aman di Firebase. Menyinkronkan ke Google Sheet...'
+                   text: 'Data sudah aman. Menyinkronkan ke Google Sheet...'
                });
 
                // Tunggu hasil Google Sheet agar popup kedua hanya muncul setelah benar-benar terverifikasi.
@@ -1002,6 +1003,7 @@
                newlyAddedKeysMap.delete(unikey);
                presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                renderRiwayatTable();
+               if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                Toast.fire({
                    icon: 'error',
                    title: 'Firebase gagal menyimpan',
@@ -1062,6 +1064,7 @@
                 }
                 tandaiPresensiTersimpanLokal(key, 'synced');
                 if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
+                if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({ icon: 'success', title: 'Tersimpan di Firebase • Google Sheet tersinkron' });
                 return result;
             })
@@ -1070,6 +1073,7 @@
                 // hanya karena Google Sheet sedang lambat/gagal.
                 tandaiPresensiTersimpanLokal(key, 'firebase');
                 console.error('[Google Sheet] Sinkronisasi tertunda:', err);
+                if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({
                     icon: 'info',
                     title: 'Presensi aman di Firebase',
@@ -1092,7 +1096,6 @@
        if(!Array.isArray(presensiHistory)) presensiHistory = [];
        presensiHistory.unshift(tempRecord);
        renderRiwayatTable();
-       Toast.fire({ icon: 'success', title: `${namaSantri} (${status})`, text: 'Menyimpan ke Firebase...' });
        markHistoryWritePending(tempRecord);
 
        // Antrean tetap dipertahankan agar beberapa scan cepat tidak saling bertabrakan.
@@ -1109,10 +1112,11 @@
                  tandaiPresensiTersimpanLokal(unikey, 'firebase');
                  newlyAddedKeysMap.delete(unikey);
 
+                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                  Toast.fire({
                      icon: 'success',
-                     title: `${namaSantri} tersimpan`,
-                     text: 'Firebase berhasil • sinkron Google Sheet berjalan'
+                     title: `${namaSantri} tersimpan di Firebase`,
+                     text: 'Data sudah aman. Menyinkronkan ke Google Sheet...'
                  });
 
                  // 2) Google Sheet setelah Firebase sukses.
@@ -1126,6 +1130,7 @@
                  presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                  renderRiwayatTable();
 
+                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                  Toast.fire({
                      icon: 'error',
                      title: 'Firebase gagal menyimpan',
