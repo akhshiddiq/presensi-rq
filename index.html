@@ -877,23 +877,54 @@
     function playSynthSound(type) {
         try {
             const ctx = getAudioContext(); if (!ctx) return;
-            // Satu-satunya suara notifikasi presensi: laser singkat dan cepat.
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
-            osc.type = 'sawtooth';
-            // Laser dipanjangkan menjadi maksimal 5 detik per anak.
-            // Bagian lain dari sistem tidak diubah.
+            // Satu-satunya suara notifikasi presensi: efek tembakan berkali-kali selama 5 detik.
+            const start = ctx.currentTime + 0.02;
             const duration = 5.0;
-            osc.frequency.setValueAtTime(3000, now);
-            osc.frequency.exponentialRampToValueAtTime(120, now + duration);
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(5200, now);
-            filter.frequency.exponentialRampToValueAtTime(500, now + duration);
-            gain.gain.setValueAtTime(0.9, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-            osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-            osc.start(now); osc.stop(now + duration);
-        } catch (e) { console.warn('Audio laser error:', e); }
+            const shotCount = 15;
+            const interval = duration / shotCount;
+
+            // Buffer noise pendek untuk karakter letupan setiap tembakan.
+            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.16), ctx.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseData.length; i++) {
+                noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseData.length);
+            }
+
+            for (let i = 0; i < shotCount; i++) {
+                const t = start + i * interval;
+
+                // Letupan/noise singkat.
+                const noise = ctx.createBufferSource();
+                const noiseFilter = ctx.createBiquadFilter();
+                const noiseGain = ctx.createGain();
+                noise.buffer = noiseBuffer;
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(1500, t);
+                noiseFilter.Q.setValueAtTime(0.8, t);
+                noiseGain.gain.setValueAtTime(0.0001, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.75, t + 0.006);
+                noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noise.start(t);
+                noise.stop(t + 0.16);
+
+                // Dentuman rendah yang sangat singkat untuk mempertegas tiap letupan.
+                const osc = ctx.createOscillator();
+                const oscGain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(125, t);
+                osc.frequency.exponentialRampToValueAtTime(48, t + 0.10);
+                oscGain.gain.setValueAtTime(0.0001, t);
+                oscGain.gain.exponentialRampToValueAtTime(0.7, t + 0.004);
+                oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+                osc.connect(oscGain);
+                oscGain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + 0.13);
+            }
+        } catch (e) { console.warn('Audio tembakan error:', e); }
     }
     function playAudioFeedback(type, santri) {
         if (type !== 'ok') return;
@@ -934,13 +965,13 @@
         const modalSelect = document.getElementById('modalAudioMode'), modalSfxSelect = document.getElementById('modalSfxType'), modalApiKeyInput = document.getElementById('inputGeminiApiKey'), sfxContainer = document.getElementById('sfxOptionsContainer');
         if (modalSelect) modalSelect.value = audioMode; if (modalSfxSelect) modalSfxSelect.value = sfxType; if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
         if (sfxContainer) { if (audioMode === 'sfx') sfxContainer.classList.remove('hidden'); else sfxContainer.classList.add('hidden'); }
-        if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Laser Cepat"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
+        if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Tembakan 5 Detik"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
     }
     function cycleAudioMode() {
         getAudioContext();
         audioMode = audioMode === 'sfx' ? 'off' : 'sfx';
         localStorage.setItem('audioMode', audioMode); updateAudioUI();
-        if (audioMode === 'sfx') playSynthSound('laser');
+        if (audioMode === 'sfx') playSynthSound('shot');
     }
     function updateAudioModeFromSelect(val) { audioMode = val; localStorage.setItem('audioMode', audioMode); updateAudioUI(); }
     function updateSfxType(val) { sfxType = 'laser'; localStorage.setItem('sfxType', 'laser'); updateAudioUI(); }
