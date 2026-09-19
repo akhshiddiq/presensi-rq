@@ -181,40 +181,6 @@
 
     })();
   </script>
-  </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <!-- Fallback pemindai QR: jika CDN utama gagal dimuat, coba CDN lain otomatis. -->
-  <script>
-    window.__html5QrReady = (async function () {
-      if (window.Html5Qrcode) return true;
-
-      const sources = [
-        'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'
-      ];
-
-      for (const src of sources) {
-        try {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = src;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-          });
-          if (window.Html5Qrcode) return true;
-        } catch (e) {
-          console.warn('CDN pemindai QR gagal dimuat:', src, e);
-        }
-      }
-
-      return false;
-    })();
-  </script>
-  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { background-color: #f8fafc; color: #334155; font-family: 'Inter', sans-serif; }
