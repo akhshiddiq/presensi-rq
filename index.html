@@ -138,7 +138,9 @@
             waktu: String(record?.waktu || "").trim(),
             hari: String(record?.hari || "").trim(),
             createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
+            firebaseSync: 'saved',
+            sheetSync: 'pending'
           };
           console.log("[Firebase] Menyimpan presensi:", payload);
           const targetRef = doc(window.firebaseDb, "presensi", safeKey);
@@ -217,6 +219,15 @@
           const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js');
           await deleteDoc(doc(window.firebaseDb,'sheetSyncQueue',String(id)));
         };
+        window.firebaseMarkSheetSync = async function (key, state) {
+          if (!window.firebaseDb || !window.firebaseAuth?.currentUser || !key) return;
+          const safeKey = String(key).replace(/[\/\\]/g, '_');
+          await setDoc(doc(window.firebaseDb, 'presensi', safeKey), {
+            firebaseSync: 'saved',
+            sheetSync: String(state || 'pending'),
+            updatedAt: serverTimestamp()
+          }, {merge:true});
+        };
 
         // Ambil seluruh data aplikasi dari Firebase. Google Sheet tidak menjadi sumber tampilan.
         window.firebaseLoadAllData = async function () {
@@ -228,7 +239,7 @@
           ]);
           return {
             santri: santriSnap.docs.map(d => ({ id: String(d.data()?.id || d.id), nama: String(d.data()?.nama || d.data()?.namaSantri || ""), kelas: String(d.data()?.kelas || ""), guru: String(d.data()?.guru || "") })),
-            history: presensiSnap.docs.map(d => ({ key: String(d.data()?.key || d.id), idSantri: String(d.data()?.idSantri || ""), namaSantri: String(d.data()?.namaSantri || ""), kelas: String(d.data()?.kelas || ""), guru: String(d.data()?.guru || ""), waktu: String(d.data()?.waktu || ""), hari: String(d.data()?.hari || ""), status: String(d.data()?.status || "Hadir") })),
+            history: presensiSnap.docs.map(d => ({ key: String(d.data()?.key || d.id), idSantri: String(d.data()?.idSantri || ""), namaSantri: String(d.data()?.namaSantri || ""), kelas: String(d.data()?.kelas || ""), guru: String(d.data()?.guru || ""), waktu: String(d.data()?.waktu || ""), hari: String(d.data()?.hari || ""), status: String(d.data()?.status || "Hadir"), firebaseSync: String(d.data()?.firebaseSync || "saved"), sheetSync: String(d.data()?.sheetSync || "synced") })),
             acuan: Object.fromEntries(acuanSnap.docs.map(d => { const x=d.data()||{}; return [String(x.kelas || d.id), Number(x.acuan100 || 0)]; }).filter(([k,v]) => k && Number.isFinite(v) && v > 0))
           };
         };
@@ -600,7 +611,7 @@
                 <th class="p-4">Tanggal</th>
                 <th class="p-4">Nama Lengkap</th>
                 <th class="p-4">Kelas</th>
-                <th class="p-4">Status</th>
+                <th class="p-4">Status & Penyimpanan</th>
                 <th class="p-4 text-center w-28">Aksi</th>
               </tr>
             </thead>
@@ -1141,7 +1152,7 @@
            const tempRecord = {
                key: unikey, idSantri, namaSantri, kelas, guru,
                waktu: timeObj.waktu, hari: timeObj.hari, status,
-               sync: 'saving-firebase', createdAt: nowTime
+               sync: 'saving-firebase', firebaseSync: 'saving', sheetSync: 'pending', createdAt: nowTime
            };
            if(!Array.isArray(presensiHistory)) presensiHistory = [];
            presensiHistory.unshift(tempRecord);
@@ -1223,11 +1234,12 @@
 
     async function sinkronkanPresensiKeGoogleSetelahFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key)
-            .then((result) => {
+            .then(async (result) => {
                 if (!result || result.status !== 'success' || result.verified !== true) {
                     throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi sinkronisasi.');
                 }
                 tandaiPresensiTersimpanLokal(key, 'synced');
+                try { await window.firebaseMarkSheetSync(key, 'synced'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet belum tertulis:', markErr); }
                 if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({ icon: 'success', title: 'Tersimpan di Firebase • Google Sheet tersinkron' });
@@ -1237,6 +1249,7 @@
                 // Firebase tetap menjadi sumber utama. Jangan hapus data Firebase
                 // hanya karena Google Sheet sedang lambat/gagal.
                 tandaiPresensiTersimpanLokal(key, 'firebase');
+                try { await window.firebaseMarkSheetSync(key, 'pending'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet pending belum tertulis:', markErr); }
                 try { await window.firebaseQueueSheetSync('saveAttendance', {idSantri,namaSantri,kelas,guru,status,key,waktu:timeObj?.waktu||'',hari:timeObj?.hari||''}); } catch(queueErr) { console.warn('[Firebase] Gagal membuat antrean Google Sheet:',queueErr); }
                 console.error('[Google Sheet] Sinkronisasi tertunda:', err);
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
@@ -1258,6 +1271,9 @@
              const result=await requestGoogleJsonp(Object.assign({action:job.action}, job.payload||{}));
              const verified = result && result.status==='success' && result.verified!==false;
              if(!verified) throw new Error(result?.message||'Google Sheet belum terverifikasi.');
+             if (job.action === 'saveAttendance' && job.payload?.key) {
+                try { await window.firebaseMarkSheetSync(job.payload.key, 'synced'); } catch (markErr) { console.warn('[Firebase] Status Sheet belum diperbarui:', markErr); }
+             }
              await window.firebaseDeleteSheetSync(job.id); done++;
           } catch(e) { failed++; console.warn('[Google Sheet] Antrian belum tersinkron:',job.action,e); }
        }
@@ -1271,7 +1287,7 @@
        const tempRecord = {
            key: unikey, idSantri, namaSantri, kelas, guru,
            waktu: timeObj.waktu, hari: timeObj.hari, status,
-           sync: 'saving-firebase', createdAt: nowTime
+           sync: 'saving-firebase', firebaseSync: 'saving', sheetSync: 'pending', createdAt: nowTime
        };
 
        if(!Array.isArray(presensiHistory)) presensiHistory = [];
@@ -1412,7 +1428,12 @@
         let html = '';
         data.forEach((item,index) => {
             const st = String(item.status || '').toLowerCase();
-            let badge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
+            let attendanceBadge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
+            const firebaseState = String(item.firebaseSync || (item.sync === 'saving-firebase' ? 'saving' : 'saved')).toLowerCase();
+            const sheetState = String(item.sheetSync || (item.sync === 'synced' ? 'synced' : 'pending')).toLowerCase();
+            const firebaseBadge = firebaseState === 'saved' ? '<span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-check-circle"></i> Tersimpan Firebase</span>' : '<span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-spinner fa-spin"></i> Menyimpan Firebase...</span>';
+            const sheetBadge = sheetState === 'synced' ? '<span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-check-circle"></i> Tersimpan di Google Sheet</span>' : '<span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-spinner fa-spin"></i> Menyinkronkan Google Sheet...</span>';
+            const badge = `<div class="flex flex-col items-start gap-1.5">${attendanceBadge}<div class="flex flex-col items-start gap-1 text-[11px] leading-tight">${firebaseBadge}${sheetBadge}</div></div>`;
             
             const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm inline-flex items-center justify-center" title="Hapus Permanen"><i class="fas fa-trash-alt"></i></button>`;
             
