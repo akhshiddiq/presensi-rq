@@ -955,6 +955,57 @@
         });
     }
 
+    // =========================================================
+    // FIREBASE MIRROR PRESENSI — TAHAP 3
+    // Google Sheet tetap menjadi penyimpanan utama.
+    // Firebase hanya menerima salinan setelah Google Sheet sukses.
+    // Jika Firebase gagal, presensi Google Sheet tetap dianggap berhasil.
+    // =========================================================
+    async function mirrorPresensiKeFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
+        try {
+            const ready = await window.firebaseReadyPromise;
+            if (!ready || !window.firebaseReady || !window.firebaseDb || !window.firebaseAuth?.currentUser) {
+                console.warn('[Firebase] Firebase belum siap, salinan presensi dilewati.');
+                return { status: 'skipped', reason: 'firebase-not-ready' };
+            }
+
+            const {
+                doc,
+                setDoc,
+                serverTimestamp
+            } = await import(
+                'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'
+            );
+
+            const rawKey = String(key || '').trim();
+            const safeKey = (() => {
+                const bytes = new TextEncoder().encode(rawKey);
+                return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('') || ('auto_' + Date.now());
+            })();
+
+            const ref = doc(window.firebaseDb, 'presensi', safeKey);
+
+            await setDoc(ref, {
+                key: rawKey || safeKey,
+                idSantri: String(idSantri || 'MANUAL').trim(),
+                namaSantri: String(namaSantri || 'Santri').trim(),
+                kelas: String(kelas || '-').trim(),
+                guru: String(guru || '-').trim(),
+                status: String(status || 'Hadir').trim(),
+                waktu: String(timeObj?.waktu || '').trim(),
+                hari: String(timeObj?.hari || '').trim(),
+                mirroredAt: serverTimestamp()
+            }, { merge: true });
+
+            console.log('[Firebase] Salinan presensi berhasil:', rawKey || safeKey);
+            return { status: 'success' };
+        } catch (error) {
+            // Jangan membuat presensi gagal hanya karena Firebase bermasalah.
+            console.error('[Firebase] Salinan presensi gagal:', error);
+            return { status: 'error', error };
+        }
+    }
+
     function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return requestGoogleJsonp({ action: 'saveAttendance', idSantri: idSantri || 'MANUAL', namaSantri: namaSantri || 'Santri', kelas: kelas || '-', guru: guru || '-', status: status || 'Hadir', key: key || '', waktu: timeObj?.waktu || '', hari: timeObj?.hari || '' });
     }
@@ -969,6 +1020,15 @@
            .then((serverResult) => {
                if (!serverResult || serverResult.status !== 'success' || serverResult.verified !== true) throw new Error((serverResult && serverResult.message) || 'Presensi belum terverifikasi di Google Sheet.');
                markHistoryWriteComplete(unikey);
+               mirrorPresensiKeFirebase(
+                   idSantri,
+                   namaSantri,
+                   kelas,
+                   guru,
+                   status,
+                   timeObj,
+                   unikey
+               );
                setTimeout(() => { fetchHistoryFromSheets(true); resolve({ status: 'sent', data: serverResult.data || { key: unikey } }); }, 500);
            }).catch(err => {
                pendingHistoryWrites.delete(unikey);
@@ -995,6 +1055,20 @@
              }
              markHistoryWriteComplete(unikey);
              newlyAddedKeysMap.delete(unikey);
+
+             // Google Sheet sudah terverifikasi sukses.
+             // Setelah itu, buat salinan yang sama ke Firebase.
+             // Kegagalan Firebase TIDAK membatalkan presensi di Google Sheet.
+             mirrorPresensiKeFirebase(
+                 idSantri,
+                 namaSantri,
+                 kelas,
+                 guru,
+                 status,
+                 timeObj,
+                 unikey
+             );
+
              if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
              else {
                  const idx = presensiHistory.findIndex(x => String(x.key) === String(unikey));
