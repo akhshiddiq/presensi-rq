@@ -663,8 +663,8 @@
         <div class="space-y-5 mb-6">
             <div class="bg-emerald-50/70 border border-emerald-100 p-4 rounded-2xl">
                <label class="block text-sm font-bold text-emerald-900 mb-2 flex items-center gap-1.5"><i class="fas fa-volume-up text-brand-green"></i> Mode Suara Presensi Masuk</label>
-               <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-sm bg-white py-2.5"><option value="ai">🤖 Suara Gemini AI Studio (Ramah & Motivasi)</option><option value="sfx">🔔 Efek Suara (Blup / Ting-Dong / Laser)</option><option value="off">🔇 Mute / Tanpa Suara</option></select>
-               <div id="sfxOptionsContainer" class="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-sm"><span class="font-bold text-gray-600">Jenis Efek Suara:</span><select id="modalSfxType" onchange="updateSfxType(this.value)" class="p-2 rounded-lg border border-gray-200 text-xs font-semibold bg-white outline-none"><option value="blup">🫧 Blup (Gelembung Air)</option><option value="tingdong">🔔 Ting-Dong (Melodis)</option><option value="laser">⚡ Laser Star Wars (Pew Pew!)</option></select></div>
+               <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-sm bg-white py-2.5"><option value="sfx">⚡ Suara Laser (Notifikasi Presensi)</option><option value="off">🔇 Mute / Tanpa Suara</option></select>
+               <div id="sfxOptionsContainer" class="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-sm"><span class="font-bold text-gray-600">Suara Presensi:</span><span class="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold bg-white">⚡ Laser Cepat</span></div>
             </div>
             <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Barakallah fiikum"* (Suara Ikhwan Ramah).</p></div>
             <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Google Apps Script</label><input type="text" id="inputUrlSheet" class="modern-input font-mono text-xs py-2.5" placeholder="Tempel URL Google Apps Script /exec di sini"></div>
@@ -698,8 +698,11 @@
     let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
-    let audioMode = localStorage.getItem('audioMode') || 'ai';
-    let sfxType = localStorage.getItem('sfxType') || 'blup';
+    const storedAudioMode = localStorage.getItem('audioMode');
+    let audioMode = storedAudioMode === 'off' ? 'off' : 'sfx';
+    localStorage.setItem('audioMode', audioMode);
+    let sfxType = 'laser';
+    localStorage.setItem('sfxType', 'laser');
     // Deklarasi variabel state kamera
     let isCameraOn = false;
     let html5QrCode = null;
@@ -732,37 +735,28 @@
     function playSynthSound(type) {
         try {
             const ctx = getAudioContext(); if (!ctx) return;
-            for (let i = 0; i < 5; i++) {
-                if (type === 'blup') {
-                    const now = ctx.currentTime + (i * 0.1);
-                    const osc = ctx.createOscillator(), gain = ctx.createGain();
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
-                    gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    osc.connect(gain); gain.connect(ctx.destination); osc.start(now); osc.stop(now + 0.08);
-                } else if (type === 'tingdong') {
-                    const tdNow = ctx.currentTime + (i * 0.22);
-                    const osc1 = ctx.createOscillator(), gain1 = ctx.createGain();
-                    osc1.type = 'sine'; osc1.frequency.setValueAtTime(880, tdNow); gain1.gain.setValueAtTime(0.2, tdNow); gain1.gain.exponentialRampToValueAtTime(0.001, tdNow + 0.1);
-                    osc1.connect(gain1); gain1.connect(ctx.destination); osc1.start(tdNow); osc1.stop(tdNow + 0.1);
-                    const osc2 = ctx.createOscillator(), gain2 = ctx.createGain();
-                    osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, tdNow + 0.08); gain2.gain.setValueAtTime(0.2, tdNow + 0.08); gain2.gain.exponentialRampToValueAtTime(0.001, tdNow + 0.18);
-                    osc2.connect(gain2); gain2.connect(ctx.destination); osc2.start(tdNow + 0.08); osc2.stop(tdNow + 0.18);
-                } else if (type === 'laser') {
-                    const now = ctx.currentTime + (i * 0.12);
-                    const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(3200, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
-                    filter.type = 'lowpass'; filter.frequency.setValueAtTime(5000, now); filter.frequency.exponentialRampToValueAtTime(400, now + 0.12);
-                    gain.gain.setValueAtTime(1.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                    osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination); osc.start(now); osc.stop(now + 0.12);
-                }
-            }
-        } catch (e) { console.warn("Audio synth error:", e); }
+            // Satu-satunya suara notifikasi presensi: laser singkat dan cepat.
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
+            osc.type = 'sawtooth';
+            // Laser dipanjangkan menjadi maksimal 5 detik per anak.
+            // Bagian lain dari sistem tidak diubah.
+            const duration = 5.0;
+            osc.frequency.setValueAtTime(3000, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + duration);
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(5200, now);
+            filter.frequency.exponentialRampToValueAtTime(500, now + duration);
+            gain.gain.setValueAtTime(0.9, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+            osc.start(now); osc.stop(now + duration);
+        } catch (e) { console.warn('Audio laser error:', e); }
     }
     function playAudioFeedback(type, santri) {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (type !== 'ok') return;
         if (audioMode === 'off') return;
-        if (audioMode === 'sfx') playSynthSound(type === 'ok' ? sfxType : 'blup');
-        else if (audioMode === 'ai') { if (type === 'ok') playGeminiTtsGreeting(); else playSynthSound('blup'); }
+        playSynthSound('laser');
     }
     function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i); return bytes.buffer; }
     function pcmToWav(pcm16Data, sampleRate = 24000) {
@@ -798,16 +792,16 @@
         const modalSelect = document.getElementById('modalAudioMode'), modalSfxSelect = document.getElementById('modalSfxType'), modalApiKeyInput = document.getElementById('inputGeminiApiKey'), sfxContainer = document.getElementById('sfxOptionsContainer');
         if (modalSelect) modalSelect.value = audioMode; if (modalSfxSelect) modalSfxSelect.value = sfxType; if (modalApiKeyInput) modalApiKeyInput.value = geminiApiKey;
         if (sfxContainer) { if (audioMode === 'sfx') sfxContainer.classList.remove('hidden'); else sfxContainer.classList.add('hidden'); }
-        if (audioMode === 'ai') { btnIcon.className = "fas fa-robot text-brand-gold text-[12px]"; btnLabel.innerText = "Gemini AI Studio"; } else if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Efek Suara (" + sfxType.toUpperCase() + ")"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
+        if (audioMode === 'sfx') { btnIcon.className = "fas fa-volume-up text-emerald-300 text-[12px]"; btnLabel.innerText = "Laser Cepat"; } else { btnIcon.className = "fas fa-volume-mute text-red-300 text-[12px]"; btnLabel.innerText = "Mute / Mati"; }
     }
     function cycleAudioMode() {
         getAudioContext();
-        if (audioMode === 'ai') audioMode = 'sfx'; else if (audioMode === 'sfx') audioMode = 'off'; else audioMode = 'ai';
+        audioMode = audioMode === 'sfx' ? 'off' : 'sfx';
         localStorage.setItem('audioMode', audioMode); updateAudioUI();
-        if (audioMode === 'sfx') playSynthSound(sfxType); else if (audioMode === 'ai') playGeminiTtsGreeting();
+        if (audioMode === 'sfx') playSynthSound('laser');
     }
     function updateAudioModeFromSelect(val) { audioMode = val; localStorage.setItem('audioMode', audioMode); updateAudioUI(); }
-    function updateSfxType(val) { sfxType = val; localStorage.setItem('sfxType', sfxType); playSynthSound(sfxType); updateAudioUI(); }
+    function updateSfxType(val) { sfxType = 'laser'; localStorage.setItem('sfxType', 'laser'); updateAudioUI(); }
     function applyLogo() {
       const img = document.getElementById('appLogo'), defIcon = document.getElementById('defaultLogoIcon');
       if (LOGO_URL && LOGO_URL.trim() !== '') { img.src = LOGO_URL; img.classList.remove('hidden'); defIcon.classList.add('hidden'); } else { img.classList.add('hidden'); defIcon.classList.remove('hidden'); }
@@ -1019,8 +1013,8 @@
        if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
        lastScannedId = qrId; lastScanTime = now; triggerCameraFlash();
        const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
-       if(!santri) { playAudioFeedback('error', null); Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
-       playAudioFeedback('ok', santri); const cTime = getCustomDateForSubmission(true);
+       if(!santri) { Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
+       const cTime = getCustomDateForSubmission(true);
        console.log('[Presensi] Scan valid → mulai simpan Firebase:', santri.nama, santri.id);
        postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
     }
@@ -1068,6 +1062,7 @@
                markHistoryWriteComplete(unikey);
                tandaiPresensiTersimpanLokal(unikey, 'firebase');
                newlyAddedKeysMap.delete(unikey);
+               playAudioFeedback('ok', { nama: namaSantri });
 
                if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                Toast.fire({
@@ -1393,7 +1388,7 @@
             if(santri) { const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime); if(!result.error) { successCount++; checkedCbs[i].checked = false; } }
         }
         isProcessing = false; document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`; document.getElementById('checkAllManual').checked = false;
-        playAudioFeedback('ok', null); Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
+        Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
         fetchHistoryFromSheets();
     }
     function prepareLaporanSantriOptions() {
