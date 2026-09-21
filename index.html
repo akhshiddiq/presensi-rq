@@ -789,7 +789,7 @@
                <table id="kalenderTableElement" class="w-full text-left border-collapse text-sm whitespace-nowrap min-w-max">
                    <thead class="bg-emerald-50 text-brand-green sticky top-0 z-20">
                        <tr><th class="p-3 border-r border-emerald-100 sticky left-0 bg-emerald-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-56 max-w-[220px]">Nama Santri</th>
-                           <script>for(let d=1; d<=31; d++) document.write(`<th class="p-2 min-w-[32px] text-center border-r border-emerald-100 font-bold">${d}</th>`);</script>
+                           <script>for(let d=1; d<=31; d++) document.write(`<th data-calendar-day="${d}" class="p-1 min-w-[46px] text-center border-r border-emerald-100 font-bold leading-tight"><span class="block text-sm">${d}</span><span class="calendar-day-name block text-[9px] font-semibold opacity-75">-</span></th>`);</script>
                        </tr>
                    </thead>
                    <tbody id="kalenderBody" class="divide-y divide-gray-100 text-gray-700 text-sm"><tr><td colspan="32" class="p-10 text-center text-gray-400 font-medium">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr></tbody>
@@ -2067,8 +2067,22 @@
         document.getElementById('kalenderBulanSelect').value = new Date().getMonth();
         renderClassCalendar();
     }
+    function updateKalenderHari(selBulan, selTahun) {
+        const namaHari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        document.querySelectorAll('#kalenderTableElement th[data-calendar-day]').forEach(th => {
+            const d = Number(th.getAttribute('data-calendar-day'));
+            const date = new Date(selTahun, selBulan, d);
+            const valid = date.getMonth() === selBulan && date.getFullYear() === selTahun;
+            const numberEl = th.querySelector('span:first-child');
+            const dayEl = th.querySelector('.calendar-day-name');
+            if (numberEl) numberEl.textContent = valid ? d : '-';
+            if (dayEl) dayEl.textContent = valid ? namaHari[date.getDay()] : '';
+            th.classList.toggle('opacity-40', !valid);
+        });
+    }
     function renderClassCalendar() {
         const selKelas = document.getElementById('kalenderKelasSelect').value, selBulan = parseInt(document.getElementById('kalenderBulanSelect').value), selTahun = parseInt(document.getElementById('kalenderTahunSelect').value);
+        updateKalenderHari(selBulan, selTahun);
         const tbody = document.getElementById('kalenderBody'), studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
         if(studentsInClass.length === 0) { tbody.innerHTML = `<tr><td colspan="32" class="p-10 text-center text-gray-400 font-medium">Pilih kelas di atas untuk melihat kalender kehadiran.</td></tr>`; return; }
         
