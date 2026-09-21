@@ -487,7 +487,28 @@
       #view-riwayat .riwayat-table-body td { padding: 13px 11px; } #view-riwayat .riwayat-date { font-size: 15px; }
       #view-riwayat .riwayat-name { font-size: 16px; } #view-riwayat .riwayat-class { font-size: 15px; } #view-riwayat .riwayat-status { font-size: 14px; }
     }
-  </style>
+  
+    /* =========================================================
+       INDIKATOR READ / WRITE GLOBAL
+       Persentase = progres tahap proses, bukan byte transfer.
+       Ditampilkan di semua menu melalui panel global.
+    ========================================================= */
+    .global-sync-panel{position:sticky;top:0;z-index:18;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:8px 10px}
+    .global-sync-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .global-sync-card{min-width:0;border:1px solid #e5e7eb;border-radius:11px;padding:7px 9px;background:#fff}
+    .global-sync-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800}
+    .global-sync-label{display:flex;align-items:center;gap:6px;min-width:0}
+    .global-sync-source{font-size:9px;font-weight:800;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .global-sync-bar{height:5px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:5px}
+    .global-sync-fill{height:100%;width:0%;transition:width .25s ease;background:#10b981;border-radius:999px}
+    .global-sync-meta{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:9px;color:#64748b}
+    .global-sync-running .global-sync-fill{background:#3b82f6}
+    .global-sync-success .global-sync-fill{background:#10b981}
+    .global-sync-error .global-sync-fill{background:#ef4444}
+    .global-sync-partial .global-sync-fill{background:#f59e0b}
+    .global-sync-idle .global-sync-fill{background:#94a3b8}
+    @media(max-width:640px){.global-sync-panel{padding:7px}.global-sync-grid{grid-template-columns:1fr}.global-sync-card{padding:6px 8px}}
+</style>
 </head>
 
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
@@ -529,6 +550,28 @@
       <button onclick="switchTab('acuanKehadiran')" id="tab-acuanKehadiran" class="nav-menu-item student-report-menu"><i class="fas fa-bullseye"></i> <span>Acuan Kehadiran 100%</span></button>
       <button onclick="switchTab('dataSantri')" id="tab-dataSantri" class="nav-menu-item student-report-menu"><i class="fas fa-user-graduate"></i> <span>Data Nama Santri</span></button>
     </div>
+
+    <!-- INDIKATOR GLOBAL READ / WRITE: tampil di semua menu -->
+    <section id="globalSyncPanel" class="global-sync-panel" aria-label="Status proses READ dan WRITE">
+      <div class="global-sync-grid">
+        <div id="globalReadCard" class="global-sync-card global-sync-idle">
+          <div class="global-sync-head">
+            <div class="global-sync-label"><i id="globalReadIcon" class="fas fa-download text-slate-500"></i><span>READ</span><span id="globalReadSource" class="global-sync-source">Belum ada proses</span></div>
+            <strong id="globalReadPct">0%</strong>
+          </div>
+          <div class="global-sync-bar"><div id="globalReadFill" class="global-sync-fill"></div></div>
+          <div class="global-sync-meta"><span id="globalReadMessage">Menunggu</span><span id="globalReadPath">—</span></div>
+        </div>
+        <div id="globalWriteCard" class="global-sync-card global-sync-idle">
+          <div class="global-sync-head">
+            <div class="global-sync-label"><i id="globalWriteIcon" class="fas fa-upload text-slate-500"></i><span>WRITE</span><span id="globalWriteSource" class="global-sync-source">Belum ada proses</span></div>
+            <strong id="globalWritePct">0%</strong>
+          </div>
+          <div class="global-sync-bar"><div id="globalWriteFill" class="global-sync-fill"></div></div>
+          <div class="global-sync-meta"><span id="globalWriteMessage">Menunggu</span><span id="globalWritePath">—</span></div>
+        </div>
+      </div>
+    </section>
     
     <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-xl shadow-sm items-start gap-3">
         <i class="fas fa-wifi-slash mt-1 text-xs"></i>
@@ -1188,9 +1231,83 @@
         script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() })); script.async = true; document.head.appendChild(script);
         setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 30000);
     }
+    // =========================================================
+    // MONITOR PROSES READ / WRITE GLOBAL
+    // Persentase menunjukkan tahapan proses yang benar-benar diketahui:
+    // 10% mulai, 50% permintaan berjalan, 100% respons selesai.
+    // Bukan persentase byte jaringan.
+    // =========================================================
+    window.syncProcessState = window.syncProcessState || {
+        read: {status:'idle', progress:0, source:'Belum ada proses', message:'Menunggu', path:'—'},
+        write:{status:'idle', progress:0, source:'Belum ada proses', message:'Menunggu', path:'—'}
+    };
+    window.setGlobalSyncStatus = function(type, status, progress, source, message, path) {
+        const state = window.syncProcessState[type] || {};
+        state.status = status;
+        state.progress = Math.max(0, Math.min(100, Number(progress) || 0));
+        state.source = source || state.source || '—';
+        state.message = message || '';
+        state.path = path || '—';
+        window.syncProcessState[type] = state;
+        const prefix = type === 'read' ? 'Read' : 'Write';
+        const card = document.getElementById('global' + prefix + 'Card');
+        const icon = document.getElementById('global' + prefix + 'Icon');
+        const pct = document.getElementById('global' + prefix + 'Pct');
+        const fill = document.getElementById('global' + prefix + 'Fill');
+        const sourceEl = document.getElementById('global' + prefix + 'Source');
+        const msgEl = document.getElementById('global' + prefix + 'Message');
+        const pathEl = document.getElementById('global' + prefix + 'Path');
+        if (!card) return;
+        card.className = 'global-sync-card global-sync-' + (status === 'running' ? 'running' : status === 'success' ? 'success' : status === 'error' ? 'error' : status === 'partial' ? 'partial' : 'idle');
+        if (pct) pct.textContent = state.progress + '%';
+        if (fill) fill.style.width = state.progress + '%';
+        if (sourceEl) sourceEl.textContent = state.source;
+        if (msgEl) msgEl.textContent = state.message;
+        if (pathEl) pathEl.textContent = state.path;
+        if (icon) {
+            icon.className = (type === 'read' ? 'fas fa-download ' : 'fas fa-upload ') + (status === 'running' ? 'text-blue-500 fa-pulse' : status === 'success' ? 'text-emerald-600' : status === 'error' ? 'text-red-500' : 'text-slate-500');
+        }
+    };
+    window.beginGlobalSync = function(type, source, path) {
+        window.setGlobalSyncStatus(type, 'running', 10, source, 'Memulai proses…', path);
+        setTimeout(() => {
+            const st = window.syncProcessState[type];
+            if (st && st.status === 'running' && st.progress < 50) window.setGlobalSyncStatus(type, 'running', 50, source, 'Proses sedang berjalan…', path);
+        }, 120);
+    };
+    window.finishGlobalSync = function(type, success, source, message, path, statusOverride) {
+        const finalStatus = statusOverride || (success ? 'success' : 'error');
+        window.setGlobalSyncStatus(type, finalStatus, success ? 100 : 0, source, message || (success ? 'Selesai' : 'Gagal'), path);
+    };
+    window.getGoogleActionSyncMeta = function(action) {
+        const a = String(action || '').toLowerCase();
+        const isRead = ['getdata','gethistory','get_data','get_history'].includes(a) || a.startsWith('get');
+        const source = isRead ? 'Google Apps Script + Google Sheet' : 'Google Apps Script → Google Sheet';
+        const path = isRead ? 'Google Script → Google Sheet → Web' : 'Web → Google Script → Google Sheet';
+        return {type:isRead ? 'read' : 'write', source, path};
+    };
+
     function requestGoogleJsonp(payload) {
+        const meta = window.getGoogleActionSyncMeta(payload?.action);
+        window.beginGlobalSync(meta.type, meta.source, meta.path);
         return new Promise((resolve, reject) => {
-            fetchGoogleJsonp(data => { if (data && (data.status === 'success' || data.status === 'online' || data.status === 'warning')) resolve(data); else reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.')); }, reject, payload || {});
+            fetchGoogleJsonp(data => {
+                const ok = !!(data && (data.status === 'success' || data.status === 'online'));
+                const warning = !!(data && data.status === 'warning');
+                if (ok) {
+                    window.finishGlobalSync(meta.type, true, meta.source, meta.type === 'read' ? 'READ berhasil' : 'WRITE selesai', meta.path);
+                    resolve(data);
+                } else if (warning) {
+                    window.finishGlobalSync(meta.type, true, meta.source, data.message || 'Proses selesai dengan peringatan.', meta.path, 'partial');
+                    resolve(data);
+                } else {
+                    window.finishGlobalSync(meta.type, false, meta.source, (data && data.message) || 'Proses gagal', meta.path);
+                    reject(new Error((data && data.message) || 'Google Apps Script menolak permintaan.'));
+                }
+            }, err => {
+                window.finishGlobalSync(meta.type, false, meta.source, String(err?.message || err || 'Koneksi gagal'), meta.path);
+                reject(err);
+            }, payload || {});
         });
     }
     window.requestGoogleJsonp = requestGoogleJsonp;
@@ -1269,10 +1386,17 @@
         }
         const safeKey = String(key || ('presensi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)))
             .replace(/[/\\]/g, '_');
-        await window.firebaseSaveAttendance({
-            key: safeKey, idSantri, namaSantri, kelas, guru, status,
-            waktu: timeObj?.waktu || '', hari: timeObj?.hari || ''
-        });
+        window.beginGlobalSync('write', 'Firebase', 'Web → Firebase Firestore → presensi');
+        try {
+            await window.firebaseSaveAttendance({
+                key: safeKey, idSantri, namaSantri, kelas, guru, status,
+                waktu: timeObj?.waktu || '', hari: timeObj?.hari || ''
+            });
+            window.finishGlobalSync('write', true, 'Firebase', 'WRITE selesai di Firebase', 'Web → Firebase Firestore → presensi');
+        } catch (firebaseErr) {
+            window.finishGlobalSync('write', false, 'Firebase', String(firebaseErr?.message || firebaseErr || 'Firebase gagal'), 'Web → Firebase Firestore → presensi');
+            throw firebaseErr;
+        }
         return safeKey;
     }
 
@@ -1294,6 +1418,7 @@
                 tandaiPresensiTersimpanLokal(key, 'synced');
                 try { await window.firebaseMarkSheetSync(key, 'synced'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet belum tertulis:', markErr); }
                 if (Array.isArray(result.history)) replaceHistoryFromSheet(result.history);
+                window.finishGlobalSync('write', true, 'Firebase + Google Script + Google Sheet', 'WRITE selesai • Firebase dan Google Sheet tersinkron', 'Web → Firebase → Google Script → Google Sheet');
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({ icon: 'success', title: 'Tersimpan di Firebase • Google Sheet tersinkron' });
                 return result;
@@ -1305,6 +1430,7 @@
                 try { await window.firebaseMarkSheetSync(key, 'pending'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet pending belum tertulis:', markErr); }
                 try { await window.firebaseQueueSheetSync('saveAttendance', {idSantri,namaSantri,kelas,guru,status,key,waktu:timeObj?.waktu||'',hari:timeObj?.hari||''}); } catch(queueErr) { console.warn('[Firebase] Gagal membuat antrean Google Sheet:',queueErr); }
                 console.error('[Google Sheet] Sinkronisasi tertunda:', err);
+                window.finishGlobalSync('write', true, 'Firebase + Google Script (tertunda)', 'WRITE sebagian • Firebase berhasil • Google Sheet tertunda', 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)', 'partial');
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({
                     icon: 'info',
@@ -1835,7 +1961,9 @@
       try {
         const ready=await window.firebaseReadyPromise;
         if(!ready || !window.firebaseReady || typeof window.firebaseSaveAcuan!=='function') throw new Error('Firebase belum siap.');
+        window.beginGlobalSync('write', 'Firebase', 'Web → Firebase Firestore → acuanKehadiran');
         await window.firebaseSaveAcuan(kelas,acuan);
+        window.finishGlobalSync('write', true, 'Firebase', 'WRITE selesai di Firebase', 'Web → Firebase Firestore → acuanKehadiran');
         setAcuanKelas(kelas,acuan); input.dataset.acuanDirty='0';
         if(status){status.className='text-[10px] font-bold text-amber-600 mt-1';status.innerHTML='<i class="fas fa-sync-alt fa-spin mr-1"></i> Firebase aman. Menyinkronkan ke Google Sheet...';}
         let sheetOk=false;
@@ -1847,6 +1975,8 @@
           console.warn('[Google Sheet] Acuan tertunda:',sheetErr);
           try { await window.firebaseQueueSheetSync('saveAcuan',{kelas,acuan}); } catch(queueErr) { console.warn('[Firebase] Antrian acuan gagal:',queueErr); }
         }
+        if (sheetOk) window.finishGlobalSync('write', true, 'Firebase + Google Script + Google Sheet', 'WRITE selesai • Firebase dan Google Sheet tersinkron', 'Web → Firebase → Google Script → Google Sheet');
+        else window.finishGlobalSync('write', true, 'Firebase + Google Script (tertunda)', 'WRITE sebagian • Firebase berhasil • Google Sheet tertunda', 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)', 'partial');
         if(status){status.className=`text-[10px] font-bold ${sheetOk?'text-emerald-600':'text-amber-600'} mt-1`;status.innerHTML=sheetOk?'<i class="fas fa-check-circle mr-1"></i> Firebase + Google Sheet tersinkron ✓':'<i class="fas fa-cloud mr-1"></i> Firebase tersimpan • Google Sheet tertunda';}
         button.innerHTML=sheetOk?'<i class="fas fa-check-circle"></i> <span>Tersimpan</span>':'<i class="fas fa-cloud"></i> <span>Firebase Aman</span>';
         button.classList.remove('opacity-75','cursor-wait'); button.classList.add('bg-emerald-700');
@@ -2013,7 +2143,9 @@
             Toast.fire({ icon: 'info', title: 'Menyimpan data santri...' });
             const ready = await window.firebaseReadyPromise;
             if (!ready || !window.firebaseReady || typeof window.firebaseSaveMasterSantri !== 'function') throw new Error('Firebase belum siap.');
+            window.beginGlobalSync('write', 'Firebase', 'Web → Firebase Firestore → santri');
             const savedId = await window.firebaseSaveMasterSantri({ id, nama, kelas, guru });
+            window.finishGlobalSync('write', true, 'Firebase', 'WRITE selesai di Firebase', 'Web → Firebase Firestore → santri');
             let sheetOk = false;
             try {
                 const result = await requestGoogleJsonp({ action: 'addMasterSantri', id:savedId, nama, kelas, guru });
@@ -2028,6 +2160,7 @@
                 if (el) el.value = '';
             });
             deletedMasterIds.delete(String(savedId || id).trim());
+            window.finishGlobalSync('write', true, sheetOk ? 'Firebase + Google Script + Google Sheet' : 'Firebase + Google Script (tertunda)', sheetOk ? 'WRITE selesai • Firebase dan Google Sheet tersinkron' : 'WRITE aman di Firebase • Google Sheet tertunda', sheetOk ? 'Web → Firebase → Google Script → Google Sheet' : 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)');
             Toast.fire({ icon: 'success', title: sheetOk ? 'Santri berhasil ditambahkan' : 'Santri tersimpan di Firebase', text: sheetOk ? 'Google Sheet juga sudah tersinkron.' : 'Google Sheet belum tersinkron.' });
             await fetchHistoryFromSheets(false);
             renderDataSantriMaster();
@@ -2055,7 +2188,9 @@
             try {
                 const ready = await window.firebaseReadyPromise;
                 if (!ready || !window.firebaseReady || typeof window.firebaseDeleteMasterSantri !== 'function') throw new Error('Firebase belum siap.');
+                window.beginGlobalSync('write', 'Firebase', 'Web → Firebase Firestore → santri');
                 await window.firebaseDeleteMasterSantri(targetId);
+                window.finishGlobalSync('write', true, 'Firebase', 'WRITE selesai di Firebase', 'Web → Firebase Firestore → santri');
                 let sheetOk = false;
                 try {
                     const response = await requestGoogleJsonp({ action:'deleteMasterSantri', id:targetId });
@@ -2069,6 +2204,7 @@
                 masterDataSantri = masterDataSantri.filter(s => String(s.id || '').trim() !== targetId);
                 populateClassDropdowns();
                 renderDataSantriMaster();
+                window.finishGlobalSync('write', true, sheetOk ? 'Firebase + Google Script + Google Sheet' : 'Firebase + Google Script (tertunda)', sheetOk ? 'WRITE selesai • Firebase dan Google Sheet tersinkron' : 'WRITE aman di Firebase • Google Sheet tertunda', sheetOk ? 'Web → Firebase → Google Script → Google Sheet' : 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)');
                 Toast.fire({ icon: 'success', title: sheetOk ? 'Santri berhasil dihapus' : 'Santri dihapus dari Firebase', text: sheetOk ? 'Google Sheet juga sudah tersinkron.' : 'Google Sheet belum tersinkron.' });
                 setTimeout(() => fetchHistoryFromSheets(false), 250);
             } catch (err) {
