@@ -1789,7 +1789,8 @@
                          newlyAddedKeysMap.delete(unikey);
                          presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                          renderRiwayatTable();
-                         showDuplicateAttendancePopup(santri, err.existing || {}, true);
+                         const duplicateSantri = masterDataSantri.find(s => String(s.id).trim() === String(idSantri).trim()) || { id:idSantri, nama:namaSantri, kelas:kelas, guru:guru };
+                         showDuplicateAttendancePopup(duplicateSantri, err.existing || {}, true);
                      }
                  });
              } catch (err) {
