@@ -1293,7 +1293,7 @@
                 }
                 tandaiPresensiTersimpanLokal(key, 'synced');
                 try { await window.firebaseMarkSheetSync(key, 'synced'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet belum tertulis:', markErr); }
-                if (Array.isArray(result.history)) mergeServerHistory(result.history, historyRevision);
+                if (Array.isArray(result.history)) replaceHistoryFromSheet(result.history);
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 Toast.fire({ icon: 'success', title: 'Tersimpan di Firebase • Google Sheet tersinkron' });
                 return result;
@@ -1448,25 +1448,34 @@
         })
         .then(async (result) => {
             if (!result.isConfirmed) {
-                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+                // Riwayat tidak lagi memakai polling berkala. READ dilakukan via Google Sheet saat diperlukan.
                 return;
             }
             try {
                 const deletedKey = String(key);
 
-                // Firebase adalah sumber utama: hapus Firebase terlebih dahulu.
-                const firebaseDeleted = await hapusPresensiDariFirebase(deletedKey);
-                if (!firebaseDeleted) throw new Error('Firebase gagal menghapus presensi. Google Sheet tidak disentuh.');
-
-                // Setelah Firebase aman, sinkronkan penghapusan ke Google Sheet.
+                // Google Sheet adalah sumber READ Riwayat. Karena itu penghapusan
+                // diarahkan ke Google Sheet terlebih dahulu dan harus terverifikasi
+                // sukses sebelum baris dihapus dari tampilan web.
                 let sheetSyncOk = false;
                 try {
                     const response = await requestGoogleJsonp({ action: 'deleteHistory', key: deletedKey });
                     sheetSyncOk = !!(response && response.status === 'success' && response.verified === true);
-                    if (!sheetSyncOk) console.warn('[Google Sheet] Penghapusan belum terkonfirmasi:', response);
+                    if (!sheetSyncOk) {
+                        console.warn('[Google Sheet] Penghapusan belum terkonfirmasi:', response);
+                        throw new Error(response?.message || 'Penghapusan di Google Sheet belum terverifikasi.');
+                    }
                 } catch(sheetErr) {
-                    console.warn('[Google Sheet] Penghapusan tertunda:', sheetErr);
-                    try { await window.firebaseQueueSheetSync('deleteHistory',{key:deletedKey}); } catch(queueErr) { console.warn('[Firebase] Antrian hapus riwayat gagal:',queueErr); }
+                    console.warn('[Google Sheet] Gagal menghapus riwayat:', sheetErr);
+                    throw new Error('Google Sheet gagal menghapus data. Data web tidak dihapus.');
+                }
+
+                // Setelah Google Sheet berhasil, hapus salinan Firebase agar kedua
+                // penyimpanan tetap konsisten. Jika Firebase gagal, Riwayat web tetap
+                // mengikuti Google Sheet; tidak membatalkan penghapusan yang sudah sukses.
+                const firebaseDeleted = await hapusPresensiDariFirebase(deletedKey);
+                if (!firebaseDeleted) {
+                    console.warn('[Firebase] Penghapusan salinan Firebase gagal setelah Google Sheet berhasil dihapus.');
                 }
 
                 historyRevision++;
@@ -1474,14 +1483,20 @@
                 deletedKeys.add(deletedKey);
                 presensiHistory = presensiHistory.filter(item => String(item.key) !== deletedKey);
                 renderRiwayatTable();
-                Toast.fire({ icon: 'success', title: sheetSyncOk ? 'Presensi dihapus' : 'Presensi dihapus dari Firebase', text: sheetSyncOk ? 'Google Sheet juga sudah tersinkron.' : 'Google Sheet belum tersinkron.' });
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Presensi dihapus',
+                    text: firebaseDeleted
+                        ? 'Data sudah terhapus dari web, Google Sheet, dan Firebase.'
+                        : 'Data sudah terhapus dari web dan Google Sheet.'
+                });
                 await new Promise(resolve => setTimeout(resolve, 400));
                 await fetchHistoryFromSheets(true);
             } catch (err) {
                 Toast.fire({ icon: 'error', title: 'Gagal menghapus presensi', text: String(err?.message || err || 'Kesalahan tidak diketahui') });
                 await fetchHistoryFromSheets(true);
             } finally {
-                if (wasSyncing) syncInterval = setInterval(fetchHistoryFromSheets, 4000);
+                // Riwayat tidak lagi memakai polling berkala. READ dilakukan via Google Sheet saat diperlukan.
             }
         });
     }
@@ -2107,42 +2122,69 @@
         presensiHistory = Array.from(byKey.values());
         renderRiwayatTable();
     }
+    function replaceHistoryFromSheet(serverHistory) {
+        // Google Sheet adalah sumber kebenaran untuk tampilan Riwayat Absen.
+        // Jangan mempertahankan data lama yang sudah tidak ada di Sheet.
+        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
+        const byKey = new Map();
+        incoming.forEach(item => {
+            if (!item || !item.key) return;
+            const k = String(item.key);
+            if (!deletedKeys.has(k)) byKey.set(k, item);
+        });
+        // Presensi yang baru saja ditulis ke Firebase tetapi belum sempat masuk Sheet
+        // tetap ditampilkan sementara agar tidak terasa hilang.
+        pendingHistoryWrites.forEach((item, k) => {
+            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
+        });
+        presensiHistory = Array.from(byKey.values());
+        renderRiwayatTable();
+    }
     async function fetchHistoryFromSheets(isManual = false) {
         // Nama fungsi dipertahankan agar seluruh fitur lama tetap memanggil fungsi yang sama.
-        // Namun sumber data tampilan sekarang 100% Firebase. Google Sheet hanya untuk backfill/sinkronisasi.
+        // KHUSUS RIWAYAT ABSEN: Google Sheet menjadi sumber READ utama.
+        // Firebase tetap dipakai untuk WRITE cepat dan sinkronisasi, tetapi tidak lagi
+        // dibaca realtime untuk menampilkan seluruh riwayat. Ini menghemat Firestore reads.
         try {
-            const ready = await window.firebaseReadyPromise;
-            if (!ready || !window.firebaseReady || typeof window.firebaseLoadAllData !== 'function') {
-                throw new Error('Firebase belum siap.');
+            const data = await requestGoogleJsonp({ action: 'getData' });
+            if (!data || (data.status !== 'online' && data.status !== 'success')) {
+                throw new Error(data?.message || 'Google Sheet tidak dapat mengirim data.');
             }
-            const data = await window.firebaseLoadAllData();
-            masterDataSantri = Array.isArray(data.santri) ? data.santri.filter(s => !deletedMasterIds.has(String(s.id||'').trim())) : [];
-            serverMasterLoaded = true;
-            window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
-            populateClassDropdowns();
-            renderManualStudents();
-            if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
-            if(Array.isArray(data.history)) mergeServerHistory(data.history, historyRevision);
+
+            // Master dan acuan tetap diperbarui dari respons Sheet agar manual sync
+            // tetap mempertahankan perilaku lama. Riwayat secara khusus berasal dari Sheet.
+            if (Array.isArray(data.santri)) {
+                masterDataSantri = data.santri.filter(s => !deletedMasterIds.has(String(s.id||'').trim()));
+                serverMasterLoaded = true;
+                window.__serverMasterClasses = [...new Set(masterDataSantri.map(s => s.kelas).filter(Boolean))];
+                populateClassDropdowns();
+                renderManualStudents();
+                if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
+            }
+
+            if(Array.isArray(data.history)) replaceHistoryFromSheet(data.history);
+
             if(data.acuan && typeof data.acuan === 'object') {
                 acuanKehadiranData = Object.assign({}, data.acuan);
                 try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
                 if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
             }
+
             const syncText=document.getElementById('syncStatusText'), syncPing=document.getElementById('syncStatusPing'), syncDot=document.getElementById('syncStatusDot'), btnIcon=document.getElementById('iconSyncManual');
-            if(syncText) syncText.innerText='FIREBASE';
+            if(syncText) syncText.innerText='SHEET';
             if(syncPing) syncPing.className='animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
             if(syncDot) syncDot.className='relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
             if(btnIcon) btnIcon.classList.remove('fa-spin');
             document.getElementById('offlineAlert')?.classList.add('hidden');
-            if(isManual) Toast.fire({icon:'success', title:'Data dimuat dari Firebase'});
+            if(isManual) Toast.fire({icon:'success', title:'Riwayat dimuat dari Google Sheet'});
         } catch(err) {
-            console.error('[Firebase] Gagal memuat data utama:', err);
-            const syncText=document.getElementById('syncStatusText'); if(syncText) syncText.innerText='FIREBASE ERROR';
+            console.error('[Google Sheet] Gagal memuat Riwayat Absen:', err);
+            const syncText=document.getElementById('syncStatusText'); if(syncText) syncText.innerText='SHEET ERROR';
             const syncDot=document.getElementById('syncStatusDot'); if(syncDot) syncDot.className='relative inline-flex rounded-full h-2 w-2 bg-red-500';
             const syncPing=document.getElementById('syncStatusPing'); if(syncPing) syncPing.className='hidden';
             const btnIcon=document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.remove('fa-spin');
             document.getElementById('offlineAlert')?.classList.remove('hidden');
-            if(isManual) Toast.fire({icon:'error', title:'Firebase belum dapat dimuat', text:String(err?.message||err)});
+            if(isManual) Toast.fire({icon:'error', title:'Google Sheet belum dapat dimuat', text:String(err?.message||err)});
         }
     }
     window.onload = async function() {
@@ -2154,8 +2196,8 @@
         renderManualStudents();
         renderDataSantriMaster();
 
-        // Firebase menjadi sumber utama tampilan. Backfill Sheet hanya sekali untuk data lama
-        // yang belum masuk Firebase, lalu seluruh tampilan membaca Firebase.
+        // Firebase tetap dipakai untuk WRITE/sinkronisasi.
+        // Riwayat Absen ditampilkan dari Google Sheet agar tidak membebani Firestore reads.
         try {
             await window.firebaseReadyPromise;
             if (typeof window.firebaseBackfillMissingFromSheet === 'function') {
@@ -2171,7 +2213,8 @@
         } catch(e) { console.warn('[Google Sheet] Flush antrian awal dilewati:',e); }
         await fetchHistoryFromSheets(false);
         if (syncInterval) clearInterval(syncInterval);
-        // Tidak lagi polling Google Sheet. Realtime Firebase menangani perubahan antar perangkat.
+        // Riwayat sekarang READ dari Google Sheet saat diperlukan. Tidak memasang
+        // polling 4 detik agar Google Apps Script juga tetap hemat.
         syncInterval = null;
         if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
     }
@@ -2534,34 +2577,10 @@
                 if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
             }, err => console.error('[Firebase] Realtime santri error:',err));
 
-            onSnapshot(collection(window.firebaseDb, 'presensi'), snapshot => {
-                const incoming=snapshot.docs.map(d=>{
-                    const x=d.data()||{};
-                    const firebaseSync = String(x.firebaseSync || 'saved').toLowerCase();
-                    // Data yang sudah berada di Firebase sebelum fitur status dibuat
-                    // dianggap sudah tersinkron ke Sheet. Data baru yang masih pending
-                    // tetap mengikuti field sheetSync yang disimpan di Firestore.
-                    const sheetSync = String(x.sheetSync || 'synced').toLowerCase();
-                    return {
-                        key:String(x.key||d.id), idSantri:String(x.idSantri||''),
-                        namaSantri:String(x.namaSantri||''), kelas:String(x.kelas||''),
-                        guru:String(x.guru||''), waktu:String(x.waktu||''), hari:String(x.hari||''),
-                        status:String(x.status||'Hadir'), sync:sheetSync==='synced'?'synced':'firebase',
-                        firebaseSync: firebaseSync==='saving' ? 'saving' : 'saved',
-                        sheetSync: sheetSync==='pending' ? 'pending' : 'synced',
-                        createdAt: x.createdAt || null, updatedAt: x.updatedAt || null
-                    };
-                });
-                const byKey=new Map(incoming.filter(x=>!deletedKeys.has(x.key)).map(x=>[x.key,x]));
-                pendingHistoryWrites.forEach((item,k)=>{
-                    if(!deletedKeys.has(String(k))) {
-                        const current=byKey.get(String(k));
-                        byKey.set(String(k), Object.assign({}, current||{}, item));
-                    }
-                });
-                presensiHistory=Array.from(byKey.values());
-                renderRiwayatTable();
-            }, err => console.error('[Firebase] Realtime presensi error:',err));
+            // RIWAYAT ABSEN TIDAK lagi memakai onSnapshot('presensi').
+            // READ riwayat dilakukan melalui Google Apps Script -> Google Sheet saat
+            // fetchHistoryFromSheets() dipanggil. Ini sengaja menghilangkan listener
+            // Firestore besar yang sebelumnya terus mengonsumsi read quota.
 
             onSnapshot(collection(window.firebaseDb, 'acuanKehadiran'), snapshot => {
                 const obj={}; snapshot.docs.forEach(d=>{const x=d.data()||{}; const k=String(x.kelas||d.id); const n=Number(x.acuan100); if(k&&Number.isFinite(n)&&n>0)obj[k]=Math.round(n);});
@@ -2583,7 +2602,7 @@
                 }
             }, err => console.error('[Firebase] Realtime queue Google Sheet error:',err));
 
-            console.log('[Firebase] Realtime santri + presensi + acuan + antrean Sheet aktif.');
+            console.log('[Firebase] Realtime santri + acuan + antrean Sheet aktif. Riwayat presensi READ via Google Sheet.');
         } catch(e) { console.error('[Firebase] Gagal mengaktifkan realtime utama:',e); }
     })();
 </script>
