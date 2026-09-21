@@ -1033,7 +1033,7 @@
       if(tabId === 'riwayat') renderRiwayatTable();
       if(tabId === 'laporanSantri') prepareLaporanSantriOptions();
       if(tabId === 'progressSantri') prepareProgressOptions();
-      if(tabId === 'acuanKehadiran') prepareAcuanKehadiran();
+      if(tabId === 'acuanKehadiran') { prepareAcuanKehadiran(); refreshAcuanFromGoogleScript(false); }
       if(tabId === 'dataSantri') renderDataSantriMaster();
     }
     async function toggleCamera() {
@@ -1315,6 +1315,68 @@
     function simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return requestGoogleJsonp({ action: 'saveAttendance', idSantri: idSantri || 'MANUAL', namaSantri: namaSantri || 'Santri', kelas: kelas || '-', guru: guru || '-', status: status || 'Hadir', key: key || '', waktu: timeObj?.waktu || '', hari: timeObj?.hari || '' });
     }
+    function updateBulkAbsenProgress(extra = {}) {
+        const state = window.__bulkAbsenState;
+        if (!state) return;
+        Object.assign(state, extra);
+        const total = Math.max(1, state.total || 1);
+        const done = Math.max(0, Math.min(total, state.done || 0));
+        const percent = Math.round((done / total) * 100);
+        const bar = document.getElementById('bulkAbsenProgressBar');
+        const pct = document.getElementById('bulkAbsenPercent');
+        const summary = document.getElementById('bulkAbsenSummary');
+        const list = document.getElementById('bulkAbsenProcessList');
+        const mode = document.getElementById('bulkAbsenMode');
+        if (bar) bar.style.width = percent + '%';
+        if (pct) pct.textContent = percent + '%';
+        if (summary) summary.textContent = `${done} dari ${total} santri selesai diproses`;
+        if (mode) mode.innerHTML = state.currentMode === 'direct'
+            ? '<i class="fas fa-bolt mr-1"></i> Langsung masuk Google Sheet'
+            : state.currentMode === 'queue'
+                ? '<i class="fas fa-clock mr-1"></i> Mengantri ke Google Sheet'
+                : '<i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola...';
+        if (list && Array.isArray(state.items)) {
+            list.innerHTML = state.items.map(item => {
+                const cls = item.state === 'success' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : item.state === 'queue' ? 'text-amber-700 bg-amber-50 border-amber-200' : item.state === 'error' ? 'text-red-700 bg-red-50 border-red-200' : 'text-sky-700 bg-sky-50 border-sky-200';
+                const icon = item.state === 'success' ? 'fa-check-circle' : item.state === 'queue' ? 'fa-clock' : item.state === 'error' ? 'fa-times-circle' : 'fa-spinner fa-spin';
+                return `<div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${cls}"><div class="min-w-0 font-bold truncate"><i class="fas ${icon} mr-1.5"></i>${escapeHtmlLaporan(item.name || 'Santri')}</div><div class="text-[10px] font-black whitespace-nowrap">${escapeHtmlLaporan(item.percent || (item.state === 'success' ? '100%' : '0%'))} · ${escapeHtmlLaporan(item.status || 'Memproses')}</div></div>`;
+            }).join('');
+        }
+    }
+
+    function openBulkAbsenProgress(names) {
+        const items = names.map(name => ({name, state:'processing', percent:'0%', status:'Mengantri'}));
+        window.__bulkAbsenState = {total:names.length, done:0, items, currentMode:'processing'};
+        Swal.fire({
+            title: 'Proses Absen',
+            html: `<div class="text-left space-y-3"><div class="flex items-center justify-between text-xs font-black"><span id="bulkAbsenMode">Google Script sedang mengelola...</span><span id="bulkAbsenPercent">0%</span></div><div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden"><div id="bulkAbsenProgressBar" class="h-full bg-emerald-500 transition-all duration-300" style="width:0%"></div></div><div id="bulkAbsenSummary" class="text-[11px] text-slate-500 font-bold">0 dari ${names.length} santri selesai diproses</div><div id="bulkAbsenProcessList" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div></div>`,
+            allowOutsideClick:false, allowEscapeKey:false, showConfirmButton:false, width:520
+        });
+        updateBulkAbsenProgress();
+    }
+
+    function setBulkAbsenStudent(name, state, status, percent, mode) {
+        const data = window.__bulkAbsenState;
+        if (!data) return;
+        const item = data.items.find(x => x.name === name);
+        if (item) Object.assign(item, {state, status, percent});
+        data.currentMode = mode || data.currentMode;
+        updateBulkAbsenProgress();
+    }
+
+    async function directGoogleSheetRetry(idSantri, namaSantri, kelas, guru, status, timeObj, key, maxAttempts = 5) {
+        let lastError = null;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const result = await simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key);
+                if (result && result.status === 'success' && result.verified === true) return result;
+                lastError = new Error(result?.message || 'Google Sheet belum terverifikasi.');
+            } catch (e) { lastError = e; }
+            if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1200 * attempt));
+        }
+        throw lastError || new Error('Google Sheet belum berhasil menerima data.');
+    }
+
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
        return new Promise((resolve) => {
            const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
@@ -1329,45 +1391,49 @@
            renderRiwayatTable();
            markHistoryWritePending(tempRecord);
 
-           // Firebase adalah penyimpanan utama. Google Sheet hanya sinkronisasi setelah Firebase sukses.
            simpanPresensiKeFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, unikey)
-           .then(() => {
+           .then(async () => {
                markHistoryWriteComplete(unikey);
                tandaiPresensiTersimpanLokal(unikey, 'firebase');
                newlyAddedKeysMap.delete(unikey);
                playAudioFeedback('ok', { nama: namaSantri });
-
-               if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
-               Toast.fire({
-                   icon: 'success',
-                   title: `${namaSantri} tersimpan di Firebase`,
-                   text: 'Data sudah aman. Menyinkronkan ke Google Sheet...'
-               });
-
-               // Tunggu hasil Google Sheet agar popup kedua hanya muncul setelah benar-benar terverifikasi.
-               return sinkronkanPresensiKeGoogleSetelahFirebase(
-                   idSantri, namaSantri, kelas, guru, status, timeObj, unikey
-               );
-           })
-           .then((sheetResult) => {
-               if (sheetResult?.status === 'firebase-only') {
-                   resolve({ status: 'firebase-only', data: { key: unikey }, sheetError: true });
-                   return;
+               try {
+                   const sheetResult = await sinkronkanPresensiKeGoogleSetelahFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, unikey);
+                   if (sheetResult?.status === 'firebase-only') {
+                       if (sheetResult.sheetQueued) return { status:'queued', data:{key:unikey}, sheetQueued:true };
+                       const direct = await directGoogleSheetRetry(idSantri, namaSantri, kelas, guru, status, timeObj, unikey, 5);
+                       return { status:'sent', data:direct?.data || {key:unikey}, direct:true };
+                   }
+                   return { status:'sent', data:sheetResult?.data || {key:unikey} };
+               } catch (sheetErr) {
+                   try {
+                       const direct = await directGoogleSheetRetry(idSantri, namaSantri, kelas, guru, status, timeObj, unikey, 5);
+                       return { status:'sent', data:direct?.data || {key:unikey}, direct:true };
+                   } catch (directErr) {
+                       try { await window.firebaseQueueSheetSync('saveAttendance', {idSantri,namaSantri,kelas,guru,status,key:unikey,waktu:timeObj?.waktu||'',hari:timeObj?.hari||''}); } catch(_) {}
+                       return { status:'queued', data:{key:unikey}, sheetQueued:true, sheetError:directErr };
+                   }
                }
-               resolve({ status: 'sent', data: sheetResult?.data || { key: unikey } });
            })
-           .catch(err => {
-               pendingHistoryWrites.delete(unikey);
-               newlyAddedKeysMap.delete(unikey);
-               presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
-               renderRiwayatTable();
-               if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
-               Toast.fire({
-                   icon: 'error',
-                   title: 'Firebase gagal menyimpan',
-                   text: String(err?.message || err || 'Presensi belum tersimpan.')
-               });
-               resolve({ error: true, message: String(err) });
+           .catch(async (firebaseErr) => {
+               console.warn('[Firebase] Gagal, langsung mencoba Google Sheet:', firebaseErr);
+               try {
+                   const result = await directGoogleSheetRetry(idSantri, namaSantri, kelas, guru, status, timeObj, unikey, 5);
+                   markHistoryWriteComplete(unikey);
+                   tandaiPresensiTersimpanLokal(unikey, 'synced');
+                   newlyAddedKeysMap.delete(unikey);
+                   replaceHistoryFromSheet(result.history || presensiHistory);
+                   resolve({status:'sent-direct', data:result.data || {key:unikey}, firebaseError:firebaseErr});
+               } catch (sheetErr) {
+                   pendingHistoryWrites.delete(unikey);
+                   newlyAddedKeysMap.delete(unikey);
+                   presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+                   renderRiwayatTable();
+                   resolve({error:true, message:String(sheetErr?.message || sheetErr || firebaseErr)});
+               }
+           })
+           .then(result => {
+               if (result && (result.status === 'sent' || result.status === 'queued')) resolve(result);
            });
        });
     }
@@ -1428,7 +1494,11 @@
                 // hanya karena Google Sheet sedang lambat/gagal.
                 tandaiPresensiTersimpanLokal(key, 'firebase');
                 try { await window.firebaseMarkSheetSync(key, 'pending'); } catch (markErr) { console.warn('[Firebase] Status Google Sheet pending belum tertulis:', markErr); }
-                try { await window.firebaseQueueSheetSync('saveAttendance', {idSantri,namaSantri,kelas,guru,status,key,waktu:timeObj?.waktu||'',hari:timeObj?.hari||''}); } catch(queueErr) { console.warn('[Firebase] Gagal membuat antrean Google Sheet:',queueErr); }
+                let queueCreated = false;
+                try {
+                    await window.firebaseQueueSheetSync('saveAttendance', {idSantri,namaSantri,kelas,guru,status,key,waktu:timeObj?.waktu||'',hari:timeObj?.hari||''});
+                    queueCreated = true;
+                } catch(queueErr) { console.warn('[Firebase] Gagal membuat antrean Google Sheet:',queueErr); }
                 console.error('[Google Sheet] Sinkronisasi tertunda:', err);
                 window.finishGlobalSync('write', true, 'Firebase + Google Script (tertunda)', 'WRITE sebagian • Firebase berhasil • Google Sheet tertunda', 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)', 'partial');
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
@@ -1437,7 +1507,7 @@
                     title: 'Presensi aman di Firebase',
                     text: 'Google Sheet belum tersinkron. Sistem akan mencoba lagi saat sinkronisasi berikutnya.'
                 });
-                return { status: 'firebase-only', error: err };
+                return { status: 'firebase-only', error: err, sheetQueued: queueCreated };
             });
     }
 
@@ -1722,16 +1792,45 @@
     }
     async function processAbsenManualBulk() {
         getAudioContext();
-        const checkedCbs = document.querySelectorAll('.manual-student-cb:checked'), status = document.getElementById('statusManualBulk').value, cTime = getCustomDateForSubmission(false);
+        const checkedCbs = Array.from(document.querySelectorAll('.manual-student-cb:checked')), status = document.getElementById('statusManualBulk').value, cTime = getCustomDateForSubmission(false);
         if (checkedCbs.length === 0) { Toast.fire({ icon: 'warning', title: 'Belum ada santri yang dicentang!' }); return; }
-        isProcessing = true; let successCount = 0; Toast.fire({ icon: 'info', title: `Memproses ${checkedCbs.length} presensi...` });
-        for(let i=0; i<checkedCbs.length; i++) {
-            const santri = masterDataSantri.find(s => s.id === checkedCbs[i].value);
-            if(santri) { const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime); if(!result.error) { successCount++; checkedCbs[i].checked = false; } }
+        const selected = checkedCbs.map(cb => masterDataSantri.find(s => s.id === cb.value)).filter(Boolean);
+        isProcessing = true;
+        openBulkAbsenProgress(selected.map(s => s.nama));
+        let successCount = 0, queueCount = 0, errorCount = 0;
+        for(let i=0; i<selected.length; i++) {
+            const santri = selected[i];
+            setBulkAbsenStudent(santri.nama, 'processing', 'Sedang diproses', Math.max(5, Math.round((i / selected.length) * 100)), 'processing');
+            const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime);
+            if(result?.status === 'sent-direct') {
+                successCount++;
+                setBulkAbsenStudent(santri.nama, 'success', 'Langsung masuk Google Sheet', '100%', 'direct');
+                const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
+            } else if(result?.status === 'sent') {
+                successCount++;
+                setBulkAbsenStudent(santri.nama, 'success', 'Masuk & terverifikasi', '100%', 'processing');
+                const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
+            } else if(result?.status === 'queued') {
+                queueCount++;
+                setBulkAbsenStudent(santri.nama, 'queue', 'Mengantri ke Google Sheet', '100%', 'queue');
+                const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
+            } else {
+                errorCount++;
+                setBulkAbsenStudent(santri.nama, 'error', 'Gagal masuk Google Sheet', '0%', 'processing');
+            }
         }
-        isProcessing = false; document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`; document.getElementById('checkAllManual').checked = false;
-        Swal.fire({ icon: 'success', title: 'Berhasil', text: `${successCount} data santri berhasil dicatat.`, confirmButtonColor: '#059669', timer: 2000 });
+        isProcessing = false;
+        document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`;
+        document.getElementById('checkAllManual').checked = false;
+        const state = window.__bulkAbsenState; if (state) { state.done = selected.length; state.currentMode = queueCount ? 'queue' : 'processing'; updateBulkAbsenProgress(); }
+        await new Promise(r => setTimeout(r, 700));
+        if (errorCount === 0) {
+            Swal.fire({ icon: queueCount ? 'info' : 'success', title: queueCount ? 'Sebagian Mengantri' : 'Absen Berhasil', html: `<b>${successCount}</b> langsung/terverifikasi ke Google Sheet${queueCount ? ` dan <b>${queueCount}</b> sedang mengantri.` : '.'}`, confirmButtonColor: '#059669' });
+        } else {
+            Swal.fire({ icon: 'warning', title: 'Proses selesai dengan catatan', html: `<b>${successCount}</b> berhasil, <b>${queueCount}</b> mengantri, <b>${errorCount}</b> gagal. Data yang gagal tidak dianggap tersimpan.`, confirmButtonColor: '#d97706' });
+        }
         fetchHistoryFromSheets();
+        window.__bulkAbsenState = null;
     }
     function prepareLaporanSantriOptions() {
         const selKelas = document.getElementById('laporanSantriKelasSelect'), selTahun = document.getElementById('laporanSantriTahunSelect'), search = document.getElementById('laporanSantriSearch'), logo = document.getElementById('kartuAbsenLogo');
@@ -1956,39 +2055,69 @@
       if (!Number.isFinite(nilaiInput) || nilaiInput < 1) { Toast.fire({ icon:'warning', title:'Acuan harus berupa angka minimal 1' }); input.focus(); return; }
       const acuan = Math.max(1, Math.round(nilaiInput));
       input.value=acuan; input.disabled=true; button.disabled=true; button.classList.add('opacity-75','cursor-wait');
-      button.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> <span>Data masuk...</span>';
-      if(status){status.className='text-[10px] font-bold text-amber-600 mt-1';status.innerHTML='<i class="fas fa-sync-alt fa-spin mr-1"></i> Menyimpan ke Firebase...';}
+      button.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> <span>Google Script mengelola...</span>';
+      if(status){status.className='text-[10px] font-bold text-amber-600 mt-1';status.innerHTML='<i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola...';}
+
+      let lastError = null;
       try {
-        const ready=await window.firebaseReadyPromise;
-        if(!ready || !window.firebaseReady || typeof window.firebaseSaveAcuan!=='function') throw new Error('Firebase belum siap.');
-        window.beginGlobalSync('write', 'Firebase', 'Web → Firebase Firestore → acuanKehadiran');
-        await window.firebaseSaveAcuan(kelas,acuan);
-        window.finishGlobalSync('write', true, 'Firebase', 'WRITE selesai di Firebase', 'Web → Firebase Firestore → acuanKehadiran');
-        setAcuanKelas(kelas,acuan); input.dataset.acuanDirty='0';
-        if(status){status.className='text-[10px] font-bold text-amber-600 mt-1';status.innerHTML='<i class="fas fa-sync-alt fa-spin mr-1"></i> Firebase aman. Menyinkronkan ke Google Sheet...';}
-        let sheetOk=false;
-        try {
-          const result=await requestGoogleJsonp({action:'saveAcuan',kelas:kelas,acuan:acuan});
-          sheetOk=!!(result && result.status==='success' && result.verified!==false);
-          if(!sheetOk) console.warn('[Google Sheet] Acuan belum terkonfirmasi:',result);
-        } catch(sheetErr){
-          console.warn('[Google Sheet] Acuan tertunda:',sheetErr);
-          try { await window.firebaseQueueSheetSync('saveAcuan',{kelas,acuan}); } catch(queueErr) { console.warn('[Firebase] Antrian acuan gagal:',queueErr); }
+        // ACUAN KEHADIRAN KHUSUS GOOGLE SCRIPT / GOOGLE SHEET.
+        // Tidak menggunakan Firebase untuk READ, WRITE, queue, atau listener.
+        let result = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            result = await requestGoogleJsonp({action:'saveAcuan',kelas:kelas,acuan:acuan});
+            if (result && result.status === 'success' && result.verified === true) break;
+            lastError = new Error(result?.message || 'Google Sheet belum memberikan verifikasi berhasil.');
+          } catch (err) {
+            lastError = err;
+          }
+          if (attempt < 3) {
+            if(status) status.innerHTML=`<i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola... percobaan ${attempt + 1}/3`;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
-        if (sheetOk) window.finishGlobalSync('write', true, 'Firebase + Google Script + Google Sheet', 'WRITE selesai • Firebase dan Google Sheet tersinkron', 'Web → Firebase → Google Script → Google Sheet');
-        else window.finishGlobalSync('write', true, 'Firebase + Google Script (tertunda)', 'WRITE sebagian • Firebase berhasil • Google Sheet tertunda', 'Web → Firebase ✓ → Google Script → Google Sheet (menunggu)', 'partial');
-        if(status){status.className=`text-[10px] font-bold ${sheetOk?'text-emerald-600':'text-amber-600'} mt-1`;status.innerHTML=sheetOk?'<i class="fas fa-check-circle mr-1"></i> Firebase + Google Sheet tersinkron ✓':'<i class="fas fa-cloud mr-1"></i> Firebase tersimpan • Google Sheet tertunda';}
-        button.innerHTML=sheetOk?'<i class="fas fa-check-circle"></i> <span>Tersimpan</span>':'<i class="fas fa-cloud"></i> <span>Firebase Aman</span>';
+
+        if (!result || result.status !== 'success' || result.verified !== true) {
+          throw lastError || new Error('Acuan belum berhasil diverifikasi di Google Sheet.');
+        }
+
+        // Hanya setelah Google Sheet terverifikasi, cache lokal dan tampilan diperbarui.
+        setAcuanKelas(kelas, acuan); input.dataset.acuanDirty='0';
+        window.finishGlobalSync('write', true, 'Google Apps Script + Google Sheet', 'WRITE selesai • Acuan berhasil disimpan & diverifikasi', 'Web → Google Script → Google Sheet');
+        if(status){status.className='text-[10px] font-bold text-emerald-600 mt-1';status.innerHTML='<i class="fas fa-check-circle mr-1"></i> Berhasil disimpan & diverifikasi di Google Sheet ✓';}
+        button.innerHTML='<i class="fas fa-check-circle"></i> <span>Berhasil</span>';
         button.classList.remove('opacity-75','cursor-wait'); button.classList.add('bg-emerald-700');
-        Toast.fire({icon:'success',title:sheetOk?'Acuan tersimpan & tersinkron':'Acuan tersimpan di Firebase',text:`${kelas}: ${acuan}× hadir = 100%`});
+        Toast.fire({icon:'success',title:'Acuan berhasil disimpan',text:`${kelas}: ${acuan}× hadir = 100% • Google Sheet terverifikasi`});
         renderProgressSantri(); if(typeof renderLaporanSantri==='function') renderLaporanSantri();
       } catch(err) {
-        if(status){status.className='text-[10px] font-bold text-red-600 mt-1';status.innerHTML='<i class="fas fa-times-circle mr-1"></i> Firebase gagal disimpan';}
+        window.finishGlobalSync('write', false, 'Google Apps Script + Google Sheet', 'WRITE gagal • Acuan belum terverifikasi', 'Web → Google Script → Google Sheet');
+        if(status){status.className='text-[10px] font-bold text-red-600 mt-1';status.innerHTML='<i class="fas fa-times-circle mr-1"></i> Gagal — Google Sheet belum terverifikasi';}
         button.innerHTML='<i class="fas fa-save"></i> <span>Coba Lagi</span>';
-        Toast.fire({icon:'error',title:'Acuan gagal disimpan',text:String(err?.message||err)});
-      } finally { input.disabled=false; button.disabled=false; button.classList.remove('opacity-75','cursor-wait'); }
+        Toast.fire({icon:'error',title:'Acuan gagal disimpan',text:String(err?.message||err||'Google Sheet belum berhasil mengelola data.')});
+      } finally {
+        input.disabled=false; button.disabled=false; button.classList.remove('opacity-75','cursor-wait');
+      }
     }
-    
+
+    async function refreshAcuanFromGoogleScript(showToast = false) {
+      try {
+        const result = await requestGoogleJsonp({action:'getData'});
+        if (!result || (result.status !== 'online' && result.status !== 'success') || !result.acuan || typeof result.acuan !== 'object') {
+          throw new Error(result?.message || 'Data Acuan dari Google Sheet tidak ditemukan.');
+        }
+        acuanKehadiranData = Object.assign({}, result.acuan);
+        try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
+        prepareAcuanKehadiran();
+        if (showToast) Toast.fire({icon:'success',title:'Acuan berhasil dibaca dari Google Sheet'});
+        return true;
+      } catch (err) {
+        console.error('[Acuan] READ Google Script gagal:', err);
+        if (showToast) Toast.fire({icon:'error',title:'Acuan gagal dibaca',text:String(err?.message || err || 'Google Sheet tidak dapat dibaca.')});
+        return false;
+      }
+    }
+    window.refreshAcuanFromGoogleScript = refreshAcuanFromGoogleScript;
+
     function prepareAcuanKehadiran() {
       const container = document.getElementById('acuanKehadiranList'); if(!container) return;
       const classes = getUniqueClassNames();
@@ -2301,6 +2430,7 @@
             if(Array.isArray(data.history)) replaceHistoryFromSheet(data.history);
 
             if(data.acuan && typeof data.acuan === 'object') {
+                // Acuan berasal dari Google Apps Script -> Google Sheet.
                 acuanKehadiranData = Object.assign({}, data.acuan);
                 try { localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY, JSON.stringify(acuanKehadiranData)); } catch(e) {}
                 if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
@@ -2718,11 +2848,8 @@
             // fetchHistoryFromSheets() dipanggil. Ini sengaja menghilangkan listener
             // Firestore besar yang sebelumnya terus mengonsumsi read quota.
 
-            onSnapshot(collection(window.firebaseDb, 'acuanKehadiran'), snapshot => {
-                const obj={}; snapshot.docs.forEach(d=>{const x=d.data()||{}; const k=String(x.kelas||d.id); const n=Number(x.acuan100); if(k&&Number.isFinite(n)&&n>0)obj[k]=Math.round(n);});
-                acuanKehadiranData=obj; try{localStorage.setItem(PROGRESS_ACUAN_STORAGE_KEY,JSON.stringify(obj));}catch(e){}
-                if(!document.getElementById('view-acuanKehadiran')?.classList.contains('hidden')) prepareAcuanKehadiran();
-            }, err => console.error('[Firebase] Realtime acuan error:',err));
+            // ACUAN KEHADIRAN TIDAK lagi memakai listener Firebase.
+            // READ Acuan dilakukan melalui Google Apps Script -> Google Sheet.
 
             // Antrean Google Sheet juga dipantau realtime. Semua HP boleh menerima
             // event yang sama, tetapi hanya satu HP yang dapat mengklaim job melalui
