@@ -477,6 +477,37 @@
     .nav-menu-large .nav-menu-item i { font-size: 20px; }
     .nav-menu-large .history-menu { font-size: 18px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 20px; font-weight: 900; }
     @media (max-width: 767px) { .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; } }
+
+    /* =========================================================
+       TAMPILAN HP — MENU ATAS DISEMBUNYIKAN
+       Menu HP hanya memakai navigasi bawah dan dapat digeser horizontal.
+       Tidak memengaruhi tampilan laptop/desktop.
+       ========================================================= */
+    @media (max-width: 767px) {
+      #navMenuBar {
+        display: none !important;
+      }
+      #mobileBottomNav {
+        width: 100%;
+        justify-content: flex-start !important;
+        align-items: stretch;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+      }
+      #mobileBottomNav::-webkit-scrollbar {
+        display: none;
+      }
+      #mobileBottomNav .nav-btn {
+        flex: 0 0 88px;
+        width: 88px;
+        min-width: 88px;
+      }
+    }
     
     #view-riwayat .riwayat-table-head { font-size: 16px; } #view-riwayat .riwayat-table-body { font-size: 17px; }
     #view-riwayat .riwayat-table-body td { padding: 15px 14px; } #view-riwayat .riwayat-date { font-size: 17px; font-weight: 800; white-space: nowrap; }
@@ -894,7 +925,7 @@
     </div>
   </main>
 
-  <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-around z-40 pb-safe pb-3">
     <button onclick="switchTab('live')" id="mob-live" class="nav-btn active flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-camera text-sm mb-0.5"></i> Pemindai</button>
     <button onclick="switchTab('manual')" id="mob-manual" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-keyboard text-sm mb-0.5"></i> Manual</button>
     <button onclick="switchTab('kalender')" id="mob-kalender" class="nav-btn flex-1 py-2 text-[10px] flex flex-col items-center gap-0.5 rounded-none"><i class="fas fa-calendar-alt text-sm mb-0.5"></i> Kalender</button>
