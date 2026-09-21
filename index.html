@@ -1355,14 +1355,27 @@
     }
     function showDuplicateAttendancePopup(santri, existing, isLive = true) {
        const dateKey = getSelectedAttendanceDateKey(isLive);
-       const labelDate = dateKey ? dateKey.split('-').reverse().join('/') : 'tanggal yang dipilih';
-       return Swal.fire({
-          icon: 'warning',
-          title: 'Sudah Absen Hari Ini',
-          html: `<b>${escapeHtmlLaporan(santri?.nama || 'Santri')}</b> sudah memiliki presensi pada <b>${labelDate}</b>.<br><br>Presensi kedua <b>tidak dapat disimpan</b>.<br><span class="text-sm text-gray-500">Jika ingin absen ulang, hapus dulu data tersebut dari Riwayat Presensi.</span>`,
-          confirmButtonText: 'Mengerti',
-          confirmButtonColor: '#059669'
-       });
+       const fallbackDate = String(existing?.waktu || '').match(/(\d{1,2}\/(\d{1,2})\/(\d{4}))/)?.[1] || '';
+       const labelDate = dateKey ? dateKey.split('-').reverse().join('/') : (fallbackDate || 'tanggal yang dipilih');
+       const rawName = String(santri?.nama || existing?.namaSantri || 'Santri');
+       const safeName = rawName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+       const html = `<b>${safeName}</b> sudah memiliki presensi pada <b>${labelDate}</b>.<br><br>Presensi kedua <b>tidak dapat disimpan</b>.<br><span class="text-sm text-gray-500">Jika ingin absen ulang, hapus dulu data tersebut dari Riwayat Presensi.</span>`;
+       try {
+          if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+             return Swal.fire({ icon:'warning', title:'Sudah Absen Hari Ini', html, confirmButtonText:'Mengerti', confirmButtonColor:'#059669' });
+          }
+       } catch (popupErr) {
+          console.warn('[Presensi] Popup duplikat gagal ditampilkan:', popupErr);
+       }
+       try {
+          if (typeof Toast !== 'undefined' && typeof Toast.fire === 'function') {
+             Toast.fire({ icon:'warning', title:'Santri sudah absen', text:`${rawName} sudah absen pada ${labelDate}. Absen kedua tidak dapat disimpan.` });
+             return Promise.resolve();
+          }
+       } catch (toastErr) {
+          console.warn('[Presensi] Toast duplikat gagal ditampilkan:', toastErr);
+       }
+       return Promise.resolve();
     }
     function checkDuplicateAttendance(santri, isLive = true, showPopup = true) {
        const existing = findExistingAttendanceForStudent(santri, getSelectedAttendanceDateKey(isLive));
