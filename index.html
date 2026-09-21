@@ -592,11 +592,37 @@
         padding-right: 24px !important;
       }
     }
+/* =========================================================
+   READ / WRITE GLOBAL — DI HEADER
+   Tidak lagi mengambil ruang di area isi pada HP.
+   ========================================================= */
+.global-sync-panel{
+  position:relative; top:auto; z-index:auto; width:100%;
+  margin-top:6px; padding:4px 0 0;
+  background:transparent; backdrop-filter:none;
+  border:0; border-radius:0; box-shadow:none;
+}
+.global-sync-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.global-sync-card{min-width:0;border:1px solid rgba(255,255,255,.18);border-radius:9px;padding:5px 7px;background:rgba(2,44,34,.38);color:#fff}
+.global-sync-head{font-size:9px;gap:5px}
+.global-sync-source{font-size:8px;color:rgba(255,255,255,.72)}
+.global-sync-bar{height:3px;background:rgba(255,255,255,.16);margin-top:3px}
+.global-sync-meta{margin-top:2px;font-size:7px;color:rgba(255,255,255,.68)}
+.global-sync-card strong{font-size:9px}
+@media(max-width:640px){
+  .global-sync-panel{margin-top:5px;padding:3px 0 0}
+  .global-sync-grid{grid-template-columns:1fr 1fr;gap:4px}
+  .global-sync-card{padding:4px 5px;border-radius:8px}
+  .global-sync-head{font-size:8px;gap:3px}
+  .global-sync-source{font-size:7px}
+  .global-sync-meta{font-size:6.5px;gap:4px}
+  .global-sync-card strong{font-size:8px}
+}
 </style>
 </head>
 
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
-  <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row justify-between items-center z-20 relative shadow-md">
+  <header class="bg-islamic-pattern text-white px-4 py-2.5 md:px-6 md:py-3 flex flex-col sm:flex-row sm:flex-wrap justify-between items-center z-20 relative shadow-md">
     <div class="flex items-center gap-3 w-full sm:w-auto mb-1.5 sm:mb-0">
       <div id="logoContainer" class="flex-shrink-0">
         <img id="appLogo" src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo RQ Al-Khansa" class="w-8 h-8 md:w-9 md:h-9 object-contain rounded-full bg-white p-0.5 border border-brand-gold/50 shadow-sm" onerror="handleLogoError(this)">
@@ -621,19 +647,6 @@
       <button onclick="toggleDarkMode()" id="btnDarkMode" class="flex items-center justify-center w-9 h-8 text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-sm border border-white/20 text-[12px]" title="Ganti Mode Malam / Siang"><i id="darkModeIcon" class="fas fa-moon"></i></button>
       <button onclick="bukaModalUrl()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-accent/90 hover:bg-brand-accent backdrop-blur-md border border-brand-gold/50 rounded-lg text-[11px] font-bold text-white shadow-gold transition-all"><i class="fas fa-cog text-white text-[9px]"></i> Pengaturan</button>
     </div>
-  </header>
-
-  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
-    <div id="navMenuBar" class="nav-menu-full nav-menu-large" aria-label="Menu utama">
-      <button onclick="switchTab('live')" id="tab-live" class="nav-menu-item active"><i class="fas fa-camera"></i> <span>Pemindai Kamera</span></button>
-      <button onclick="switchTab('manual')" id="tab-manual" class="nav-menu-item"><i class="fas fa-keyboard"></i> <span>Input Manual Berkelompok</span></button>
-      <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-menu-item"><i class="fas fa-calendar-alt"></i> <span>Kalender Kelas</span></button>
-      <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-menu-item history-menu"><i class="fas fa-history"></i> <span class="riwayat-menu-text">Riwayat</span></button>
-      <button onclick="switchTab('laporanSantri')" id="tab-laporanSantri" class="nav-menu-item student-report-menu"><i class="fas fa-user-check"></i> <span>Kartu Absen</span></button>
-      <button onclick="switchTab('progressSantri')" id="tab-progressSantri" class="nav-menu-item student-report-menu"><i class="fas fa-chart-line"></i> <span>Progress Kehadiran</span></button>
-      <button onclick="switchTab('acuanKehadiran')" id="tab-acuanKehadiran" class="nav-menu-item student-report-menu"><i class="fas fa-bullseye"></i> <span>Acuan Kehadiran 100%</span></button>
-      <button onclick="switchTab('dataSantri')" id="tab-dataSantri" class="nav-menu-item student-report-menu"><i class="fas fa-user-graduate"></i> <span>Data Nama Santri</span></button>
-    </div>
 
     <!-- INDIKATOR GLOBAL READ / WRITE: tampil di semua menu -->
     <section id="globalSyncPanel" class="global-sync-panel" aria-label="Status proses READ dan WRITE">
@@ -657,6 +670,20 @@
       </div>
     </section>
     
+    </header>
+
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex flex-col gap-4">
+    <div id="navMenuBar" class="nav-menu-full nav-menu-large" aria-label="Menu utama">
+      <button onclick="switchTab('live')" id="tab-live" class="nav-menu-item active"><i class="fas fa-camera"></i> <span>Pemindai Kamera</span></button>
+      <button onclick="switchTab('manual')" id="tab-manual" class="nav-menu-item"><i class="fas fa-keyboard"></i> <span>Input Manual Berkelompok</span></button>
+      <button onclick="switchTab('kalender')" id="tab-kalender" class="nav-menu-item"><i class="fas fa-calendar-alt"></i> <span>Kalender Kelas</span></button>
+      <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-menu-item history-menu"><i class="fas fa-history"></i> <span class="riwayat-menu-text">Riwayat</span></button>
+      <button onclick="switchTab('laporanSantri')" id="tab-laporanSantri" class="nav-menu-item student-report-menu"><i class="fas fa-user-check"></i> <span>Kartu Absen</span></button>
+      <button onclick="switchTab('progressSantri')" id="tab-progressSantri" class="nav-menu-item student-report-menu"><i class="fas fa-chart-line"></i> <span>Progress Kehadiran</span></button>
+      <button onclick="switchTab('acuanKehadiran')" id="tab-acuanKehadiran" class="nav-menu-item student-report-menu"><i class="fas fa-bullseye"></i> <span>Acuan Kehadiran 100%</span></button>
+      <button onclick="switchTab('dataSantri')" id="tab-dataSantri" class="nav-menu-item student-report-menu"><i class="fas fa-user-graduate"></i> <span>Data Nama Santri</span></button>
+    </div>
+
     <div id="offlineAlert" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-xl shadow-sm items-start gap-3">
         <i class="fas fa-wifi-slash mt-1 text-xs"></i>
         <div><h4 class="font-bold text-xs">Koneksi Terputus</h4><p class="text-[11px] mt-0.5">Sistem sedang mencoba menghubungkan kembali ke Google Sheet Server...</p></div>
