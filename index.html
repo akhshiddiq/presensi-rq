@@ -586,7 +586,7 @@
                 <p class="text-xs text-gray-500 mb-3">Arahkan QR Code kartu santri ke dalam area kamera</p>
                 <div class="w-full max-w-xl mx-auto mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-inner">
                     <label class="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-2 text-left">TANGGAL PRESENSI</label>
-                    <input type="date" id="scanDateInput" class="modern-input font-bold text-sm mb-4 border-gray-300">
+                    <input type="date" id="scanDateInput" class="modern-input font-bold text-sm border-gray-300"><div id="scanDateDay" class="mt-2 text-xs font-extrabold text-brand-green text-left"></div>
                     <div class="flex items-center gap-2">
                         <button id="btnToggleCam" onclick="toggleCamera()" class="flex-grow py-4 bg-brand-green text-white rounded-xl font-extrabold transition-all shadow-float hover:shadow-lg hover:bg-[#047857] active:scale-95 flex justify-center items-center gap-2 text-xs md:text-sm"><i class="fas fa-video text-sm"></i> Nyalakan Kamera</button>
                         <button onclick="switchCameraDirection()" class="w-14 h-14 bg-white hover:bg-gray-100 text-gray-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center flex-shrink-0 active:scale-95 border border-gray-300" title="Ganti Kamera Depan/Belakang"><i class="fas fa-sync-alt text-base text-brand-green"></i></button>
@@ -614,7 +614,7 @@
             <div class="space-y-6">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-2">Tanggal Presensi</label>
-                    <input type="date" id="manualDateInput" class="modern-input font-bold py-3 text-sm">
+                    <input type="date" id="manualDateInput" class="modern-input font-bold py-3 text-sm"><div id="manualDateDay" class="mt-2 text-xs font-extrabold text-amber-600"></div>
                     <p class="text-[11px] mt-1.5 text-gray-400 italic">Ubah tanggal jika ingin memasukkan data absen di hari sebelumnya.</p>
                 </div>
                 <div>
@@ -905,12 +905,32 @@
     let audioCtx = null;
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true });
 
+    function getDayNameFromDateInput(value) {
+        if (!value) return '';
+        const parts = String(value).split('-').map(Number);
+        if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return '';
+        const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+        if (Number.isNaN(dt.getTime())) return '';
+        return ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];
+    }
+    function updateAttendanceDateDay(inputId, labelId) {
+        const input = document.getElementById(inputId);
+        const label = document.getElementById(labelId);
+        if (!input || !label) return;
+        const day = getDayNameFromDateInput(input.value);
+        label.textContent = day ? `Hari: ${day}` : '';
+    }
     function setDateInputsDefault() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const todayValue = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
         const di = document.getElementById('scanDateInput');
         const mi = document.getElementById('manualDateInput');
-        if(di && !di.value) di.value = today;
-        if(mi && !mi.value) mi.value = today;
+        if(di && !di.value) di.value = todayValue;
+        if(mi && !mi.value) mi.value = todayValue;
+        updateAttendanceDateDay('scanDateInput','scanDateDay');
+        updateAttendanceDateDay('manualDateInput','manualDateDay');
+        if (di && !di.dataset.dayBound) { di.addEventListener('change', () => updateAttendanceDateDay('scanDateInput','scanDateDay')); di.dataset.dayBound='1'; }
+        if (mi && !mi.dataset.dayBound) { mi.addEventListener('change', () => updateAttendanceDateDay('manualDateInput','manualDateDay')); mi.dataset.dayBound='1'; }
     }
     function getAudioContext() {
         if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) audioCtx = new AudioContext(); }
@@ -1207,12 +1227,60 @@
         return { waktu: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`, hari: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][now.getDay()] };
     }
     
+    function normalizeAttendanceIdentity(value) {
+       return String(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+    }
+    function getAttendanceDateKeyFromWaktu(value) {
+       const match = String(value ?? '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+       if (!match) return '';
+       return `${String(match[3]).padStart(4,'0')}-${String(match[2]).padStart(2,'0')}-${String(match[1]).padStart(2,'0')}`;
+    }
+    function getSelectedAttendanceDateKey(isLive = true) {
+       const inputId = isLive ? 'scanDateInput' : 'manualDateInput';
+       const value = document.getElementById(inputId)?.value || '';
+       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+       return getAttendanceDateKeyFromWaktu(getCustomDateForSubmission(isLive).waktu);
+    }
+    function findExistingAttendanceForStudent(santri, dateKey) {
+       if (!santri || !dateKey || !Array.isArray(presensiHistory)) return null;
+       const targetId = normalizeAttendanceIdentity(santri.id);
+       const targetName = normalizeAttendanceIdentity(santri.nama);
+       return presensiHistory.find(item => {
+          if (!item || !item.key || deletedKeys.has(String(item.key))) return false;
+          const itemDate = getAttendanceDateKeyFromWaktu(item.waktu);
+          if (itemDate !== dateKey) return false;
+          const itemId = normalizeAttendanceIdentity(item.idSantri);
+          const itemName = normalizeAttendanceIdentity(item.namaSantri);
+          return (targetId && itemId && targetId === itemId) || (targetName && itemName && targetName === itemName);
+       }) || null;
+    }
+    function showDuplicateAttendancePopup(santri, existing, isLive = true) {
+       const dateKey = getSelectedAttendanceDateKey(isLive);
+       const labelDate = dateKey ? dateKey.split('-').reverse().join('/') : 'tanggal yang dipilih';
+       return Swal.fire({
+          icon: 'warning',
+          title: 'Sudah Absen Hari Ini',
+          html: `<b>${escapeHtmlLaporan(santri?.nama || 'Santri')}</b> sudah memiliki presensi pada <b>${labelDate}</b>.<br><br>Presensi kedua <b>tidak dapat disimpan</b>.<br><span class="text-sm text-gray-500">Jika ingin absen ulang, hapus dulu data tersebut dari Riwayat Presensi.</span>`,
+          confirmButtonText: 'Mengerti',
+          confirmButtonColor: '#059669'
+       });
+    }
+    function checkDuplicateAttendance(santri, isLive = true) {
+       const existing = findExistingAttendanceForStudent(santri, getSelectedAttendanceDateKey(isLive));
+       if (existing) {
+          showDuplicateAttendancePopup(santri, existing, isLive);
+          return existing;
+       }
+       return null;
+    }
+
     function processScanResult(decodedText) {
        const now = Date.now(), qrId = extractSantriIdFromQr(decodedText); if (!qrId) return;
        if (qrId === lastScannedId && (now - lastScanTime) < 2500) return;
        lastScannedId = qrId; lastScanTime = now; triggerCameraFlash();
        const santri = masterDataSantri.find(s => String(s.id).trim() === qrId);
        if(!santri) { Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
+       if (checkDuplicateAttendance(santri, true)) return;
        const cTime = getCustomDateForSubmission(true);
        console.log('[Presensi] Scan valid → mulai simpan Firebase:', santri.nama, santri.id);
        postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
@@ -1369,6 +1437,11 @@
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const result = await simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key);
+                if (result?.duplicate) {
+                    const err = new Error(result.message || 'Santri sudah absen pada tanggal tersebut.');
+                    err.code = 'ATTENDANCE_DUPLICATE'; err.duplicate = true; err.existing = result.existing || null;
+                    throw err;
+                }
                 if (result && result.status === 'success' && result.verified === true) return result;
                 lastError = new Error(result?.message || 'Google Sheet belum terverifikasi.');
             } catch (e) { lastError = e; }
@@ -1378,6 +1451,8 @@
     }
 
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
+       const santri = masterDataSantri.find(s => String(s.id).trim() === String(idSantri).trim()) || {id:idSantri,nama:namaSantri,kelas,guru};
+       if (checkDuplicateAttendance(santri, false)) return Promise.resolve({ status:'duplicate', duplicate:true, blocked:true });
        return new Promise((resolve) => {
            const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
            newlyAddedKeysMap.set(unikey, nowTime);
@@ -1406,6 +1481,14 @@
                    }
                    return { status:'sent', data:sheetResult?.data || {key:unikey} };
                } catch (sheetErr) {
+                   if (sheetErr?.duplicate || sheetErr?.code === 'ATTENDANCE_DUPLICATE') {
+                       pendingHistoryWrites.delete(unikey);
+                       newlyAddedKeysMap.delete(unikey);
+                       presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+                       renderRiwayatTable();
+                       showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
+                       return { status:'duplicate', duplicate:true, blocked:true };
+                   }
                    try {
                        const direct = await directGoogleSheetRetry(idSantri, namaSantri, kelas, guru, status, timeObj, unikey, 5);
                        return { status:'sent', data:direct?.data || {key:unikey}, direct:true };
@@ -1429,6 +1512,11 @@
                    newlyAddedKeysMap.delete(unikey);
                    presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                    renderRiwayatTable();
+                   if (sheetErr?.duplicate || sheetErr?.code === 'ATTENDANCE_DUPLICATE') {
+                       showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
+                       resolve({status:'duplicate', duplicate:true, blocked:true});
+                       return;
+                   }
                    resolve({error:true, message:String(sheetErr?.message || sheetErr || firebaseErr)});
                }
            })
@@ -1478,6 +1566,11 @@
     async function sinkronkanPresensiKeGoogleSetelahFirebase(idSantri, namaSantri, kelas, guru, status, timeObj, key) {
         return simpanPresensiKeServer(idSantri, namaSantri, kelas, guru, status, timeObj, key)
             .then(async (result) => {
+                if (result?.duplicate) {
+                    const err = new Error(result.message || 'Santri sudah absen pada tanggal tersebut.');
+                    err.code = 'ATTENDANCE_DUPLICATE'; err.duplicate = true; err.existing = result.existing || null;
+                    throw err;
+                }
                 if (!result || result.status !== 'success' || result.verified !== true) {
                     throw new Error((result && result.message) || 'Google Sheet belum mengonfirmasi sinkronisasi.');
                 }
@@ -1490,6 +1583,7 @@
                 return result;
             })
             .catch(async (err) => {
+                if (err?.duplicate || err?.code === 'ATTENDANCE_DUPLICATE') throw err;
                 // Firebase tetap menjadi sumber utama. Jangan hapus data Firebase
                 // hanya karena Google Sheet sedang lambat/gagal.
                 tandaiPresensiTersimpanLokal(key, 'firebase');
@@ -1584,7 +1678,15 @@
                  // Tidak menghambat keberhasilan presensi Firebase.
                  sinkronkanPresensiKeGoogleSetelahFirebase(
                      idSantri, namaSantri, kelas, guru, status, timeObj, unikey
-                 );
+                 ).catch(err => {
+                     if (err?.duplicate || err?.code === 'ATTENDANCE_DUPLICATE') {
+                         pendingHistoryWrites.delete(unikey);
+                         newlyAddedKeysMap.delete(unikey);
+                         presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
+                         renderRiwayatTable();
+                         showDuplicateAttendancePopup(santri, err.existing || {}, true);
+                     }
+                 });
              } catch (err) {
                  pendingHistoryWrites.delete(unikey);
                  newlyAddedKeysMap.delete(unikey);
@@ -1813,6 +1915,9 @@
             } else if(result?.status === 'queued') {
                 queueCount++;
                 setBulkAbsenStudent(santri.nama, 'queue', 'Mengantri ke Google Sheet', '100%', 'queue');
+                const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
+            } else if(result?.status === 'duplicate') {
+                setBulkAbsenStudent(santri.nama, 'error', 'Sudah absen hari ini — dilewati', '100%', 'processing');
                 const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
             } else {
                 errorCount++;
