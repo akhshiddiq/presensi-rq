@@ -1391,7 +1391,7 @@
         window[callbackName] = function(data) { if (finished) return; cleanup(); if (typeof onSuccess === 'function') onSuccess(data); };
         script.onerror = function() { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.')); };
         script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() })); script.async = true; document.head.appendChild(script);
-        setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 30000);
+        setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 15000);
     }
     // =========================================================
     // MONITOR PROSES READ / WRITE GLOBAL
@@ -1449,10 +1449,16 @@
         return {type:isRead ? 'read' : 'write', source, path};
     };
 
+    // Semua WRITE ke Google Sheet dijalankan satu per satu.
+    // Ini mencegah beberapa request saveAttendance masuk bersamaan dan saling
+    // menunggu ScriptLock sampai timeout. Firebase tetap boleh menyimpan cepat.
+    let googleSheetWriteQueue = Promise.resolve();
+
     function requestGoogleJsonp(payload) {
-        const meta = window.getGoogleActionSyncMeta(payload?.action);
-        window.beginGlobalSync(meta.type, meta.source, meta.path);
-        return new Promise((resolve, reject) => {
+        const params = payload || {};
+        const meta = window.getGoogleActionSyncMeta(params.action);
+        const run = () => new Promise((resolve, reject) => {
+            window.beginGlobalSync(meta.type, meta.source, meta.path);
             fetchGoogleJsonp(data => {
                 const ok = !!(data && (data.status === 'success' || data.status === 'online'));
                 const warning = !!(data && data.status === 'warning');
@@ -1469,8 +1475,14 @@
             }, err => {
                 window.finishGlobalSync(meta.type, false, meta.source, String(err?.message || err || 'Koneksi gagal'), meta.path);
                 reject(err);
-            }, payload || {});
+            }, params);
         });
+
+        if (meta.type !== 'write') return run();
+
+        const queued = googleSheetWriteQueue.then(run, run);
+        googleSheetWriteQueue = queued.catch(() => {});
+        return queued;
     }
     window.requestGoogleJsonp = requestGoogleJsonp;
 
