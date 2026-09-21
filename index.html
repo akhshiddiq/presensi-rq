@@ -508,6 +508,59 @@
     .global-sync-partial .global-sync-fill{background:#f59e0b}
     .global-sync-idle .global-sync-fill{background:#94a3b8}
     @media(max-width:640px){.global-sync-panel{padding:7px}.global-sync-grid{grid-template-columns:1fr}.global-sync-card{padding:6px 8px}}
+    /* =========================================================
+       TAMPILAN LAPTOP/DESKTOP — MENU DI SISI KIRI
+       Mobile/tablet tetap memakai tampilan menu yang sudah ada.
+       ========================================================= */
+    @media (min-width: 901px) {
+      #navMenuBar {
+        position: fixed;
+        left: 0;
+        top: 76px;
+        bottom: 16px;
+        width: 248px;
+        height: auto;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-auto-rows: max-content;
+        align-content: start;
+        gap: .55rem;
+        padding: .75rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-radius: 0 1.15rem 1.15rem 0;
+        box-shadow: 6px 0 20px rgba(15,23,42,.08);
+      }
+
+      #navMenuBar .nav-menu-item {
+        min-height: 58px;
+        padding: .85rem .8rem;
+        text-align: left;
+        justify-content: flex-start;
+        font-size: .86rem;
+      }
+
+      #navMenuBar .nav-menu-item i {
+        width: 22px;
+        min-width: 22px;
+        text-align: center;
+      }
+
+      #navMenuBar .nav-menu-item span {
+        min-width: 0;
+        line-height: 1.25;
+      }
+
+      body > main {
+        max-width: none !important;
+        width: calc(100% - 248px) !important;
+        margin-left: 248px !important;
+        margin-right: 0 !important;
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+    }
 </style>
 </head>
 
@@ -619,7 +672,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-2">1. Pilih Kelas</label>
-                    <select id="manualKelasSelect" onchange="renderManualStudents()" class="modern-input font-bold py-3 text-sm"><option value="">-- Pilih Kelas --</option></select>
+                    <select id="manualKelasSelect" onchange="handleManualClassChange()" class="modern-input font-bold py-3 text-sm"><option value="__ALL_CLASSES__">Semua Kelas</option></select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-2">2. Centang Nama Santri</label>
@@ -637,6 +690,17 @@
                     <select id="statusManualBulk" class="modern-input border-amber-200 bg-amber-50 focus:border-brand-accent text-amber-700 font-bold py-3 text-sm"><option value="Hadir">🟢 Hadir</option><option value="Sakit">🔵 Sakit</option><option value="Izin">🟡 Izin</option><option value="Tidak Hadir (Alfa)">🔴 Tidak Hadir (Alfa)</option></select>
                 </div>
                 <button onclick="processAbsenManualBulk()" class="w-full bg-brand-accent text-white font-extrabold py-4 rounded-xl transition-all shadow-gold hover:bg-amber-500 active:scale-95 flex items-center justify-center gap-2 text-sm mt-4"><i class="fas fa-check-circle text-lg"></i> Catat Presensi Santri</button>
+                <div id="bulkAbsenProgressPanel" class="hidden mt-4 rounded-2xl border border-emerald-100 bg-slate-50 p-4 shadow-inner">
+                    <div class="flex items-center justify-between gap-3 text-xs font-black text-gray-700 mb-2">
+                        <span id="bulkAbsenMode"><i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola...</span>
+                        <span id="bulkAbsenPercent" class="text-emerald-700">0%</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="bulkAbsenProgressBar" class="h-full bg-emerald-500 transition-all duration-300" style="width:0%"></div>
+                    </div>
+                    <div id="bulkAbsenSummary" class="text-[11px] text-slate-500 font-bold mt-2">0 dari 0 santri selesai diproses</div>
+                    <div id="bulkAbsenProcessList" class="space-y-2 max-h-72 overflow-y-auto pr-1 mt-3"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1031,9 +1095,13 @@
       const uniqueClasses = [...new Set(sumberKelas.map(c => String(c || '').trim()).filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b), 'id'));
       const createOptions = (elId) => {
           const el = document.getElementById(elId); if(!el) return;
-          const currVal = el.value; el.innerHTML = `<option value="">-- Pilih Kelas --</option>`;
+          const currVal = el.value;
+          const isManual = elId === 'manualKelasSelect';
+          el.innerHTML = isManual ? `<option value="__ALL_CLASSES__">Semua Kelas</option>` : `<option value="">-- Pilih Kelas --</option>`;
           uniqueClasses.forEach(c => el.innerHTML += `<option value="${escapeHtmlLaporan(c)}">${escapeHtmlLaporan(c)}</option>`);
-          if (currVal && uniqueClasses.includes(currVal)) el.value = currVal;
+          if (isManual) {
+              el.value = (currVal === '__ALL_CLASSES__' || uniqueClasses.includes(currVal)) ? currVal : '__ALL_CLASSES__';
+          } else if (currVal && uniqueClasses.includes(currVal)) el.value = currVal;
       };
       createOptions('manualKelasSelect'); createOptions('kalenderKelasSelect');
     }
@@ -1265,10 +1333,10 @@
           confirmButtonColor: '#059669'
        });
     }
-    function checkDuplicateAttendance(santri, isLive = true) {
+    function checkDuplicateAttendance(santri, isLive = true, showPopup = true) {
        const existing = findExistingAttendanceForStudent(santri, getSelectedAttendanceDateKey(isLive));
        if (existing) {
-          showDuplicateAttendancePopup(santri, existing, isLive);
+          if (showPopup) showDuplicateAttendancePopup(santri, existing, isLive);
           return existing;
        }
        return null;
@@ -1402,24 +1470,23 @@
             ? '<i class="fas fa-bolt mr-1"></i> Langsung masuk Google Sheet'
             : state.currentMode === 'queue'
                 ? '<i class="fas fa-clock mr-1"></i> Mengantri ke Google Sheet'
-                : '<i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola...';
+                : state.currentMode === 'duplicate'
+                    ? '<i class="fas fa-ban mr-1"></i> Sebagian sudah absen hari ini'
+                    : '<i class="fas fa-sync-alt fa-spin mr-1"></i> Google Script sedang mengelola...';
         if (list && Array.isArray(state.items)) {
             list.innerHTML = state.items.map(item => {
-                const cls = item.state === 'success' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : item.state === 'queue' ? 'text-amber-700 bg-amber-50 border-amber-200' : item.state === 'error' ? 'text-red-700 bg-red-50 border-red-200' : 'text-sky-700 bg-sky-50 border-sky-200';
-                const icon = item.state === 'success' ? 'fa-check-circle' : item.state === 'queue' ? 'fa-clock' : item.state === 'error' ? 'fa-times-circle' : 'fa-spinner fa-spin';
-                return `<div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${cls}"><div class="min-w-0 font-bold truncate"><i class="fas ${icon} mr-1.5"></i>${escapeHtmlLaporan(item.name || 'Santri')}</div><div class="text-[10px] font-black whitespace-nowrap">${escapeHtmlLaporan(item.percent || (item.state === 'success' ? '100%' : '0%'))} · ${escapeHtmlLaporan(item.status || 'Memproses')}</div></div>`;
+                const cls = item.state === 'success' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : item.state === 'queue' ? 'text-amber-700 bg-amber-50 border-amber-200' : item.state === 'duplicate' ? 'text-gray-600 bg-gray-100 border-gray-200' : item.state === 'error' ? 'text-red-700 bg-red-50 border-red-200' : 'text-sky-700 bg-sky-50 border-sky-200';
+                const icon = item.state === 'success' ? 'fa-check-circle' : item.state === 'queue' ? 'fa-clock' : item.state === 'duplicate' ? 'fa-ban' : item.state === 'error' ? 'fa-times-circle' : 'fa-spinner fa-spin';
+                return `<div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${cls}"><div class="min-w-0 font-bold truncate"><i class="fas ${icon} mr-1.5"></i>${escapeHtmlLaporan(item.name || 'Santri')}</div><div class="text-[10px] font-black whitespace-nowrap">${escapeHtmlLaporan(item.percent || (item.state === 'success' || item.state === 'duplicate' ? '100%' : '0%'))} · ${escapeHtmlLaporan(item.status || 'Memproses')}</div></div>`;
             }).join('');
         }
     }
 
     function openBulkAbsenProgress(names) {
+        const panel = document.getElementById('bulkAbsenProgressPanel');
+        if (panel) panel.classList.remove('hidden');
         const items = names.map(name => ({name, state:'processing', percent:'0%', status:'Mengantri'}));
         window.__bulkAbsenState = {total:names.length, done:0, items, currentMode:'processing'};
-        Swal.fire({
-            title: 'Proses Absen',
-            html: `<div class="text-left space-y-3"><div class="flex items-center justify-between text-xs font-black"><span id="bulkAbsenMode">Google Script sedang mengelola...</span><span id="bulkAbsenPercent">0%</span></div><div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden"><div id="bulkAbsenProgressBar" class="h-full bg-emerald-500 transition-all duration-300" style="width:0%"></div></div><div id="bulkAbsenSummary" class="text-[11px] text-slate-500 font-bold">0 dari ${names.length} santri selesai diproses</div><div id="bulkAbsenProcessList" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div></div>`,
-            allowOutsideClick:false, allowEscapeKey:false, showConfirmButton:false, width:520
-        });
         updateBulkAbsenProgress();
     }
 
@@ -1452,7 +1519,7 @@
 
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
        const santri = masterDataSantri.find(s => String(s.id).trim() === String(idSantri).trim()) || {id:idSantri,nama:namaSantri,kelas,guru};
-       if (checkDuplicateAttendance(santri, false)) return Promise.resolve({ status:'duplicate', duplicate:true, blocked:true });
+       if (checkDuplicateAttendance(santri, false, false)) return Promise.resolve({ status:'duplicate', duplicate:true, blocked:true });
        return new Promise((resolve) => {
            const unikey = "temp_" + Math.random().toString(36).substr(2,9), nowTime = Date.now();
            newlyAddedKeysMap.set(unikey, nowTime);
@@ -1486,7 +1553,7 @@
                        newlyAddedKeysMap.delete(unikey);
                        presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                        renderRiwayatTable();
-                       showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
+                       if (!window.__bulkAbsenState) showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
                        return { status:'duplicate', duplicate:true, blocked:true };
                    }
                    try {
@@ -1513,7 +1580,7 @@
                    presensiHistory = presensiHistory.filter(x => String(x.key) !== String(unikey));
                    renderRiwayatTable();
                    if (sheetErr?.duplicate || sheetErr?.code === 'ATTENDANCE_DUPLICATE') {
-                       showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
+                       if (!window.__bulkAbsenState) showDuplicateAttendancePopup(santri, sheetErr.existing || {}, false);
                        resolve({status:'duplicate', duplicate:true, blocked:true});
                        return;
                    }
@@ -1838,23 +1905,51 @@
         return String(item?.hari || '').replace(/^Minggu$/i, 'Ahad') || '-';
     }
 
+    function isManualAllClassesActive() {
+        const select = document.getElementById('manualKelasSelect');
+        return !!select && select.value === '__ALL_CLASSES__';
+    }
+
+    function setManualAllClassesMode(active, shouldRender = true) {
+        const select = document.getElementById('manualKelasSelect');
+        const search = document.getElementById('searchManualStudent');
+        if (!select) return;
+        select.value = active ? '__ALL_CLASSES__' : (select.value === '__ALL_CLASSES__' ? '' : select.value);
+        if (search) search.placeholder = active ? 'Ketik nama santri dari semua kelas untuk mencari...' : 'Ketik nama santri untuk mencari...';
+        if (shouldRender) renderManualStudents();
+    }
+
+    function toggleManualAllClasses() {
+        const select = document.getElementById('manualKelasSelect');
+        if (select) { select.value = '__ALL_CLASSES__'; renderManualStudents(); }
+    }
+
+    function handleManualClassChange() {
+        const select = document.getElementById('manualKelasSelect');
+        const search = document.getElementById('searchManualStudent');
+        if (search) search.placeholder = select?.value === '__ALL_CLASSES__' ? 'Ketik nama santri dari semua kelas untuk mencari...' : 'Ketik nama santri untuk mencari...';
+        renderManualStudents();
+    }
+
     function renderManualStudents() {
         const kelas = document.getElementById('manualKelasSelect').value, listContainer = document.getElementById('manualStudentList'), checkAll = document.getElementById('checkAllManual');
+        const allClasses = isManualAllClassesActive();
 
         // Simpan pilihan yang sedang dicentang agar sinkronisasi otomatis tidak menghilangkannya.
         // renderManualStudents() dipanggil setiap sinkronisasi ±4 detik.
         const renderedClass = listContainer.dataset.manualRenderedClass || '';
-        const sameClass = renderedClass === kelas;
+        const renderScope = allClasses ? '__ALL_CLASSES__' : kelas;
+        const sameClass = renderedClass === renderScope;
         const selectedIds = sameClass
             ? new Set(Array.from(listContainer.querySelectorAll('.manual-student-cb:checked')).map(cb => String(cb.value)))
             : new Set();
 
-        if(!kelas) {
+        if(!allClasses && !kelas) {
             checkAll.checked = false;
             document.getElementById('selectedCountText').innerText = "0 dipilih";
             document.getElementById('searchManualStudent').value = "";
             listContainer.dataset.manualRenderedClass = '';
-            listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu untuk melihat daftar santri.</p>';
+            listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-6 font-medium">Pilih kelas terlebih dahulu.</p>';
             document.getElementById('countTampilSantri').innerText = "0";
             return;
         }
@@ -1863,12 +1958,19 @@
             document.getElementById('countTampilSantri').innerText = "0";
             return;
         }
-        const santris = masterDataSantri.filter(s => s.kelas === kelas);
+        const santris = allClasses
+            ? [...masterDataSantri]
+            : masterDataSantri.filter(s => s.kelas === kelas);
+        santris.sort((a, b) => {
+            const byName = String(a?.nama || '').localeCompare(String(b?.nama || ''), 'id', { sensitivity: 'base' });
+            if (byName !== 0) return byName;
+            return String(a?.kelas || '').localeCompare(String(b?.kelas || ''), 'id', { sensitivity: 'base' });
+        });
         document.getElementById('countTampilSantri').innerText = santris.length;
         listContainer.innerHTML = santris.map(s => `
               <label class="student-item flex items-center gap-4 p-3 rounded-lg border border-gray-200 bg-white cursor-pointer hover:bg-emerald-50 transition-colors shadow-sm">
                   <input type="checkbox" class="manual-student-cb w-5 h-5 rounded border-gray-300 bg-white accent-emerald-600 cursor-pointer" value="${escapeHtmlLaporan(s.id)}">
-                  <div class="flex-grow"><p class="font-bold text-sm text-gray-800">${escapeHtmlLaporan(s.nama)}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${escapeHtmlLaporan(s.id)}</p></div>
+                  <div class="flex-grow min-w-0"><p class="font-bold text-sm text-gray-800 truncate">${escapeHtmlLaporan(s.nama)}</p><p class="text-[10px] text-gray-500 font-mono mt-0.5">${allClasses ? escapeHtmlLaporan(s.kelas || '-') + ' • ' : ''}${escapeHtmlLaporan(s.id)}</p></div>
               </label>`).join('');
 
         // Kembalikan centang yang sudah dipilih sebelum daftar dibangun ulang.
@@ -1880,7 +1982,7 @@
         const selectedCount = document.querySelectorAll('.manual-student-cb:checked').length;
         document.getElementById('selectedCountText').innerText = `${selectedCount} dipilih`;
         checkAll.checked = santris.length > 0 && selectedCount === santris.length;
-        listContainer.dataset.manualRenderedClass = kelas;
+        listContainer.dataset.manualRenderedClass = renderScope;
     }
     function filterManualStudents() {
         const query = document.getElementById('searchManualStudent').value.toLowerCase();
@@ -1894,15 +1996,40 @@
     }
     async function processAbsenManualBulk() {
         getAudioContext();
-        const checkedCbs = Array.from(document.querySelectorAll('.manual-student-cb:checked')), status = document.getElementById('statusManualBulk').value, cTime = getCustomDateForSubmission(false);
+        const checkedCbs = Array.from(document.querySelectorAll('.manual-student-cb:checked'));
+        const status = document.getElementById('statusManualBulk').value;
+        const cTime = getCustomDateForSubmission(false);
         if (checkedCbs.length === 0) { Toast.fire({ icon: 'warning', title: 'Belum ada santri yang dicentang!' }); return; }
+
         const selected = checkedCbs.map(cb => masterDataSantri.find(s => s.id === cb.value)).filter(Boolean);
         isProcessing = true;
         openBulkAbsenProgress(selected.map(s => s.nama));
-        let successCount = 0, queueCount = 0, errorCount = 0;
-        for(let i=0; i<selected.length; i++) {
-            const santri = selected[i];
-            setBulkAbsenStudent(santri.nama, 'processing', 'Sedang diproses', Math.max(5, Math.round((i / selected.length) * 100)), 'processing');
+
+        let successCount = 0, queueCount = 0, errorCount = 0, duplicateCount = 0;
+        const eligible = [];
+        const dateKey = getSelectedAttendanceDateKey(false);
+
+        // Saring terlebih dahulu. Santri yang sudah absen tetap ditampilkan di daftar,
+        // tetapi tidak dikirim ke proses simpan. Santri lain langsung dilanjutkan.
+        selected.forEach((santri, index) => {
+            const existing = findExistingAttendanceForStudent(santri, dateKey);
+            if (existing) {
+                duplicateCount++;
+                setBulkAbsenStudent(santri.nama, 'duplicate', 'Sudah absen hari ini — dilewati', '100%', 'duplicate');
+                const cb = checkedCbs[index];
+                if (cb) cb.checked = false;
+            } else {
+                eligible.push(santri);
+            }
+        });
+        if (window.__bulkAbsenState) {
+            window.__bulkAbsenState.done = duplicateCount;
+            updateBulkAbsenProgress();
+        }
+
+        for (let i = 0; i < eligible.length; i++) {
+            const santri = eligible[i];
+            setBulkAbsenStudent(santri.nama, 'processing', 'Sedang diproses', '0%', 'processing');
             const result = await postDataToGoogleAsync(santri.id, santri.nama, santri.kelas, santri.guru, status, cTime);
             if(result?.status === 'sent-direct') {
                 successCount++;
@@ -1917,26 +2044,33 @@
                 setBulkAbsenStudent(santri.nama, 'queue', 'Mengantri ke Google Sheet', '100%', 'queue');
                 const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
             } else if(result?.status === 'duplicate') {
-                setBulkAbsenStudent(santri.nama, 'error', 'Sudah absen hari ini — dilewati', '100%', 'processing');
+                duplicateCount++;
+                setBulkAbsenStudent(santri.nama, 'duplicate', 'Sudah absen hari ini — dilewati', '100%', 'duplicate');
                 const cb = checkedCbs.find(x => x.value === santri.id); if (cb) cb.checked = false;
             } else {
                 errorCount++;
                 setBulkAbsenStudent(santri.nama, 'error', 'Gagal masuk Google Sheet', '0%', 'processing');
             }
+            if (window.__bulkAbsenState) {
+                window.__bulkAbsenState.done = duplicateCount + successCount + queueCount + errorCount;
+                updateBulkAbsenProgress();
+            }
         }
+
         isProcessing = false;
         document.getElementById('selectedCountText').innerText = `${document.querySelectorAll('.manual-student-cb:checked').length} dipilih`;
         document.getElementById('checkAllManual').checked = false;
-        const state = window.__bulkAbsenState; if (state) { state.done = selected.length; state.currentMode = queueCount ? 'queue' : 'processing'; updateBulkAbsenProgress(); }
-        await new Promise(r => setTimeout(r, 700));
-        if (errorCount === 0) {
-            Swal.fire({ icon: queueCount ? 'info' : 'success', title: queueCount ? 'Sebagian Mengantri' : 'Absen Berhasil', html: `<b>${successCount}</b> langsung/terverifikasi ke Google Sheet${queueCount ? ` dan <b>${queueCount}</b> sedang mengantri.` : '.'}`, confirmButtonColor: '#059669' });
-        } else {
-            Swal.fire({ icon: 'warning', title: 'Proses selesai dengan catatan', html: `<b>${successCount}</b> berhasil, <b>${queueCount}</b> mengantri, <b>${errorCount}</b> gagal. Data yang gagal tidak dianggap tersimpan.`, confirmButtonColor: '#d97706' });
+        const state = window.__bulkAbsenState;
+        if (state) {
+            state.done = selected.length;
+            state.currentMode = errorCount > 0 ? 'processing' : (queueCount > 0 ? 'queue' : (duplicateCount > 0 && successCount === 0 ? 'duplicate' : 'direct'));
+            updateBulkAbsenProgress();
         }
+
+        // Tidak ada popup hasil. Daftar status tetap terlihat di bawah tombol.
         fetchHistoryFromSheets();
-        window.__bulkAbsenState = null;
     }
+
     function prepareLaporanSantriOptions() {
         const selKelas = document.getElementById('laporanSantriKelasSelect'), selTahun = document.getElementById('laporanSantriTahunSelect'), search = document.getElementById('laporanSantriSearch'), logo = document.getElementById('kartuAbsenLogo');
         if(!selKelas || !selTahun) return;
@@ -2564,6 +2698,9 @@
         updateAudioUI();
         setDateInputsDefault();
         populateClassDropdowns();
+        const manualKelas = document.getElementById('manualKelasSelect');
+        if (manualKelas) manualKelas.value = '__ALL_CLASSES__';
+        setManualAllClassesMode(true, false);
         renderManualStudents();
         renderDataSantriMaster();
 
