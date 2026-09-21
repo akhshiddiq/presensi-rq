@@ -1084,23 +1084,6 @@
         let offset = 44; for (let i = 0; i < pcm16Data.length; i++, offset += 2) view.setInt16(offset, pcm16Data[i], true);
         return new Blob([buffer], { type: 'audio/wav' });
     }
-    async function playGeminiTtsGreeting() {
-        if (!geminiApiKey || geminiApiKey.trim() === "") { playSynthSound('blup'); return; }
-        try {
-            const targetVoice = "Achird"; 
-            const response = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey.trim()}`;
-            const res = await fetch(response, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: "Say warmly with friendly and cheerful male tone in Indonesian: Barakallah fiikum" }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: targetVoice } } } } }) });
-            const data = await res.json();
-            const part = data?.candidates?.[0]?.content?.parts?.[0];
-            if (part && part.inlineData && part.inlineData.data) {
-                const base64Data = part.inlineData.data, mimeType = part.inlineData.mimeType || "audio/L16;rate=24000";
-                let sampleRate = 24000; const rateMatch = mimeType.match(/rate=(\d+)/); if (rateMatch) sampleRate = parseInt(rateMatch[1], 10);
-                const pcmBuffer = base64ToArrayBuffer(base64Data), pcm16 = new Int16Array(pcmBuffer), wavBlob = pcmToWav(pcm16, sampleRate);
-                const audioUrl = URL.createObjectURL(wavBlob), audio = new Audio(audioUrl);
-                audio.onended = () => URL.revokeObjectURL(audioUrl); audio.play().catch(e => console.warn("Audio play error:", e));
-            } else playSynthSound('blup');
-        } catch (err) { playSynthSound('blup'); }
-    }
     function updateAudioUI() {
         const btnIcon = document.getElementById('audioIcon'), btnLabel = document.getElementById('audioLabelHeader');
         const modalSelect = document.getElementById('modalAudioMode'), modalSfxSelect = document.getElementById('modalSfxType'), modalApiKeyInput = document.getElementById('inputGeminiApiKey'), sfxContainer = document.getElementById('sfxOptionsContainer');
@@ -1115,7 +1098,6 @@
         if (audioMode === 'sfx') playSynthSound('shot');
     }
     function updateAudioModeFromSelect(val) { audioMode = val; localStorage.setItem('audioMode', audioMode); updateAudioUI(); }
-    function updateSfxType(val) { sfxType = 'laser'; localStorage.setItem('sfxType', 'laser'); updateAudioUI(); }
     function applyLogo() {
       const img = document.getElementById('appLogo'), defIcon = document.getElementById('defaultLogoIcon');
       if (LOGO_URL && LOGO_URL.trim() !== '') { img.src = LOGO_URL; img.classList.remove('hidden'); defIcon.classList.add('hidden'); } else { img.classList.add('hidden'); defIcon.classList.remove('hidden'); }
@@ -1963,11 +1945,6 @@
         if (shouldRender) renderManualStudents();
     }
 
-    function toggleManualAllClasses() {
-        const select = document.getElementById('manualKelasSelect');
-        if (select) { select.value = '__ALL_CLASSES__'; renderManualStudents(); }
-    }
-
     function handleManualClassChange() {
         const select = document.getElementById('manualKelasSelect');
         const search = document.getElementById('searchManualStudent');
@@ -2634,8 +2611,6 @@
           await fetchHistoryFromSheets(true);
         } catch(e) { await fetchHistoryFromSheets(true); }
     }
-    let syncRequestInFlight = false;
-    let syncRequestedAfterFlight = false;
     let attendanceWriteQueue = Promise.resolve();
     let sheetSyncRetryTimer = null;
     let historyRevision = 0;
@@ -2649,26 +2624,6 @@
         if (key) pendingHistoryWrites.delete(String(key));
         historyRevision++;
         return historyRevision;
-    }
-    function mergeServerHistory(serverHistory, requestRevision) {
-        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
-        const byKey = new Map();
-        const current = Array.isArray(presensiHistory) ? presensiHistory : [];
-        current.forEach(item => {
-            if (!item || !item.key) return;
-            const k = String(item.key);
-            if (!deletedKeys.has(k)) byKey.set(k, item);
-        });
-        incoming.forEach(item => {
-            if (!item || !item.key) return;
-            const k = String(item.key);
-            if (!deletedKeys.has(k)) byKey.set(k, item);
-        });
-        pendingHistoryWrites.forEach((item, k) => {
-            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
-        });
-        presensiHistory = Array.from(byKey.values());
-        renderRiwayatTable();
     }
     function replaceHistoryFromSheet(serverHistory) {
         // Google Sheet adalah sumber kebenaran untuk tampilan Riwayat Absen.
