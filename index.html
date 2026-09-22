@@ -2664,98 +2664,162 @@
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat PDF...'; }
 
       /*
-       * PDF dibuat mengikuti tampilan Progress Kehadiran yang sudah ada di website:
-       * - kartu per santri, bukan tabel
-       * - nama + kelas di kiri
-       * - persen + jumlah hadir di kanan
-       * - garis progress berwarna hijau
-       * - keterangan progress di bawah garis
-       * - warna kartu mengikuti status pada tampilan web
-       * Fitur/data/formula presensi tidak diubah.
+       * PDF Progress Kehadiran sengaja dibuat semirip mungkin dengan tampilan web:
+       * header/kop di atas, ringkasan kelas, lalu kartu santri dengan persentase,
+       * jumlah hadir, garis progress dan keterangan. Hanya tampilan export PDF
+       * yang diubah; data, rumus dan fitur aplikasi tidak disentuh.
        */
-      const exportBox = document.createElement('div');
-      exportBox.style.cssText = 'position:fixed;left:-100000px;top:0;width:794px;background:#f8fafc;padding:28px 30px 34px;font-family:Arial,Helvetica,sans-serif;z-index:-1;box-sizing:border-box;color:#1f2937;';
-      exportBox.innerHTML = `
-        <div style="background:#ffffff;border:1px solid #d1fae5;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.06);">
-          <div style="padding:22px 24px 18px;background:#ecfdf5;border-bottom:1px solid #a7f3d0;text-align:center;">
-            <img id="pdfProgressLogo" src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" crossorigin="anonymous" style="width:76px;height:76px;object-fit:contain;display:block;margin:0 auto 8px auto;">
-            <div style="font-size:21px;font-weight:900;color:#064e3b;line-height:1.2;">Progress Kehadiran Santri</div>
-            <div style="font-size:14px;font-weight:800;color:#047857;margin-top:5px;">RQ Al-Khansa</div>
-            <div style="font-size:11px;color:#475569;margin-top:7px;">Laporan Progress Kehadiran</div>
+      const root = document.createElement('div');
+      root.style.cssText = 'position:fixed;left:-100000px;top:0;width:794px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;z-index:-1;box-sizing:border-box;color:#1f2937;';
+      document.body.appendChild(root);
+
+      const makeCard = (x) => {
+        const pct = Math.round(x.hadir / acuan * 100);
+        const barPct = Math.min(100, Math.max(0, pct));
+        const rajinSantri = x.hadir >= acuan;
+        const card = document.createElement('div');
+        card.style.cssText = `margin:0 0 12px;padding:14px 16px;border:1px solid ${rajinSantri?'#fde68a':'#e5e7eb'};border-radius:16px;background:${rajinSantri?'#fffbeb':'#ffffff'};box-shadow:0 1px 3px rgba(15,23,42,.08);box-sizing:border-box;`;
+        const pctColor = rajinSantri ? '#d97706' : '#059669';
+        const smallColor = rajinSantri ? '#b45309' : '#64748b';
+        const keterangan = rajinSantri
+          ? (x.hadir === acuan ? '100% — target ' + acuan + '× sudah tercapai' : 'Lebih dari ' + acuan + '× hadir — sangat baik!')
+          : 'Sedang progres menuju ' + acuan + ' kali hadir';
+        card.innerHTML = `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:17px;font-weight:900;color:#172033;line-height:1.3;">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:4px;">${escapeHtmlLaporan(x.s.kelas||'-')}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;min-width:105px;">
+              <div style="font-size:27px;font-weight:900;color:${pctColor};line-height:1;">${pct}%</div>
+              <div style="font-size:11px;font-weight:800;color:${smallColor};margin-top:5px;">${x.hadir} / ${acuan} hadir</div>
+            </div>
           </div>
-          <div style="padding:15px 20px;background:#ffffff;border-bottom:1px solid #e5e7eb;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="margin-top:13px;height:13px;width:100%;overflow:hidden;border-radius:999px;background:#e5e7eb;box-shadow:inset 0 1px 2px rgba(15,23,42,.10);">
+            <div style="height:100%;width:${barPct}%;border-radius:999px;background:linear-gradient(90deg,#10b981,#34d399);"></div>
+          </div>
+          <div style="margin-top:7px;font-size:11px;font-weight:700;color:${smallColor};line-height:1.35;">${keterangan}</div>`;
+        return card;
+      };
+
+      const makeHeader = () => {
+        const header = document.createElement('div');
+        header.style.cssText = 'margin:0 0 14px;box-sizing:border-box;';
+        header.innerHTML = `
+          <div style="text-align:center;padding:10px 8px 8px;">
+            <img id="pdfProgressLogo" src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:76px;height:76px;object-fit:contain;display:block;margin:0 auto 8px auto;">
+            <div style="font-size:24px;font-weight:900;color:#12352f;line-height:1.15;text-transform:uppercase;">Progress Kehadiran Santri</div>
+            <div style="font-size:15px;font-weight:800;color:#145c52;margin-top:5px;">RQ Al-Khansa</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;">Laporan Progress Kehadiran · ${monthName} ${tahun}</div>
+          </div>
+          <div style="height:1px;background:#cbd5e1;margin:0 4px 12px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <div style="flex:1;border:1px solid #dbe4ea;border-radius:10px;padding:9px 11px;background:#ffffff;box-sizing:border-box;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;">KELAS</div><div style="font-size:12px;color:#172033;font-weight:900;margin-top:3px;">${escapeHtmlLaporan(kelas)}</div>
+            </div>
+            <div style="flex:1;border:1px solid #dbe4ea;border-radius:10px;padding:9px 11px;background:#ffffff;box-sizing:border-box;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;">BULAN</div><div style="font-size:12px;color:#172033;font-weight:900;margin-top:3px;">${monthName}</div>
+            </div>
+            <div style="flex:1;border:1px solid #dbe4ea;border-radius:10px;padding:9px 11px;background:#ffffff;box-sizing:border-box;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;">TAHUN</div><div style="font-size:12px;color:#172033;font-weight:900;margin-top:3px;">${tahun}</div>
+            </div>
+            <div style="flex:1.25;border:1px solid #dbe4ea;border-radius:10px;padding:9px 11px;background:#ffffff;box-sizing:border-box;">
+              <div style="font-size:9px;color:#64748b;font-weight:700;">ACUAN KEHADIRAN</div><div style="font-size:12px;color:#172033;font-weight:900;margin-top:3px;">${acuan}× = 100%</div>
+            </div>
+          </div>
+          <div style="padding:15px 17px;border:1px solid #a7f3d0;border-radius:16px;background:#ecfdf5;box-sizing:border-box;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
               <div style="min-width:0;">
-                <div style="font-size:17px;font-weight:900;color:#1f2937;">Kelas ${escapeHtmlLaporan(kelas)}</div>
-                <div style="font-size:11px;font-weight:700;color:#047857;margin-top:4px;">${monthName} ${tahun} · ${students.length} santri · Acuan ${acuan}× = 100%</div>
+                <div style="font-size:19px;font-weight:900;color:#172033;">Kelas ${escapeHtmlLaporan(kelas)}</div>
+                <div style="font-size:11px;font-weight:800;color:#047857;margin-top:4px;">${monthName} ${tahun} · ${students.length} santri · Acuan ${acuan}× = 100%</div>
               </div>
               <div style="font-size:12px;font-weight:900;color:#b45309;white-space:nowrap;">🏆 ${rajin} Santri Rajin</div>
             </div>
-          </div>
-        </div>
-        <div id="pdfProgressStudentList" style="margin-top:14px;"></div>
-        <div style="margin-top:14px;padding:10px 12px;border:1px solid #a7f3d0;border-radius:10px;background:#ecfdf5;color:#065f46;font-size:10px;font-weight:800;text-align:center;line-height:1.5;">Kehadiran sangat di anjurkan melebihi target , barakallah fiikum .</div>
-        <div style="margin-top:10px;font-size:8px;color:#64748b;text-align:center;">Dokumen ini dibuat dari data Progress Kehadiran pada sistem Presensi Santri RQ Al-Khansa.</div>`;
-      document.body.appendChild(exportBox);
+          </div>`;
+        return header;
+      };
 
-      const list = exportBox.querySelector('#pdfProgressStudentList');
-      students.forEach((x, idx) => {
-        const pct = Math.round(x.hadir / acuan * 100);
-        const barPct = Math.min(100, pct);
-        const rajinSantri = x.hadir >= acuan;
-        const card = document.createElement('div');
-        card.style.cssText = `margin-bottom:10px;padding:14px 15px;border:1px solid ${rajinSantri?'#fde68a':'#e5e7eb'};border-radius:14px;background:${rajinSantri?'#fffbeb':'#ffffff'};box-shadow:0 1px 4px rgba(15,23,42,.06);box-sizing:border-box;`;
-        const pctColor = rajinSantri ? '#d97706' : '#059669';
-        const smallColor = rajinSantri ? '#b45309' : '#64748b';
-        let keterangan = 'Sedang progres menuju ' + acuan + ' kali hadir';
-        if (rajinSantri) keterangan = x.hadir === acuan ? '100% — target ' + acuan + '× sudah tercapai' : 'Lebih dari ' + acuan + '× hadir — sangat baik!';
-        card.innerHTML = `
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-            <div style="min-width:0;flex:1;">
-              <div style="font-size:13px;font-weight:900;color:#1f2937;line-height:1.35;">${x.no}. ${escapeHtmlLaporan(x.s.nama)}</div>
-              <div style="font-size:9px;color:#64748b;margin-top:3px;">${escapeHtmlLaporan(x.s.kelas||'-')}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:20px;font-weight:900;color:${pctColor};line-height:1;">${pct}%</div>
-              <div style="font-size:9px;font-weight:800;color:${smallColor};margin-top:4px;">${rajinSantri?'🏆🌟 SANTRI RAJIN':x.hadir+' / '+acuan+' hadir'}</div>
-            </div>
-          </div>
-          <div style="margin-top:10px;height:11px;width:100%;overflow:hidden;border-radius:999px;background:#e5e7eb;box-shadow:inset 0 1px 2px rgba(15,23,42,.12);">
-            <div style="height:100%;width:${barPct}%;border-radius:999px;background:linear-gradient(90deg,#10b981,#34d399);"></div>
-          </div>
-          <div style="margin-top:6px;font-size:9px;font-weight:700;color:${smallColor};line-height:1.35;">${keterangan}</div>`;
-        list.appendChild(card);
-      });
+      const makeFooter = () => {
+        const footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:2px;box-sizing:border-box;';
+        footer.innerHTML = `
+          <div style="padding:11px 13px;border:1px solid #a7f3d0;border-radius:12px;background:#ecfdf5;color:#065f46;font-size:11px;font-weight:800;text-align:center;line-height:1.5;">Kehadiran sangat di anjurkan melebihi target , barakallah fiikum .</div>
+          <div style="display:flex;justify-content:space-between;gap:15px;margin-top:14px;font-size:9px;color:#64748b;line-height:1.45;">
+            <div><b style="color:#172033;">RQ Al-Khansa</b><br>Generasi Qurani, Berakhlak, Berprestasi</div>
+            <div style="text-align:right;">Dicetak: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div>
+          </div>`;
+        return footer;
+      };
 
       try {
-        const logo = exportBox.querySelector('#pdfProgressLogo');
-        if (logo && !logo.complete) await new Promise(resolve => { logo.onload=resolve; logo.onerror=resolve; });
-        const canvas = await html2canvas(exportBox, {scale:2, useCORS:true, allowTaint:false, backgroundColor:'#f8fafc', logging:false, windowWidth:794});
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
         const pageW = 210, pageH = 297, margin = 8;
-        const imgW = pageW - margin*2;
-        const pxPerMm = canvas.width / imgW;
-        const pageCanvasH = Math.floor((pageH - margin*2) * pxPerMm);
-        let y = 0, page = 0;
-        while (y < canvas.height) {
-          const sliceH = Math.min(pageCanvasH, canvas.height-y);
-          const slice = document.createElement('canvas');
-          slice.width = canvas.width; slice.height = sliceH;
-          const ctx = slice.getContext('2d');
-          ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,slice.width,slice.height);
-          ctx.drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
-          if (page > 0) pdf.addPage();
-          pdf.addImage(slice.toDataURL('image/jpeg',0.95),'JPEG',margin,margin,imgW,sliceH/pxPerMm);
-          y += sliceH; page++;
+        const imgW = pageW - margin * 2;
+        const pdf = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+        const pages = [];
+        let current = null;
+        let firstPage = true;
+
+        // Bangun halaman secara terpisah agar kartu santri tidak terpotong di tengah halaman PDF.
+        const createPage = () => {
+          const page = document.createElement('div');
+          page.style.cssText = 'width:794px;background:#ffffff;padding:25px 30px 28px;box-sizing:border-box;color:#1f2937;';
+          if (firstPage) page.appendChild(makeHeader());
+          const list = document.createElement('div');
+          list.style.cssText = 'width:100%;box-sizing:border-box;';
+          page.appendChild(list);
+          root.appendChild(page);
+          current = {page, list};
+          pages.push(page);
+          firstPage = false;
+        };
+
+        createPage();
+        for (const x of students) {
+          const card = makeCard(x);
+          current.list.appendChild(card);
+          // Ukuran aman agar satu kartu tidak melewati tinggi A4.
+          if (current.page.scrollHeight > 1050) {
+            current.list.removeChild(card);
+            createPage();
+            current.list.appendChild(card);
+          }
         }
+        current.page.appendChild(makeFooter());
+        // Jika footer membuat halaman terakhir terlalu tinggi, pindahkan footer ke halaman baru.
+        if (current.page.scrollHeight > 1100 && students.length) {
+          current.page.removeChild(current.page.lastElementChild);
+          createPage();
+          current.page.appendChild(makeFooter());
+        }
+
+        const firstLogo = pages[0].querySelector('#pdfProgressLogo');
+        if (firstLogo && !firstLogo.complete) await new Promise(resolve => { firstLogo.onload=resolve; firstLogo.onerror=resolve; });
+        // Beri browser waktu merender font/gambar sebelum screenshot.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        for (let i=0; i<pages.length; i++) {
+          const pageEl = pages[i];
+          const canvas = await html2canvas(pageEl, {
+            scale:2,
+            useCORS:true,
+            allowTaint:false,
+            backgroundColor:'#ffffff',
+            logging:false,
+            windowWidth:794
+          });
+          const pxPerMm = canvas.width / imgW;
+          const imgH = canvas.height / pxPerMm;
+          if (i > 0) pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',margin,margin,imgW,Math.min(imgH,pageH-margin*2));
+        }
+
         pdf.save(`Progress_Kehadiran_${String(kelas).replace(/[^a-z0-9]+/gi,'_')}_${monthName}_${tahun}.pdf`);
         if (window.Swal) Swal.fire({toast:true,position:'top-end',icon:'success',title:'PDF Progress Kehadiran berhasil dibuat',showConfirmButton:false,timer:2200});
       } catch (err) {
         console.error('Export Progress PDF error:', err);
         if (window.Swal) Swal.fire({icon:'error',title:'Gagal membuat PDF',text:'Silakan coba lagi. Data presensi tidak diubah.'});
       } finally {
-        exportBox.remove();
+        root.remove();
         if (btn) { btn.disabled=false; btn.innerHTML=oldHtml; }
       }
     }
