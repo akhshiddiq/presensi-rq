@@ -479,6 +479,71 @@
     @media (max-width: 767px) { .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; } }
 
     /* =========================================================
+       RIWAYAT ABSEN — TEMA KHUSUS & UKURAN LEBIH RINGKAS
+       Hanya mengubah tampilan tombol menu Riwayat.
+       Tidak mengubah HTML, JavaScript, fungsi switchTab, atau fitur lain.
+       ========================================================= */
+    @media (min-width: 901px) {
+      #navMenuBar .nav-menu-item.history-menu {
+        min-height: 48px;
+        width: 82%;
+        justify-self: center;
+        padding: 8px 10px;
+        font-size: 12px;
+        gap: .4rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: .75rem;
+        box-shadow: 0 3px 9px rgba(30,64,175,.08);
+      }
+
+      #navMenuBar .nav-menu-item.history-menu i {
+        width: 16px;
+        min-width: 16px;
+        font-size: 14px;
+      }
+
+      #navMenuBar .nav-menu-item.history-menu .riwayat-menu-text {
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      #navMenuBar .nav-menu-item.history-menu:hover {
+        background: #dbeafe;
+        color: #1e40af;
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(30,64,175,.12);
+      }
+
+      #navMenuBar .nav-menu-item.history-menu.active {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+        box-shadow: 0 5px 14px rgba(37,99,235,.22);
+      }
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu {
+      background: #172554 !important;
+      color: #93c5fd !important;
+      border-color: #1d4ed8 !important;
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu:hover {
+      background: #1e3a8a !important;
+      color: #dbeafe !important;
+      border-color: #3b82f6 !important;
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #2563eb !important;
+    }
+
+    /* =========================================================
        TAMPILAN HP — MENU ATAS DISEMBUNYIKAN
        Menu HP hanya memakai navigasi bawah dan dapat digeser horizontal.
        Tidak memengaruhi tampilan laptop/desktop.
@@ -618,49 +683,7 @@
   .global-sync-meta{font-size:6.5px;gap:4px}
   .global-sync-card strong{font-size:8px}
 }
-
-    /* =========================================================
-       TAMPILAN GARIS TABEL KALENDER PRESENSI
-       HANYA CSS — TIDAK MENGUBAH FUNGSI / RUMUS / DATA
-       ========================================================= */
-    #kalenderTableElement {
-      border-collapse: separate !important;
-      border-spacing: 0;
-    }
-
-    #kalenderTableElement thead th {
-      border-right: 1px solid #d1fae5;
-      border-bottom: 1px solid #a7f3d0;
-    }
-
-    #kalenderTableElement tbody tr {
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    #kalenderTableElement tbody td {
-      border-right: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    #kalenderTableElement tbody td:first-child {
-      border-right: 1px solid #cbd5e1;
-      border-bottom: 1px solid #dbe4ea;
-    }
-
-    #kalenderTableElement tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-  </style>
-
-  <!-- =========================================================
-       EXPORT PDF KALENDER
-       Library tambahan khusus tombol Export PDF.
-       Tidak mengubah fungsi presensi yang sudah ada.
-       ========================================================= -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+</style>
 </head>
 
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
@@ -815,7 +838,6 @@
               <div class="flex flex-wrap items-center gap-2 w-full md:w-auto mt-3 md:mt-0 justify-end">
                  <button onclick="buatLaporanWAKalender()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-2 active:scale-95"><i class="fab fa-whatsapp text-sm"></i> Bagikan WA</button>
                  <button onclick="downloadKalenderCSV()" class="bg-brand-green hover:bg-[#047857] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-2 active:scale-95"><i class="fas fa-download"></i> Download CSV</button>
-                 <button onclick="exportKalenderPDF()" id="btnExportKalenderPDF" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-float flex items-center gap-2 active:scale-95" title="Export kalender ke PDF landscape"><i class="fas fa-file-pdf"></i> Export PDF</button>
               </div>
           </div>
           <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -2176,263 +2198,6 @@
         text += `*KETERANGAN:*\n✅ = Hadir\n💊 = Sakit\nℹ️ = Izin\n🅰️ = Alfa\n\n`;
         document.getElementById('waPreviewText').innerText = text; document.getElementById('waModal').classList.remove('hidden');
     }
-
-    async function exportKalenderPDF() {
-        const table = document.getElementById('kalenderTableElement');
-        const btn = document.getElementById('btnExportKalenderPDF');
-
-        if (!table) {
-            Toast.fire({ icon: 'error', title: 'Tabel kalender tidak ditemukan' });
-            return;
-        }
-
-        if (typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-            Toast.fire({ icon: 'error', title: 'Modul PDF belum siap', text: 'Periksa koneksi internet lalu coba lagi.' });
-            return;
-        }
-
-        const selKelasEl = document.getElementById('kalenderKelasSelect');
-        const bSelect = document.getElementById('kalenderBulanSelect');
-        const tahunEl = document.getElementById('kalenderTahunSelect');
-
-        const selKelas = selKelasEl?.value || '-';
-        const monthName = bSelect?.options[bSelect.selectedIndex]?.text || '-';
-        const selTahun = tahunEl?.value || new Date().getFullYear();
-
-        const rows = table.querySelectorAll('tbody tr');
-        if (!rows.length || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) {
-            Toast.fire({ icon: 'error', title: 'Data kalender kosong' });
-            return;
-        }
-
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.classList.add('opacity-70', 'cursor-wait');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat PDF...';
-
-        let exportHost = null;
-
-        try {
-            /*
-             * Tabel dibuat ulang di area export sementara agar:
-             * - seluruh 31 kolom ikut masuk PDF,
-             * - sticky header/kolom tidak mengganggu,
-             * - scroll horizontal pada HP/laptop tidak memotong tabel.
-             * Data/fungsi kalender asli tidak disentuh.
-             */
-            exportHost = document.createElement('div');
-            exportHost.id = '__kalenderPdfExportHost';
-            exportHost.style.cssText = [
-                'position:fixed',
-                'left:-100000px',
-                'top:0',
-                'z-index:-9999',
-                'background:#ffffff',
-                'padding:18px',
-                'box-sizing:border-box',
-                'width:max-content',
-                'max-width:none',
-                'color:#1f2937',
-                'font-family:Inter,system-ui,sans-serif'
-            ].join(';');
-
-            const title = document.createElement('div');
-            title.style.cssText = 'width:100%;text-align:center;margin-bottom:10px;';
-
-            // Logo RQ Al-Khansa ditampilkan di bagian paling atas PDF.
-            // URL dibuat langsung dari logo yang dipakai pengguna di web.
-            const logo = document.createElement('img');
-            logo.src = 'https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi';
-            logo.alt = 'Logo RQ Al-Khansa';
-            logo.crossOrigin = 'anonymous';
-            logo.style.cssText = 'display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 6px auto;';
-
-            title.innerHTML = `
-                <div style="font-size:20px;font-weight:800;color:#065f46;">Kalender Presensi Kelas</div>
-                <div style="font-size:13px;font-weight:700;color:#334155;margin-top:3px;">
-                    Kelas ${escapeHtmlLaporan(selKelas)} &nbsp;•&nbsp; ${escapeHtmlLaporan(monthName)} ${escapeHtmlLaporan(selTahun)}
-                </div>
-            `;
-            title.insertBefore(logo, title.firstChild);
-
-            const legend = document.createElement('div');
-            legend.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;font-size:9px;font-weight:700;color:#475569;margin-bottom:10px;';
-            legend.innerHTML = `
-                <span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#10b981;margin-right:4px;"></b>Hadir</span>
-                <span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#3b82f6;margin-right:4px;"></b>Sakit</span>
-                <span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f59e0b;margin-right:4px;"></b>Izin</span>
-                <span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;margin-right:4px;"></b>Alfa</span>
-                <span><b style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e5e7eb;border:1px solid #cbd5e1;margin-right:4px;"></b>Kosong</span>
-            `;
-
-            const tableClone = table.cloneNode(true);
-            tableClone.removeAttribute('id');
-            tableClone.style.cssText = [
-                'width:max-content',
-                'min-width:0',
-                'max-width:none',
-                'border-collapse:separate',
-                'border-spacing:0',
-                'table-layout:auto',
-                'font-size:10px',
-                'white-space:nowrap',
-                'background:#ffffff'
-            ].join(';');
-
-            tableClone.querySelectorAll('*').forEach(el => {
-                if (el.style) {
-                    el.style.position = 'static';
-                    el.style.left = 'auto';
-                    el.style.top = 'auto';
-                    el.style.zIndex = 'auto';
-                    el.style.maxHeight = 'none';
-                    el.style.overflow = 'visible';
-                    el.style.boxShadow = 'none';
-                }
-            });
-
-            tableClone.querySelectorAll('thead').forEach(el => {
-                el.style.position = 'static';
-                el.style.background = '#ecfdf5';
-            });
-
-            tableClone.querySelectorAll('th').forEach(th => {
-                th.style.position = 'static';
-                th.style.padding = '6px 5px';
-                th.style.fontSize = '10px';
-                th.style.height = '38px';
-                th.style.boxSizing = 'border-box';
-                th.style.background = '#ecfdf5';
-                th.style.borderRight = '1px solid #d1fae5';
-                th.style.borderBottom = '1px solid #a7f3d0';
-            });
-
-            tableClone.querySelectorAll('th:first-child, td:first-child').forEach(cell => {
-                cell.style.position = 'static';
-                cell.style.width = '220px';
-                cell.style.minWidth = '220px';
-                cell.style.maxWidth = '220px';
-                cell.style.boxSizing = 'border-box';
-                cell.style.background = '#ffffff';
-                cell.style.borderRight = '1px solid #cbd5e1';
-                cell.style.borderBottom = '1px solid #dbe4ea';
-            });
-
-            tableClone.querySelectorAll('tbody td').forEach(td => {
-                td.style.padding = '5px 4px';
-                td.style.height = '28px';
-                td.style.boxSizing = 'border-box';
-                td.style.borderRight = '1px solid #e5e7eb';
-                td.style.borderBottom = '1px solid #e2e8f0';
-                td.style.background = td.classList.contains('bg-gray-50') ? '#f8fafc' : '#ffffff';
-            });
-
-            tableClone.querySelectorAll('tbody tr:last-child td').forEach(td => {
-                td.style.borderBottom = '1px solid #e2e8f0';
-            });
-
-            exportHost.appendChild(title);
-            exportHost.appendChild(legend);
-            exportHost.appendChild(tableClone);
-            document.body.appendChild(exportHost);
-
-            // Tunggu logo selesai dimuat agar ikut tertangkap html2canvas.
-            await new Promise(resolve => {
-                if (logo.complete && logo.naturalWidth > 0) return resolve();
-                logo.onload = () => resolve();
-                logo.onerror = () => resolve();
-                setTimeout(resolve, 3000);
-            });
-
-            // Pastikan ukuran layout sudah terbentuk sebelum dirender.
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-            const canvas = await html2canvas(exportHost, {
-                backgroundColor: '#ffffff',
-                scale: Math.min(2, Math.max(1.25, window.devicePixelRatio || 1)),
-                useCORS: true,
-                logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: Math.max(document.documentElement.clientWidth, exportHost.scrollWidth),
-                windowHeight: Math.max(document.documentElement.clientHeight, exportHost.scrollHeight)
-            });
-
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4',
-                compress: true
-            });
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 7;
-            const contentWidth = pageWidth - (margin * 2);
-            const contentHeight = pageHeight - (margin * 2);
-
-            const renderedHeight = (canvas.height * contentWidth) / canvas.width;
-            const pixelsPerPage = Math.max(1, Math.floor((contentHeight / renderedHeight) * canvas.height));
-
-            let sourceY = 0;
-            let pageIndex = 0;
-
-            while (sourceY < canvas.height) {
-                const sliceHeight = Math.min(pixelsPerPage, canvas.height - sourceY);
-                const sliceCanvas = document.createElement('canvas');
-                sliceCanvas.width = canvas.width;
-                sliceCanvas.height = sliceHeight;
-
-                const ctx = sliceCanvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-                ctx.drawImage(
-                    canvas,
-                    0, sourceY, canvas.width, sliceHeight,
-                    0, 0, canvas.width, sliceHeight
-                );
-
-                const sliceRenderedHeight = (sliceHeight * contentWidth) / canvas.width;
-
-                if (pageIndex > 0) pdf.addPage();
-                pdf.addImage(
-                    sliceCanvas.toDataURL('image/jpeg', 0.94),
-                    'JPEG',
-                    margin,
-                    margin,
-                    contentWidth,
-                    sliceRenderedHeight,
-                    undefined,
-                    'FAST'
-                );
-
-                sourceY += sliceHeight;
-                pageIndex++;
-            }
-
-            const safeClass = String(selKelas).replace(/[^\w\-]+/g, '_');
-            const safeMonth = String(monthName).replace(/[^\w\-]+/g, '_');
-            const filename = `Kalender_Presensi_${safeClass}_${safeMonth}_${selTahun}.pdf`;
-
-            pdf.save(filename);
-            Toast.fire({ icon: 'success', title: 'PDF berhasil dibuat!' });
-
-        } catch (error) {
-            console.error('[Kalender PDF] Gagal membuat PDF:', error);
-            Toast.fire({
-                icon: 'error',
-                title: 'Export PDF gagal',
-                text: 'Silakan coba lagi.'
-            });
-        } finally {
-            if (exportHost && exportHost.parentNode) exportHost.parentNode.removeChild(exportHost);
-            btn.disabled = false;
-            btn.classList.remove('opacity-70', 'cursor-wait');
-            btn.innerHTML = originalText;
-        }
-    }
-
     function downloadKalenderCSV() {
         const table = document.getElementById('kalenderTableElement'); if (!table) return;
         let rows = table.querySelectorAll('tr'); if (rows.length <= 1) { Toast.fire({ icon: 'error', title: 'Data kalender kosong' }); return; }
