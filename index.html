@@ -618,7 +618,40 @@
   .global-sync-meta{font-size:6.5px;gap:4px}
   .global-sync-card strong{font-size:8px}
 }
-</style>
+
+    /* =========================================================
+       TAMPILAN GARIS TABEL KALENDER PRESENSI
+       HANYA CSS — TIDAK MENGUBAH FUNGSI / RUMUS / DATA
+       ========================================================= */
+    #kalenderTableElement {
+      border-collapse: separate !important;
+      border-spacing: 0;
+    }
+
+    #kalenderTableElement thead th {
+      border-right: 1px solid #d1fae5;
+      border-bottom: 1px solid #a7f3d0;
+    }
+
+    #kalenderTableElement tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    #kalenderTableElement tbody td {
+      border-right: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    #kalenderTableElement tbody td:first-child {
+      border-right: 1px solid #cbd5e1;
+      border-bottom: 1px solid #dbe4ea;
+    }
+
+    #kalenderTableElement tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+  </style>
 </head>
 
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-green selection:text-white pb-24 md:pb-8">
