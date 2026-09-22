@@ -479,6 +479,71 @@
     @media (max-width: 767px) { .nav-menu-large .nav-menu-item { min-height: 58px; font-size: 13px; padding: 13px 10px; } .nav-menu-large .history-menu .riwayat-menu-text { font-size: 17px; } }
 
     /* =========================================================
+       RIWAYAT ABSEN — TEMA KHUSUS & UKURAN LEBIH RINGKAS
+       Hanya mengubah tampilan tombol menu Riwayat.
+       Tidak mengubah HTML, JavaScript, fungsi switchTab, atau fitur lain.
+       ========================================================= */
+    @media (min-width: 901px) {
+      #navMenuBar .nav-menu-item.history-menu {
+        min-height: 48px;
+        width: 82%;
+        justify-self: center;
+        padding: 8px 10px;
+        font-size: 12px;
+        gap: .4rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: .75rem;
+        box-shadow: 0 3px 9px rgba(30,64,175,.08);
+      }
+
+      #navMenuBar .nav-menu-item.history-menu i {
+        width: 16px;
+        min-width: 16px;
+        font-size: 14px;
+      }
+
+      #navMenuBar .nav-menu-item.history-menu .riwayat-menu-text {
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      #navMenuBar .nav-menu-item.history-menu:hover {
+        background: #dbeafe;
+        color: #1e40af;
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(30,64,175,.12);
+      }
+
+      #navMenuBar .nav-menu-item.history-menu.active {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+        box-shadow: 0 5px 14px rgba(37,99,235,.22);
+      }
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu {
+      background: #172554 !important;
+      color: #93c5fd !important;
+      border-color: #1d4ed8 !important;
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu:hover {
+      background: #1e3a8a !important;
+      color: #dbeafe !important;
+      border-color: #3b82f6 !important;
+    }
+
+    body.dark-mode #navMenuBar .nav-menu-item.history-menu.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #2563eb !important;
+    }
+
+    /* =========================================================
        TAMPILAN HP — MENU ATAS DISEMBUNYIKAN
        Menu HP hanya memakai navigasi bawah dan dapat digeser horizontal.
        Tidak memengaruhi tampilan laptop/desktop.
