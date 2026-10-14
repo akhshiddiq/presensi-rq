@@ -1021,7 +1021,7 @@
                <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-sm bg-white py-2.5"><option value="sfx">⚡ Suara Laser (Notifikasi Presensi)</option><option value="off">🔇 Mute / Tanpa Suara</option></select>
                <div id="sfxOptionsContainer" class="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-sm"><span class="font-bold text-gray-600">Suara Presensi:</span><span class="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold bg-white">⚡ Laser Cepat</span></div>
             </div>
-            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Menggunakan model **Gemini 2.5 Flash TTS** dengan ucapan *"Barakallah fiikum"* (Suara Ikhwan Ramah).</p></div>
+            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Pengaturan API Key tersimpan di browser/perangkat ini saja, tidak otomatis berpindah ke HP atau laptop lain. Untuk penggunaan lintas perangkat, konfigurasi harus tersedia di masing-masing perangkat atau melalui backend yang aman.</p></div>
             <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Google Apps Script</label><input type="text" id="inputUrlSheet" class="modern-input font-mono text-xs py-2.5" placeholder="Tempel URL Google Apps Script /exec di sini"></div>
             <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="text" id="inputUrlLogo" class="modern-input text-xs py-2.5" placeholder="https://lh3.googleusercontent.com/d/... atau https://..."></div>
         </div>
@@ -1063,6 +1063,167 @@
     let html5QrCode = null;
     let currentFacingMode = 'environment'; // 'environment' = kamera belakang, 'user' = depan
     
+    // =========================================================
+    // PENYIMPANAN PRESENSI LOKAL → GOOGLE SHEET
+    // IndexedDB adalah penyimpanan lokal persisten; Google Sheet adalah
+    // tujuan sinkronisasi terpusat. Firebase tidak dipakai untuk riwayat presensi.
+    // =========================================================
+    const ATTENDANCE_DB_NAME = 'rq_presensi_local_db_v1';
+    const ATTENDANCE_DB_VERSION = 1;
+    const ATTENDANCE_STORE_NAME = 'attendance';
+    let attendanceDbPromise = null;
+    let localAttendanceSyncRunning = false;
+
+    function openAttendanceDb() {
+        if (attendanceDbPromise) return attendanceDbPromise;
+        attendanceDbPromise = new Promise((resolve, reject) => {
+            if (!('indexedDB' in window)) {
+                reject(new Error('Browser ini tidak mendukung IndexedDB.'));
+                return;
+            }
+            const request = indexedDB.open(ATTENDANCE_DB_NAME, ATTENDANCE_DB_VERSION);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(ATTENDANCE_STORE_NAME)) {
+                    const store = db.createObjectStore(ATTENDANCE_STORE_NAME, { keyPath: 'key' });
+                    store.createIndex('sheetSync', 'sheetSync', { unique: false });
+                    store.createIndex('createdAt', 'createdAt', { unique: false });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error('Gagal membuka penyimpanan lokal.'));
+            request.onblocked = () => reject(new Error('Penyimpanan lokal sedang diblokir tab lain. Tutup tab website lain lalu coba lagi.'));
+        }).catch(error => {
+            attendanceDbPromise = null;
+            throw error;
+        });
+        return attendanceDbPromise;
+    }
+
+    async function localAttendancePut(record) {
+        if (!record || !record.key) throw new Error('ID presensi lokal tidak valid.');
+        const db = await openAttendanceDb();
+        const normalized = Object.assign({}, record, {
+            key: String(record.key),
+            localSavedAt: Number(record.localSavedAt || Date.now()),
+            updatedAtLocal: Date.now()
+        });
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ATTENDANCE_STORE_NAME, 'readwrite');
+            tx.objectStore(ATTENDANCE_STORE_NAME).put(normalized);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error('Gagal menyimpan presensi ke lokal.'));
+            tx.onabort = () => reject(tx.error || new Error('Transaksi penyimpanan lokal dibatalkan.'));
+        });
+        return normalized;
+    }
+
+    async function localAttendanceGetAll() {
+        const db = await openAttendanceDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(ATTENDANCE_STORE_NAME, 'readonly');
+            const request = tx.objectStore(ATTENDANCE_STORE_NAME).getAll();
+            request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+            request.onerror = () => reject(request.error || new Error('Gagal membaca riwayat lokal.'));
+        });
+    }
+
+    async function localAttendanceDelete(key) {
+        if (!key) return;
+        // Tombstone lokal mencegah data yang telah dihapus di Sheet muncul kembali
+        // dari cache lokal saat halaman dibuka ulang.
+        await localAttendancePut({ key: String(key), deleted: true, sheetSync: 'deleted', localSync: 'deleted', updatedAtLocal: Date.now() });
+    }
+
+    async function mergeLocalAndSheetHistory(serverHistory, serverConfirmed = true) {
+        const merged = new Map();
+        let localItems = [];
+        try { localItems = await localAttendanceGetAll(); }
+        catch (error) { console.error('[Penyimpanan Lokal] Gagal memuat riwayat IndexedDB:', error); }
+        const localDeletedKeys = new Set(localItems.filter(item => item && item.deleted).map(item => String(item.key)));
+        (Array.isArray(serverHistory) ? serverHistory : []).forEach(item => {
+            const key = String(item?.key || '');
+            if (item && key && !deletedKeys.has(key) && !localDeletedKeys.has(key)) {
+                merged.set(key, Object.assign({}, item, {
+                    localSync: 'not-needed',
+                    sheetSync: String(item.sheetSync || 'synced')
+                }));
+            }
+        });
+        try {
+            localItems.forEach(item => {
+                const key = String(item?.key || '');
+                if (!key || item.deleted || deletedKeys.has(key)) return;
+                const serverItem = merged.get(key);
+                // Server data wins for confirmed rows. Local pending/failed rows are preserved.
+                if (!serverConfirmed || String(item.sheetSync || '').toLowerCase() !== 'synced') {
+                    merged.set(key, Object.assign({}, serverItem || {}, item, {
+                        localSync: 'saved',
+                        sheetSync: String(item.sheetSync || 'pending')
+                    }));
+                }
+            });
+        } catch (error) {
+            console.error('[Penyimpanan Lokal] Gagal menggabungkan riwayat IndexedDB:', error);
+            if (!merged.size) throw error;
+        }
+        pendingHistoryWrites.forEach((item, key) => {
+            if (!deletedKeys.has(String(key))) merged.set(String(key), item);
+        });
+        presensiHistory = Array.from(merged.values());
+        renderRiwayatTable();
+    }
+
+    async function retryPendingLocalAttendance() {
+        if (localAttendanceSyncRunning) return { skipped: true };
+        localAttendanceSyncRunning = true;
+        let sent = 0, failed = 0;
+        try {
+            const items = await localAttendanceGetAll();
+            const pending = items.filter(item => ['pending', 'failed', 'sending'].includes(String(item.sheetSync || '').toLowerCase()));
+            for (const item of pending) {
+                if (!item || !item.key || deletedKeys.has(String(item.key))) continue;
+                const sending = Object.assign({}, item, { sheetSync: 'sending', sync: 'sending', lastSyncError: '' });
+                await localAttendancePut(sending);
+                const idx = presensiHistory.findIndex(x => String(x.key) === String(item.key));
+                if (idx >= 0) presensiHistory[idx] = sending;
+                renderRiwayatTable();
+                try {
+                    const timeObj = { waktu: item.waktu || '', hari: item.hari || '' };
+                    const result = await saveAttendanceDirectToSheet(item.idSantri, item.namaSantri, item.kelas, item.guru, item.status, timeObj, item.key);
+                    const realKey = String(result?.data?.key || item.key);
+                    const completed = Object.assign({}, item, { key: realKey, sync: 'synced', localSync: 'saved', sheetSync: 'synced', syncedAt: Date.now(), lastSyncError: '' });
+                    if (realKey !== String(item.key)) await localAttendanceDelete(item.key);
+                    await localAttendancePut(completed);
+                    const oldIndex = presensiHistory.findIndex(x => String(x.key) === String(item.key));
+                    if (oldIndex >= 0) presensiHistory.splice(oldIndex, 1);
+                    const newIndex = presensiHistory.findIndex(x => String(x.key) === realKey);
+                    if (newIndex >= 0) presensiHistory[newIndex] = completed; else presensiHistory.unshift(completed);
+                    sent++;
+                } catch (error) {
+                    if (error?.duplicate || error?.code === 'ATTENDANCE_DUPLICATE') {
+                        // Jangan menghapus catatan lokal otomatis pada respons duplikat;
+                        // perlu pemeriksaan manusia agar tidak ada data hilang.
+                        const duplicate = Object.assign({}, item, { sheetSync: 'failed', sync: 'failed', lastSyncError: 'Ditolak server sebagai duplikat; perlu pemeriksaan.' });
+                        await localAttendancePut(duplicate);
+                        const idx2 = presensiHistory.findIndex(x => String(x.key) === String(item.key));
+                        if (idx2 >= 0) presensiHistory[idx2] = duplicate;
+                    } else {
+                        const failedRecord = Object.assign({}, item, { sheetSync: 'failed', sync: 'failed', lastSyncError: String(error?.message || error || 'Sinkronisasi gagal'), lastAttemptAt: Date.now() });
+                        await localAttendancePut(failedRecord);
+                        const idx2 = presensiHistory.findIndex(x => String(x.key) === String(item.key));
+                        if (idx2 >= 0) presensiHistory[idx2] = failedRecord;
+                    }
+                    failed++;
+                }
+                renderRiwayatTable();
+            }
+            return { sent, failed };
+        } finally {
+            localAttendanceSyncRunning = false;
+        }
+    }
+
     let presensiHistory = []; 
     let acuanKehadiranData = {};
     let deletedKeys = new Set();
@@ -1451,7 +1612,7 @@
        if(!santri) { Toast.fire({ icon: 'error', title: 'QR tidak dikenal', text: `ID ${qrId} tidak ada di data santri.` }); return; }
        if (checkDuplicateAttendance(santri, true)) return;
        const cTime = getCustomDateForSubmission(true);
-       console.log('[Presensi] Scan valid → mulai simpan Firebase:', santri.nama, santri.id);
+       console.log('[Presensi] Scan valid → simpan lokal lalu sinkron ke Google Sheet:', santri.nama, santri.id);
        postDataToGoogle(santri.id, santri.nama, santri.kelas, santri.guru, "Hadir", cTime);
     }
     function makeScriptUrl(extraParams = {}) {
@@ -1461,12 +1622,12 @@
     function fetchGoogleJsonp(onSuccess, onError, extraParams = {}) {
         if (!SCRIPT_URL || !SCRIPT_URL.includes('script.google.com/macros/s/')) { if (typeof onError === 'function') onError(new Error('URL Google Apps Script tidak valid.')); return; }
         const callbackName = '__presensiJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-        const script = document.createElement('script'); let finished = false;
-        const cleanup = () => { finished = true; try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); };
+        const script = document.createElement('script'); let finished = false; let timeoutId = null;
+        const cleanup = () => { finished = true; if (timeoutId) clearTimeout(timeoutId); try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); };
         window[callbackName] = function(data) { if (finished) return; cleanup(); if (typeof onSuccess === 'function') onSuccess(data); };
         script.onerror = function() { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Google Apps Script tidak dapat diakses.')); };
         script.src = makeScriptUrl(Object.assign({}, extraParams, { callback: callbackName, _: Date.now() })); script.async = true; document.head.appendChild(script);
-        setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 15000);
+        timeoutId = setTimeout(() => { if (finished) return; cleanup(); if (typeof onError === 'function') onError(new Error('Waktu koneksi Google Apps Script habis.')); }, 15000);
     }
     // =========================================================
     // MONITOR PROSES READ / WRITE GLOBAL
@@ -1526,7 +1687,7 @@
 
     // Semua WRITE ke Google Sheet dijalankan satu per satu.
     // Ini mencegah beberapa request saveAttendance masuk bersamaan dan saling
-    // menunggu ScriptLock sampai timeout. Firebase tetap boleh menyimpan cepat.
+    // menunggu ScriptLock sampai timeout. Presensi diamankan di IndexedDB terlebih dahulu.
     let googleSheetWriteQueue = Promise.resolve();
 
     function requestGoogleJsonp(payload) {
@@ -1655,16 +1816,14 @@
     }
 
     function createPendingSheetAttendance(idSantri, namaSantri, kelas, guru, status, timeObj) {
-        const unikey = 'temp_' + Math.random().toString(36).substr(2, 9);
+        const unikey = 'presensi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
         const nowTime = Date.now();
         const tempRecord = {
             key: unikey,
             idSantri, namaSantri, kelas, guru,
-            waktu: timeObj.waktu, hari: timeObj.hari, status,
-            sync: 'saving-sheet',
-            firebaseSync: 'not-used',
-            sheetSync: 'pending',
-            createdAt: nowTime
+            waktu: timeObj?.waktu || '', hari: timeObj?.hari || '', status,
+            sync: 'local-saving', localSync: 'saving', sheetSync: 'pending',
+            createdAt: nowTime, localSavedAt: nowTime
         };
         newlyAddedKeysMap.set(unikey, nowTime);
         if (!Array.isArray(presensiHistory)) presensiHistory = [];
@@ -1674,49 +1833,77 @@
         return tempRecord;
     }
 
-    function finishPendingSheetAttendance(tempKey, result) {
+    async function finishPendingSheetAttendance(tempKey, result) {
         const idx = presensiHistory.findIndex(x => String(x.key) === String(tempKey));
         const realKey = String(result?.data?.key || tempKey);
-        if (idx >= 0) {
-            const current = presensiHistory[idx];
-            presensiHistory[idx] = Object.assign({}, current, {
-                key: realKey,
-                sync: 'synced',
-                firebaseSync: 'not-used',
-                sheetSync: 'synced'
-            });
-        }
+        const current = idx >= 0 ? presensiHistory[idx] : (pendingHistoryWrites.get(String(tempKey)) || {});
+        const completed = Object.assign({}, current, {
+            key: realKey, sync: 'synced', localSync: 'saved', sheetSync: 'synced',
+            syncedAt: Date.now(), lastSyncError: ''
+        });
+        if (realKey !== String(tempKey)) await localAttendanceDelete(tempKey);
+        await localAttendancePut(completed);
+        if (idx >= 0) presensiHistory.splice(idx, 1);
+        const existingIdx = presensiHistory.findIndex(x => String(x.key) === realKey);
+        if (existingIdx >= 0) presensiHistory[existingIdx] = completed; else presensiHistory.unshift(completed);
         pendingHistoryWrites.delete(String(tempKey));
         newlyAddedKeysMap.delete(String(tempKey));
         renderRiwayatTable();
         return realKey;
     }
 
-    function failPendingSheetAttendance(tempKey) {
+    async function failPendingSheetAttendance(tempKey, error) {
+        const idx = presensiHistory.findIndex(x => String(x.key) === String(tempKey));
+        const current = idx >= 0 ? presensiHistory[idx] : (pendingHistoryWrites.get(String(tempKey)) || {});
+        const failedRecord = Object.assign({}, current, {
+            sync: 'failed', localSync: 'saved', sheetSync: 'failed',
+            lastSyncError: String(error?.message || error || 'Sinkronisasi gagal'),
+            lastAttemptAt: Date.now()
+        });
+        // Jangan menghapus presensi yang sudah tersimpan lokal hanya karena jaringan gagal.
+        await localAttendancePut(failedRecord);
+        if (idx >= 0) presensiHistory[idx] = failedRecord; else presensiHistory.unshift(failedRecord);
         pendingHistoryWrites.delete(String(tempKey));
         newlyAddedKeysMap.delete(String(tempKey));
-        presensiHistory = presensiHistory.filter(x => String(x.key) !== String(tempKey));
         renderRiwayatTable();
     }
 
     function postDataToGoogleAsync(idSantri, namaSantri, kelas, guru, status, timeObj) {
         const santri = masterDataSantri.find(s => String(s.id).trim() === String(idSantri).trim()) || {id:idSantri,nama:namaSantri,kelas,guru};
         if (checkDuplicateAttendance(santri, false, false)) return Promise.resolve({ status:'duplicate', duplicate:true, blocked:true });
-
-        const temp = createPendingSheetAttendance(idSantri, namaSantri, kelas, guru, status, timeObj);
         attendanceWriteQueue = attendanceWriteQueue.catch(() => {}).then(async () => {
+            let temp = null;
             try {
+                temp = createPendingSheetAttendance(idSantri, namaSantri, kelas, guru, status, timeObj);
+                const locallySaved = Object.assign({}, temp, { sync: 'local-saved', localSync: 'saved', sheetSync: 'pending' });
+                await localAttendancePut(locallySaved);
+                const localIndex = presensiHistory.findIndex(x => String(x.key) === String(temp.key));
+                if (localIndex >= 0) presensiHistory[localIndex] = locallySaved;
+                pendingHistoryWrites.set(String(temp.key), locallySaved);
+                renderRiwayatTable();
+                const sending = Object.assign({}, locallySaved, { sync: 'sending', sheetSync: 'sending' });
+                await localAttendancePut(sending);
                 const result = await saveAttendanceDirectToSheet(idSantri, namaSantri, kelas, guru, status, timeObj, temp.key);
-                finishPendingSheetAttendance(temp.key, result);
+                await finishPendingSheetAttendance(temp.key, result);
                 playAudioFeedback('ok', { nama: namaSantri });
                 return { status:'sent-direct', data: result.data || { key: temp.key } };
             } catch (err) {
-                failPendingSheetAttendance(temp.key);
                 if (err?.duplicate || err?.code === 'ATTENDANCE_DUPLICATE') {
+                    if (temp) {
+                        try { await localAttendanceDelete(temp.key); } catch(e) { console.warn('[IndexedDB] Gagal membersihkan presensi duplikat:', e); }
+                        presensiHistory = presensiHistory.filter(x => String(x.key) !== String(temp.key));
+                        pendingHistoryWrites.delete(String(temp.key));
+                        newlyAddedKeysMap.delete(String(temp.key));
+                        renderRiwayatTable();
+                    }
                     if (!window.__bulkAbsenState) showDuplicateAttendancePopup(santri, err.existing || {}, false);
                     return { status:'duplicate', duplicate:true, blocked:true };
                 }
-                return { error:true, message:String(err?.message || err || 'Google Sheet gagal menyimpan.') };
+                if (temp) {
+                    try { await failPendingSheetAttendance(temp.key, err); }
+                    catch(localErr) { console.error('[IndexedDB] Presensi lokal gagal dipastikan tersimpan:', localErr); }
+                }
+                return { error:true, locallySaved: !!temp, message:String(err?.message || err || 'Google Sheet gagal menyimpan.') };
             }
         });
         return attendanceWriteQueue;
@@ -1725,25 +1912,42 @@
     function postDataToGoogle(idSantri, namaSantri, kelas, guru, status, timeObj) {
         const santri = masterDataSantri.find(s => String(s.id).trim() === String(idSantri).trim()) || {id:idSantri,nama:namaSantri,kelas,guru};
         if (checkDuplicateAttendance(santri, true, false)) return Promise.resolve({ status:'duplicate', duplicate:true, blocked:true });
-
-        const temp = createPendingSheetAttendance(idSantri, namaSantri, kelas, guru, status, timeObj);
         attendanceWriteQueue = attendanceWriteQueue.catch(() => {}).then(async () => {
+            let temp = null;
             try {
+                temp = createPendingSheetAttendance(idSantri, namaSantri, kelas, guru, status, timeObj);
+                const locallySaved = Object.assign({}, temp, { sync: 'local-saved', localSync: 'saved', sheetSync: 'pending' });
+                await localAttendancePut(locallySaved);
+                const localIndex = presensiHistory.findIndex(x => String(x.key) === String(temp.key));
+                if (localIndex >= 0) presensiHistory[localIndex] = locallySaved;
+                pendingHistoryWrites.set(String(temp.key), locallySaved);
+                renderRiwayatTable();
+                const sending = Object.assign({}, locallySaved, { sync: 'sending', sheetSync: 'sending' });
+                await localAttendancePut(sending);
                 const result = await saveAttendanceDirectToSheet(idSantri, namaSantri, kelas, guru, status, timeObj, temp.key);
-                finishPendingSheetAttendance(temp.key, result);
+                await finishPendingSheetAttendance(temp.key, result);
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
-                Toast.fire({ icon:'success', title:`${namaSantri} tersimpan di Google Sheet`, text:'Presensi berhasil disimpan.' });
+                Toast.fire({ icon:'success', title:`${namaSantri} tersimpan di Google Sheet`, text:'Data tersimpan lokal dan sudah diverifikasi di Google Sheet.' });
                 playAudioFeedback('ok', { nama: namaSantri });
                 return result;
             } catch (err) {
-                failPendingSheetAttendance(temp.key);
                 if (typeof Toast !== 'undefined' && typeof Toast.close === 'function') Toast.close();
                 if (err?.duplicate || err?.code === 'ATTENDANCE_DUPLICATE') {
+                    if (temp) {
+                        try { await localAttendanceDelete(temp.key); } catch(e) { console.warn('[IndexedDB] Gagal membersihkan presensi duplikat:', e); }
+                        presensiHistory = presensiHistory.filter(x => String(x.key) !== String(temp.key));
+                        pendingHistoryWrites.delete(String(temp.key)); newlyAddedKeysMap.delete(String(temp.key)); renderRiwayatTable();
+                    }
                     showDuplicateAttendancePopup(santri, err.existing || {}, true);
                     return { status:'duplicate', duplicate:true, blocked:true };
                 }
-                Toast.fire({ icon:'error', title:'Google Sheet gagal menyimpan', text:String(err?.message || err || 'Presensi belum tersimpan.') });
-                return { error:true, message:String(err?.message || err || 'Google Sheet gagal menyimpan.') };
+                let localSafe = false;
+                if (temp) {
+                    try { await failPendingSheetAttendance(temp.key, err); localSafe = true; }
+                    catch(localErr) { console.error('[IndexedDB] Penyimpanan lokal gagal:', localErr); }
+                }
+                Toast.fire({ icon: localSafe ? 'warning' : 'error', title: localSafe ? 'Tersimpan Lokal — Menunggu Sinkronisasi' : 'Gagal Menyimpan', text: localSafe ? 'Data aman di perangkat, tetapi belum terkonfirmasi di Google Sheet. Tekan Sinkron saat koneksi tersedia.' : String(err?.message || err || 'Penyimpanan lokal gagal.') });
+                return { error:true, locallySaved: localSafe, message:String(err?.message || err || 'Google Sheet gagal menyimpan.') };
             }
         });
         return attendanceWriteQueue;
@@ -1795,6 +1999,7 @@
                 historyRevision++;
                 pendingHistoryWrites.delete(deletedKey);
                 deletedKeys.add(deletedKey);
+                await localAttendanceDelete(deletedKey);
                 presensiHistory = presensiHistory.filter(item => String(item.key) !== deletedKey);
                 renderRiwayatTable();
                 Toast.fire({
@@ -1825,10 +2030,20 @@
             const st = String(item.status || '').toLowerCase();
             let attendanceBadge = st.includes('hadir') && !st.includes('tidak') ? '<span class="riwayat-status bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">✓ Hadir</span>' : st.includes('sakit') ? '<span class="riwayat-status bg-blue-100 text-blue-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">💊 Sakit</span>' : st.includes('izin') ? '<span class="riwayat-status bg-amber-100 text-amber-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">ℹ Izin</span>' : '<span class="riwayat-status bg-red-100 text-red-700 px-3 py-1 rounded-lg inline-flex items-center gap-1.5">✕ Alfa</span>';
             const sheetState = String(item.sheetSync || (item.sync === 'synced' ? 'synced' : 'pending')).toLowerCase();
-            const sheetBadge = sheetState === 'synced'
-                ? '<span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-check-circle"></i> Tersimpan di Google Sheet</span>'
-                : '<span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-spinner fa-spin"></i> Menyimpan ke Google Sheet...</span>';
-            const badge = `<div class="flex flex-col items-start gap-1.5">${attendanceBadge}<div class="flex flex-col items-start gap-1 text-[11px] leading-tight">${sheetBadge}</div></div>`;
+            const localBadge = item.localSync === 'saved' || item.localSavedAt
+                ? '<span class="inline-flex items-center gap-1.5 text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-hdd"></i> Tersimpan Lokal</span>'
+                : '';
+            let sheetBadge = '';
+            if (sheetState === 'synced') {
+                sheetBadge = '<span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-check-circle"></i> Berhasil Tersinkron ke Google Sheet</span>';
+            } else if (sheetState === 'sending' || sheetState === 'saving-sheet') {
+                sheetBadge = '<span class="inline-flex items-center gap-1.5 text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-spinner fa-spin"></i> Sedang Mengirim ke Google Sheet</span>';
+            } else if (sheetState === 'failed') {
+                sheetBadge = '<span class="inline-flex items-center gap-1.5 text-red-700 bg-red-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-exclamation-circle"></i> Gagal Sinkron — Data Tetap Lokal</span>';
+            } else {
+                sheetBadge = '<span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-clock"></i> Menunggu Sinkronisasi</span>';
+            }
+            const badge = `<div class="flex flex-col items-start gap-1.5">${attendanceBadge}<div class="flex flex-col items-start gap-1 text-[11px] leading-tight">${localBadge}${sheetBadge}</div></div>`;
             
             const deleteBtn = `<button onclick="hapusData('${item.key}', event)" class="w-9 h-9 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs font-bold shadow-sm inline-flex items-center justify-center" title="Hapus Permanen"><i class="fas fa-trash-alt"></i></button>`;
             
@@ -2983,13 +3198,18 @@
     }
     async function manualSync() {
         const btnIcon = document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.add('fa-spin');
-        Toast.fire({ icon:'info', title:'Menyegarkan Firebase & sinkronisasi...' });
+        Toast.fire({ icon:'info', title:'Memeriksa data lokal dan Google Sheet...' });
         try {
-          await window.firebaseReadyPromise;
-          await flushPendingSheetSync();
-          if(typeof window.firebaseBackfillMissingFromSheet==='function') await window.firebaseBackfillMissingFromSheet();
-          await fetchHistoryFromSheets(true);
-        } catch(e) { await fetchHistoryFromSheets(true); }
+            const localResult = await retryPendingLocalAttendance();
+            await fetchHistoryFromSheets(false);
+            if (localResult.failed) Toast.fire({ icon:'warning', title:'Sebagian Data Menunggu Sinkronisasi', text:`Berhasil dikirim: ${localResult.sent}. Belum berhasil: ${localResult.failed}. Data yang tertunda tetap tersimpan lokal.` });
+            else Toast.fire({ icon:'success', title:'Sinkronisasi Selesai', text:`Data berhasil dikirim: ${localResult.sent}.` });
+        } catch(e) {
+            await fetchHistoryFromSheets(false);
+            Toast.fire({ icon:'warning', title:'Sinkronisasi Belum Selesai', text:'Data lokal tetap dipertahankan. Periksa koneksi dan coba lagi.' });
+        } finally {
+            if(btnIcon) btnIcon.classList.remove('fa-spin');
+        }
     }
     let attendanceWriteQueue = Promise.resolve();
     let sheetSyncRetryTimer = null;
@@ -3005,29 +3225,18 @@
         historyRevision++;
         return historyRevision;
     }
-    function replaceHistoryFromSheet(serverHistory) {
-        // Google Sheet adalah sumber kebenaran untuk tampilan Riwayat Absen.
-        // Jangan mempertahankan data lama yang sudah tidak ada di Sheet.
-        const incoming = Array.isArray(serverHistory) ? serverHistory : [];
-        const byKey = new Map();
-        incoming.forEach(item => {
-            if (!item || !item.key) return;
-            const k = String(item.key);
-            if (!deletedKeys.has(k)) byKey.set(k, item);
-        });
-        // Presensi yang baru saja ditulis ke Firebase tetapi belum sempat masuk Sheet
-        // tetap ditampilkan sementara agar tidak terasa hilang.
-        pendingHistoryWrites.forEach((item, k) => {
-            if (!deletedKeys.has(String(k))) byKey.set(String(k), item);
-        });
-        presensiHistory = Array.from(byKey.values());
-        renderRiwayatTable();
+    async function replaceHistoryFromSheet(serverHistory) {
+        await mergeLocalAndSheetHistory(serverHistory);
     }
     async function fetchHistoryFromSheets(isManual = false) {
-        // Nama fungsi dipertahankan agar seluruh fitur lama tetap memanggil fungsi yang sama.
-        // KHUSUS RIWAYAT ABSEN: Google Sheet menjadi sumber READ utama.
-        // Firebase tetap dipakai untuk WRITE cepat dan sinkronisasi, tetapi tidak lagi
-        // dibaca realtime untuk menampilkan seluruh riwayat. Ini menghemat Firestore reads.
+        // Riwayat langsung menampilkan salinan lokal lebih dulu agar loading jaringan
+        // tidak membuat pengguna menebak apakah presensi sudah tercatat.
+        try {
+            const localItems = await localAttendanceGetAll();
+            if (localItems.length) await mergeLocalAndSheetHistory([], false);
+        } catch (localError) {
+            console.error('[IndexedDB] Gagal membaca riwayat lokal:', localError);
+        }
         try {
             const data = await requestGoogleJsonp({ action: 'getData' });
             if (!data || (data.status !== 'online' && data.status !== 'success')) {
@@ -3045,7 +3254,7 @@
                 if(!document.getElementById('view-dataSantri')?.classList.contains('hidden')) renderDataSantriMaster();
             }
 
-            if(Array.isArray(data.history)) replaceHistoryFromSheet(data.history);
+            if(Array.isArray(data.history)) await replaceHistoryFromSheet(data.history);
 
             if(data.acuan && typeof data.acuan === 'object') {
                 // Acuan berasal dari Google Apps Script -> Google Sheet.
@@ -3060,7 +3269,7 @@
             if(syncDot) syncDot.className='relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
             if(btnIcon) btnIcon.classList.remove('fa-spin');
             document.getElementById('offlineAlert')?.classList.add('hidden');
-            if(isManual) Toast.fire({icon:'success', title:'Riwayat dimuat dari Google Sheet'});
+            if(isManual) Toast.fire({icon:'success', title:'Riwayat diperbarui', text:'Data lokal dan Google Sheet sudah diperiksa.'});
         } catch(err) {
             console.error('[Google Sheet] Gagal memuat Riwayat Absen:', err);
             const syncText=document.getElementById('syncStatusText'); if(syncText) syncText.innerText='SHEET ERROR';
@@ -3068,7 +3277,8 @@
             const syncPing=document.getElementById('syncStatusPing'); if(syncPing) syncPing.className='hidden';
             const btnIcon=document.getElementById('iconSyncManual'); if(btnIcon) btnIcon.classList.remove('fa-spin');
             document.getElementById('offlineAlert')?.classList.remove('hidden');
-            if(isManual) Toast.fire({icon:'error', title:'Google Sheet belum dapat dimuat', text:String(err?.message||err)});
+            renderRiwayatTable();
+            if(isManual) Toast.fire({icon:'warning', title: presensiHistory.length ? 'Riwayat Lokal Ditampilkan' : 'Google Sheet belum dapat dimuat', text: presensiHistory.length ? 'Data lokal tetap tersedia. Sinkronisasi akan dicoba kembali saat koneksi tersedia.' : String(err?.message||err)});
         }
     }
     window.onload = async function() {
@@ -3083,7 +3293,16 @@
         renderManualStudents();
         renderDataSantriMaster();
 
-        // Riwayat Presensi sepenuhnya menggunakan Google Apps Script → Google Sheet.
+        // Buka IndexedDB dan tampilkan data lokal terlebih dahulu.
+        try {
+            await openAttendanceDb();
+            await mergeLocalAndSheetHistory([], false);
+        } catch (localInitError) {
+            console.error('[IndexedDB] Inisialisasi penyimpanan lokal gagal:', localInitError);
+            Toast.fire({ icon:'error', title:'Penyimpanan Lokal Tidak Siap', text:String(localInitError?.message || localInitError) });
+        }
+
+        // Riwayat presensi dibaca dari Google Sheet dan digabung dengan data lokal.
         // Firebase tidak dipakai untuk READ/WRITE Riwayat Presensi.
         // Tidak ada backfill Riwayat ke Firebase saat halaman dibuka.
         // Ini mencegah Firestore membaca/menyalin seluruh Riwayat Absen tanpa kebutuhan.
@@ -3092,6 +3311,10 @@
             console.log('[Google Sheet] Antrian sinkronisasi awal:', syncQueueResult);
         } catch(e) { console.warn('[Google Sheet] Flush antrian awal dilewati:',e); }
         await fetchHistoryFromSheets(false);
+        try {
+            const syncResult = await retryPendingLocalAttendance();
+            if (syncResult.sent || syncResult.failed) console.log('[IndexedDB → Google Sheet] Hasil sinkronisasi antrean lokal:', syncResult);
+        } catch(localSyncError) { console.warn('[IndexedDB → Google Sheet] Sinkronisasi antrean lokal dilewati:', localSyncError); }
         if (syncInterval) clearInterval(syncInterval);
         // Riwayat sekarang READ dari Google Sheet saat diperlukan. Tidak memasang
         // polling 4 detik agar Google Apps Script juga tetap hemat.
