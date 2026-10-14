@@ -2378,32 +2378,70 @@
         }).join('');
     }
     function buatLaporanWAKalender() {
-        const selKelas = document.getElementById('kalenderKelasSelect').value, bSelect = document.getElementById('kalenderBulanSelect'), monthName = bSelect.options[bSelect.selectedIndex].text, selTahun = document.getElementById('kalenderTahunSelect').value, studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
-        if(studentsInClass.length === 0) { Toast.fire({ icon: 'error', title: 'Tidak ada data santri!' }); return; }
-        
-        let daysInMonth = new Date(selTahun, parseInt(bSelect.value) + 1, 0).getDate(), acuanKelas = getAcuanKelas(selKelas);
-        let text = `🗓 *KALENDER PRESENSI KELAS* 🗓\n*_KELAS ${selKelas.toUpperCase()}_*\n\n📅 *Bulan:* ${monthName} ${selTahun}\n\n*Rekap Kehadiran Harian (Tanggal 1-${daysInMonth}):*\n\n🎯 *Acuan Kehadiran:* ${acuanKelas}× hadir = 100%\n_Keaktifan boleh lebih dari ${acuanKelas}× dan persentase akan terus bertambah._\n\n`;
-        
+        const selKelas = document.getElementById('kalenderKelasSelect').value;
+        const bSelect = document.getElementById('kalenderBulanSelect');
+        const selectedMonth = parseInt(bSelect.value, 10);
+        const monthName = bSelect.options[bSelect.selectedIndex]?.text || '';
+        const selectedYear = parseInt(document.getElementById('kalenderTahunSelect').value, 10);
+        const studentsInClass = masterDataSantri.filter(s => s.kelas === selKelas);
+        if (studentsInClass.length === 0) {
+            Toast.fire({ icon: 'error', title: 'Tidak ada data santri!' });
+            return;
+        }
+
+        // Periode mengikuti tanggal lokal perangkat: bulan berjalan sampai hari ini,
+        // bulan lampau sampai akhir bulan, dan bulan mendatang tidak menampilkan tanggal masa depan.
+        const now = new Date();
+        const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const monthStart = new Date(selectedYear, selectedMonth, 1);
+        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+        let endDay = daysInMonth;
+        if (selectedYear === todayLocal.getFullYear() && selectedMonth === todayLocal.getMonth()) {
+            endDay = todayLocal.getDate();
+        } else if (monthStart > new Date(todayLocal.getFullYear(), todayLocal.getMonth(), 1)) {
+            endDay = 0;
+        }
+
+        // Acuan tetap dipakai untuk menghitung progres, tetapi tidak dicantumkan pada laporan WA.
+        const acuanKelas = Math.max(1, Number(getAcuanKelas(selKelas)) || 12);
+        const periodeText = endDay > 0
+            ? `*Bulan ${monthName} : Tanggal 1-${endDay}*`
+            : `*Bulan ${monthName} : Periode belum berlangsung*`;
+        let text = `*🗓 Rekap Kehadiran Kelas ${selKelas}🗓*\n\n${periodeText}\n\n`;
+
         studentsInClass.forEach((santri, index) => {
-            let daysEmojiLine = '', jumlahHadir = 0;
-            for(let d = 1; d <= daysInMonth; d++) {
-                let record = presensiHistory.find(item => {
-                    let itemDate = parseGoogleSheetDate(item.waktu); if(!itemDate) return false;
-                    let nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) || (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
-                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === parseInt(bSelect.value) && itemDate.getFullYear() === parseInt(selTahun);
+            let daysEmojiLine = '';
+            let jumlahHadir = 0;
+            for (let d = 1; d <= endDay; d++) {
+                const record = presensiHistory.find(item => {
+                    const itemDate = parseGoogleSheetDate(item.waktu);
+                    if (!itemDate) return false;
+                    const nameMatch = (item.idSantri && item.idSantri.toLowerCase() === santri.id.toLowerCase()) ||
+                        (item.namaSantri && item.namaSantri.toLowerCase() === santri.nama.toLowerCase());
+                    return nameMatch && itemDate.getDate() === d && itemDate.getMonth() === selectedMonth && itemDate.getFullYear() === selectedYear;
                 });
-                if(record) {
-                    const st = String(record.status).toLowerCase();
-                    if(st.includes('hadir') && !st.includes('tidak')) { daysEmojiLine += '✅'; jumlahHadir++; } else if(st.includes('sakit')) daysEmojiLine += '💊'; else if(st.includes('izin')) daysEmojiLine += 'ℹ️'; else daysEmojiLine += '🅰️';
+                // Hanya tanggal dengan status presensi tercatat yang ditampilkan, sesuai format contoh.
+                if (!record) continue;
+                const st = String(record.status || '').toLowerCase();
+                if (st.includes('hadir') && !st.includes('tidak')) {
+                    daysEmojiLine += '✅';
+                    jumlahHadir++;
+                } else if (st.includes('sakit')) {
+                    daysEmojiLine += '💊';
+                } else if (st.includes('izin')) {
+                    daysEmojiLine += 'ℹ️';
+                } else {
+                    daysEmojiLine += '🅰️';
                 }
             }
-            if (daysEmojiLine === '') daysEmojiLine = '-';
+            if (!daysEmojiLine) daysEmojiLine = '-';
             const persen = Math.round((jumlahHadir / acuanKelas) * 100);
-            let progresNote = jumlahHadir >= acuanKelas ? (jumlahHadir === acuanKelas ? `🌟 *SANTRI RAJIN* — Target ${acuanKelas}× tercapai! MasyaAllah, sangat rajin!` : `🌟 *SANTRI RAJIN* — ${jumlahHadir}× hadir, luar biasa! Melebihi target ${acuanKelas}×.`) : `📈 *Progres Kehadiran :* ${persen}%`;
-            text += `*${index + 1}. ${santri.nama}*\n[ ${daysEmojiLine} ]\n${progresNote}\n\n`;
+            text += `*${index + 1}. ${santri.nama}*\n[ ${daysEmojiLine} ]\n📈 *Progres Kehadiran :* ${persen}%\n\n`;
         });
-        text += `*KETERANGAN:*\n✅ = Hadir\n💊 = Sakit\nℹ️ = Izin\n🅰️ = Alfa\n\n`;
-        document.getElementById('waPreviewText').innerText = text; document.getElementById('waModal').classList.remove('hidden');
+
+        text += `*KETERANGAN:*\n✅ = Hadir\n💊 = Sakit\nℹ️ = Izin\n🅰️ = Alfa`;
+        document.getElementById('waPreviewText').innerText = text;
+        document.getElementById('waModal').classList.remove('hidden');
     }
 
     async function exportKalenderPDF() {
