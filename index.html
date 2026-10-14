@@ -1021,9 +1021,18 @@
                <select id="modalAudioMode" onchange="updateAudioModeFromSelect(this.value)" class="modern-input font-medium text-sm bg-white py-2.5"><option value="sfx">⚡ Suara Laser (Notifikasi Presensi)</option><option value="off">🔇 Mute / Tanpa Suara</option></select>
                <div id="sfxOptionsContainer" class="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-sm"><span class="font-bold text-gray-600">Suara Presensi:</span><span class="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold bg-white">⚡ Laser Cepat</span></div>
             </div>
-            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="AQ.Ab8... atau AIzaSy..."><p class="text-[10px] text-gray-500 mt-1.5">Pengaturan API Key tersimpan di browser/perangkat ini saja, tidak otomatis berpindah ke HP atau laptop lain. Untuk penggunaan lintas perangkat, konfigurasi harus tersedia di masing-masing perangkat atau melalui backend yang aman.</p></div>
-            <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Google Apps Script</label><input type="text" id="inputUrlSheet" class="modern-input font-mono text-xs py-2.5" placeholder="Tempel URL Google Apps Script /exec di sini"></div>
-            <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="text" id="inputUrlLogo" class="modern-input text-xs py-2.5" placeholder="https://lh3.googleusercontent.com/d/... atau https://..."></div>
+            <div class="bg-blue-50/70 border border-blue-200/70 p-4 rounded-2xl">
+              <label class="block text-sm font-bold text-blue-900 mb-2 flex items-center gap-1.5"><i class="fas fa-plug text-blue-700"></i> API Penyimpanan Presensi (Google Sheet)</label>
+              <p class="text-[11px] text-blue-900/80 mb-2">Tempel URL Web App Google Apps Script yang berakhiran <b>/exec</b>. URL inilah penghubung website ke Google Sheet, bukan API key Gemini.</p>
+              <input type="url" inputmode="url" autocomplete="url" id="inputUrlSheet" class="modern-input font-mono text-xs py-3 w-full" placeholder="https://script.google.com/macros/s/.../exec" aria-label="URL API Google Apps Script untuk Google Sheet">
+              <div class="flex gap-2 mt-3">
+                <button type="button" onclick="ujiKoneksiApiSheet()" class="flex-1 bg-white border border-blue-300 text-blue-800 font-bold py-2.5 rounded-xl text-xs"><i class="fas fa-plug mr-1"></i> Uji Koneksi API</button>
+                <span id="apiSheetStatus" role="status" aria-live="polite" class="flex-1 flex items-center text-xs text-gray-600">Belum diuji</span>
+              </div>
+              <p class="text-[10px] text-gray-600 mt-2">URL ini disimpan di browser perangkat. Agar HP dan laptop memakai Google Sheet yang sama, pastikan URL API yang sama tersimpan di kedua perangkat. Data presensi yang berhasil dikirim disimpan di Google Sheet.</p>
+            </div>
+            <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" autocomplete="off" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="Masukkan API key Gemini"><p class="text-[10px] text-gray-500 mt-1.5">API key Gemini berbeda dari URL API Google Sheet. Key ini tersimpan di browser/perangkat ini saja. Fitur Gemini hanya dapat bekerja jika kode pemanggil Gemini sudah terhubung dan key valid.</p></div>
+            <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="url" inputmode="url" id="inputUrlLogo" class="modern-input text-xs py-2.5 w-full" placeholder="https://... (opsional)"></div>
         </div>
         <button onclick="simpanUrl()" class="w-full bg-brand-green text-white font-bold py-3.5 rounded-xl hover:bg-[#047857] transition-all shadow-float active:scale-95 text-sm">Simpan Pengaturan</button>
     </div>
@@ -2680,16 +2689,55 @@
     }
     function kirimLaporanWAAli() { const text = document.getElementById('waPreviewText').innerText, targetNumber = "+6285774042121", encoded = encodeURIComponent(text); window.open(`https://api.whatsapp.com/send?phone=${targetNumber}&text=${encoded}`, '_blank'); }
 
-    function bukaModalUrl() { document.getElementById('inputUrlSheet').value = SCRIPT_URL; document.getElementById('inputUrlLogo').value = LOGO_URL; updateAudioUI(); document.getElementById('settingModal').classList.remove('hidden'); }
+    function bukaModalUrl() {
+        const apiInput = document.getElementById('inputUrlSheet');
+        if (apiInput) apiInput.value = SCRIPT_URL || DEFAULT_SCRIPT_URL;
+        document.getElementById('inputUrlLogo').value = LOGO_URL;
+        document.getElementById('inputGeminiApiKey').value = geminiApiKey || '';
+        const status = document.getElementById('apiSheetStatus'); if (status) { status.textContent = 'Belum diuji'; status.className = 'flex-1 flex items-center text-xs text-gray-600'; }
+        updateAudioUI(); document.getElementById('settingModal').classList.remove('hidden');
+    }
     function tutupModalUrl() { document.getElementById('settingModal').classList.add('hidden'); }
+    function isValidSheetApiUrl(value) {
+        try { const u = new URL(String(value || '').trim()); return u.protocol === 'https:' && u.hostname === 'script.google.com' && u.pathname.includes('/macros/s/') && u.pathname.endsWith('/exec'); }
+        catch (e) { return false; }
+    }
+    function setApiSheetStatus(message, kind) {
+        const el = document.getElementById('apiSheetStatus'); if (!el) return;
+        const cls = kind === 'ok' ? 'text-emerald-700' : kind === 'error' ? 'text-red-700' : 'text-gray-600';
+        el.textContent = message; el.className = 'flex-1 flex items-center text-xs font-semibold ' + cls;
+    }
+    function ujiKoneksiApiSheet() {
+        const input = document.getElementById('inputUrlSheet');
+        const candidate = input ? input.value.trim() : '';
+        if (!isValidSheetApiUrl(candidate)) { setApiSheetStatus('URL API tidak valid. Gunakan URL /exec.', 'error'); return; }
+        const previous = SCRIPT_URL;
+        SCRIPT_URL = candidate;
+        setApiSheetStatus('Menguji koneksi…', 'wait');
+        fetchGoogleJsonp(data => {
+            SCRIPT_URL = previous;
+            if (data && ['success', 'online', 'warning'].includes(String(data.status || '').toLowerCase())) {
+                const extra = Array.isArray(data.data) ? ' • data diterima' : '';
+                setApiSheetStatus('API merespons' + extra, 'ok');
+            } else {
+                setApiSheetStatus('API merespons, tetapi format/status tidak dikenali.', 'error');
+            }
+        }, err => {
+            SCRIPT_URL = previous;
+            setApiSheetStatus(String(err && err.message || 'Koneksi gagal').slice(0, 100), 'error');
+        }, { action: 'getData', healthCheck: '1' });
+    }
     function simpanUrl() {
-        const v = document.getElementById('inputUrlSheet').value.trim(), l = document.getElementById('inputUrlLogo').value.trim(), key = document.getElementById('inputGeminiApiKey').value.trim();
-        if(v.includes('script.google.com')) {
-            SCRIPT_URL = v; localStorage.setItem('scriptUrlSheet', SCRIPT_URL);
-            LOGO_URL = l || DEFAULT_LOGO_URL; localStorage.setItem('logoUrl', LOGO_URL);
-            geminiApiKey = key; localStorage.setItem('geminiApiKey', geminiApiKey);
-            applyLogo(); tutupModalUrl(); Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan' }); fetchHistoryFromSheets();
-        } else { Toast.fire({ icon: 'error', title: 'URL Sheet tidak valid' }); }
+        const v = document.getElementById('inputUrlSheet').value.trim();
+        const l = document.getElementById('inputUrlLogo').value.trim();
+        const key = document.getElementById('inputGeminiApiKey').value.trim();
+        // Simpan URL API Sheet dan API key secara independen agar salah satu tidak menghalangi yang lain.
+        if (!isValidSheetApiUrl(v)) { Toast.fire({ icon: 'error', title: 'URL API Google Sheet tidak valid', text: 'Gunakan URL Web App Google Apps Script yang berakhiran /exec.' }); return; }
+        SCRIPT_URL = v; localStorage.setItem('scriptUrlSheet', SCRIPT_URL);
+        LOGO_URL = l || DEFAULT_LOGO_URL; localStorage.setItem('logoUrl', LOGO_URL);
+        geminiApiKey = key; localStorage.setItem('geminiApiKey', geminiApiKey);
+        applyLogo(); tutupModalUrl(); Toast.fire({ icon: 'success', title: 'Pengaturan Tersimpan', text: 'URL API Google Sheet tersimpan pada browser/perangkat ini.' });
+        fetchHistoryFromSheets();
     }
     function applyDarkMode(isDark) {
         document.body.classList.toggle('dark-mode', !!isDark);
