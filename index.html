@@ -1029,7 +1029,7 @@
                 <button type="button" onclick="ujiKoneksiApiSheet()" class="flex-1 bg-white border border-blue-300 text-blue-800 font-bold py-2.5 rounded-xl text-xs"><i class="fas fa-plug mr-1"></i> Uji Koneksi API</button>
                 <span id="apiSheetStatus" role="status" aria-live="polite" class="flex-1 flex items-center text-xs text-gray-600">Belum diuji</span>
               </div>
-              <p class="text-[10px] text-gray-600 mt-2">URL ini disimpan di browser perangkat. Agar HP dan laptop memakai Google Sheet yang sama, pastikan URL API yang sama tersimpan di kedua perangkat. Data presensi yang berhasil dikirim disimpan di Google Sheet.</p>
+              <p class="text-[10px] text-gray-600 mt-2">URL API disimpan di browser perangkat ini. Jika HP dan laptop berbeda, masukkan URL Web App /exec yang sama pada keduanya satu kali. Kode tidak akan menghapus URL tersimpan hanya karena versi website berubah. Data presensi yang berhasil dikirim disimpan di Google Sheet.</p>
             </div>
             <div class="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl"><label class="block text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5"><i class="fas fa-key text-brand-accent"></i> Google AI Studio API Key (Gemini TTS)</label><input type="password" id="inputGeminiApiKey" autocomplete="off" class="modern-input font-mono text-xs bg-white py-2.5" placeholder="Masukkan API key Gemini"><p class="text-[10px] text-gray-500 mt-1.5">API key Gemini berbeda dari URL API Google Sheet. Key ini tersimpan di browser/perangkat ini saja. Fitur Gemini hanya dapat bekerja jika kode pemanggil Gemini sudah terhubung dan key valid.</p></div>
             <div><label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">URL Gambar Logo (Opsional)</label><input type="url" inputmode="url" id="inputUrlLogo" class="modern-input text-xs py-2.5 w-full" placeholder="https://... (opsional)"></div>
@@ -1056,10 +1056,23 @@
     const classSchedules = { "Abu Ubaidah": "Selasa, Kamis, Jumat, Sabtu", "Abdurrahman": "Selasa, Rabu, Jumat, Sabtu", "Ali": "Senin, Rabu, Jumat", "Zubair": "Senin, Rabu, Jumat", "Utsman": "Selasa, Rabu, Kamis", "Abu Bakar": "Senin, Rabu, Jumat", "Bilal": "Senin, Rabu, Jumat", "Hamzah": "Selasa, Kamis, Sabtu", "Fatimah": "Selasa, Kamis, Sabtu", "Umar": "Senin, Rabu, Kamis" };
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi";
     const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQkZPiNBCcI58kWexHTn6lbtx21fvqqhHc4-xNBb-2zDJzalsIQRoet99fC_LttYMTXg/exec';
-    const SCRIPT_URL_VERSION = '2026-09-15-v12-SERVER-MASTER-ONLY';
-    const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion');
-    if (storedScriptVersion !== SCRIPT_URL_VERSION) { localStorage.setItem('scriptUrlSheet', DEFAULT_SCRIPT_URL); localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); }
-    let SCRIPT_URL = localStorage.getItem('scriptUrlSheet') || DEFAULT_SCRIPT_URL;
+    // API CONFIG PATCH (2026-11-03): jangan reset URL custom pengguna hanya karena
+    // versi kode berubah. Ini sebelumnya dapat menimpa konfigurasi lokal perangkat.
+    const SCRIPT_URL_VERSION = '2026-11-03-v13-PRESERVE-API-CONFIG';
+    const storedScriptVersion = localStorage.getItem('scriptUrlSheetVersion') || '';
+    let savedScriptUrl = String(localStorage.getItem('scriptUrlSheet') || '').trim();
+    // Gunakan URL tersimpan jika valid; selain itu gunakan default deployment.
+    // Validasi lengkap dilakukan oleh isValidSheetApiUrl() saat fungsi tersedia.
+    const isStoredScriptUrlShapeValid = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:[?#].*)?$/i.test(savedScriptUrl);
+    let SCRIPT_URL = isStoredScriptUrlShapeValid ? savedScriptUrl : DEFAULT_SCRIPT_URL;
+    if (!isStoredScriptUrlShapeValid && savedScriptUrl) {
+        console.warn('[API Sheet] URL tersimpan tidak sesuai format Web App /exec; menggunakan URL default.');
+    }
+    // Simpan versi tanpa memaksa reset API yang sudah tersimpan.
+    try { localStorage.setItem('scriptUrlSheetVersion', SCRIPT_URL_VERSION); } catch (e) { console.warn('[API Sheet] Gagal menyimpan versi konfigurasi:', e); }
+    if (!isStoredScriptUrlShapeValid && SCRIPT_URL) {
+        try { localStorage.setItem('scriptUrlSheet', SCRIPT_URL); } catch (e) { console.warn('[API Sheet] Gagal menyimpan URL default:', e); }
+    }
     let LOGO_URL = localStorage.getItem('logoUrl') || DEFAULT_LOGO_URL;
     let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
     const storedAudioMode = localStorage.getItem('audioMode');
